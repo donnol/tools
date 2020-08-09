@@ -16,7 +16,6 @@ type visitor struct {
 
 	methodMap map[string][]Method
 	fieldMap  map[string]Field
-	aliasMap  map[string]bool
 }
 
 // Visit 断言节点类型，然后从info里拿到types.Type信息，再使用parseTypesType方法获取具体类型信息
@@ -75,7 +74,6 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 				switch ot := obj.(type) {
 				case *types.TypeName:
 					debug.Debug("=== ident type spec type name: %+v, %+v\n", ot, ot.IsAlias())
-					v.aliasMap[ot.Id()] = ot.IsAlias()
 				}
 			}
 		}
@@ -116,7 +114,6 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 
 type qualifierParam struct {
 	pkgPath string
-	isAlias bool
 }
 
 var (
@@ -128,11 +125,6 @@ var (
 
 			// 如果是同一个包内的，省略包名
 			if pkg.Path() == qp.pkgPath {
-				return ""
-			}
-			// 如果包名相同且是别名的，省略包名
-			pkgName := qp.pkgPath[strings.LastIndex(qp.pkgPath, "/")+1:]
-			if name == pkgName && qp.isAlias {
 				return ""
 			}
 

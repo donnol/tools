@@ -107,7 +107,6 @@ func (p *Parser) ParseAST(importPath string) (structs []Struct, err error) {
 			structs:   make([]Struct, 0, 16),
 			methodMap: make(map[string][]Method),
 			fieldMap:  make(map[string]Field),
-			aliasMap:  make(map[string]bool),
 		}
 		ast.Walk(vis, pkg)
 
@@ -122,7 +121,6 @@ func (p *Parser) ParseAST(importPath string) (structs []Struct, err error) {
 				fields = append(fields, field)
 			}
 			single.Fields = fields
-			single.isAlias = vis.aliasMap[single.Id]
 			tmpStructs = append(tmpStructs, single)
 		}
 		structs = append(structs, tmpStructs...)

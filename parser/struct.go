@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"go/types"
 
-	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/importpath"
 )
 
@@ -20,8 +19,6 @@ type Struct struct {
 
 	Fields  []Field  // 字段列表
 	Methods []Method // 方法列表
-
-	isAlias bool
 }
 
 // --- 测试方法
@@ -32,7 +29,7 @@ func (s Struct) String(f Field, ip importpath.ImportPath) {
 	fmt.Printf("%s\n", s.PkgName)
 }
 
-func (s Struct) TypeAlias(p IIIIIIIInfo) {
+func (s Struct) TypeAlias(p IIIIIIIInfo, ip ImportPathAlias) {
 
 }
 
@@ -59,19 +56,11 @@ func (s Struct) MakeInterface() string {
 
 	i := types.NewInterfaceType(methods, nil)
 	i = i.Complete()
-	// FIXME:这里拿到的isAlias不是结构体的，而是参数的，所以不准确，没法用
-	is := types.TypeString(i.Underlying(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath, isAlias: s.isAlias}))
-	fmt.Printf("=== alias: %v, %s\n", s.isAlias, is)
+	is := types.TypeString(i.Underlying(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
 
 	is = interfacePrefix(s.makeInterfaceName(), is)
 
-	// 检查获得的接口定义是否规范
-	formatContent, err := format.Format("", is, true)
-	if err != nil {
-		panic(err)
-	}
-
-	return string(formatContent)
+	return is
 }
 
 func (s Struct) makeInterfaceName() string {
@@ -98,6 +87,8 @@ type Field struct {
 
 // IIIIIIIInfo 别名测试
 type IIIIIIIInfo = Field // 别名测试注释
+
+type ImportPathAlias = importpath.ImportPath
 
 type PkgInfo struct {
 	dir     string
