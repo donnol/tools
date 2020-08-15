@@ -55,10 +55,10 @@ type IM interface {
 ```go
 // From
 import (
-    "github.com/donnol/tools"
+    "github.com/xxx/tools"
 )
 // To
 import (
-    "github.com/donnol/tools"
+    "github.com/yyy/tools"
 )
 ```
