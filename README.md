@@ -2,6 +2,8 @@
 
 useful tools.
 
+## tbc
+
 安装：`make tbc_install`. (请先安装 make 工具)
 
 使用：
@@ -26,7 +28,7 @@ Flags:
 Use "tbc [command] --help" for more information about a command.
 ```
 
-## 生成结构体接口
+### 生成结构体接口
 
 ```go
 type M struct {}
@@ -48,7 +50,7 @@ type IM interface {
 }
 ```
 
-## 替换模块路径
+### 替换模块路径
 
 替换源码里的包导入路径，如：
 
@@ -62,3 +64,27 @@ import (
     "github.com/yyy/tools"
 )
 ```
+
+## inject
+
+依赖注入
+
+## apitest
+
+api接口测试及文档生成
+
+## dbdoc
+
+数据库文档生成
+
+## cache
+
+练手缓存
+
+## reflectx
+
+反射方法封装
+
+## worker
+
+goroutine工作控制
