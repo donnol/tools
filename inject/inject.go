@@ -47,12 +47,12 @@ func (ioc *Ioc) RegisterProvider(v interface{}) (err error) {
 		ti.depType = append(ti.depType, in)
 	}
 	// 返回：instance
-	var limit = 1
+	min := 1
 	if refType.NumOut() == 0 {
 		return fmt.Errorf("can't find result in func")
 	}
-	if refType.NumOut() > limit {
-		return fmt.Errorf("too many result in func, limit is %d", limit)
+	if refType.NumOut() < min {
+		return fmt.Errorf("too little result in func, min is %d", min)
 	}
 	for i := 0; i < refType.NumOut(); i++ {
 		out := refType.Out(i)
@@ -106,6 +106,8 @@ var (
 	emptyStruct         = reflect.TypeOf((*struct{})(nil))
 	emptyStructValue    = reflect.New(emptyStruct.Elem()).Elem()
 	emptyStructPtrValue = reflect.New(emptyStruct).Elem()
+
+	errorType = reflect.TypeOf((*error)(nil)).Elem()
 )
 
 func (ioc *Ioc) find(typ reflect.Type) (r reflect.Value, err error) {
@@ -146,8 +148,24 @@ func (ioc *Ioc) find(typ reflect.Type) (r reflect.Value, err error) {
 	if len(newValues) == 0 {
 		return r, fmt.Errorf("can't get new value by provider")
 	}
+
+	// 返回值里，第一个必须是实例，最后一个必须是error，中间的忽略
 	newValue := newValues[0]
 	ioc.cache[typ] = newValue
+
+	if len(newValues) > 1 {
+		lastValue := newValues[len(newValues)-1]
+		last := lastValue.Interface()
+		if lastValue.Type().Implements(errorType) {
+			if v, ok := last.(error); ok {
+				if v != nil {
+					return r, fmt.Errorf("call failed, err is %+v", v)
+				}
+			}
+		} else {
+			return r, fmt.Errorf("last return value is not error, is %+v", last)
+		}
+	}
 
 	return newValue, nil
 }

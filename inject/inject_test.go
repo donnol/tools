@@ -1,6 +1,11 @@
 package inject
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/pkg/errors"
+)
 
 type I interface {
 	Name() string
@@ -52,9 +57,57 @@ func (impl *impl1) SetName(name string) {
 	impl.name = Name(name)
 }
 
+type I2 interface {
+	Say(string)
+}
+
+func NewI2() (I2, error) {
+	return &impl2{}, nil
+}
+
+type impl2 struct {
+}
+
+func (impl *impl2) Say(a string) {
+	fmt.Println(a)
+}
+
+type I3 interface {
+	Say(string)
+}
+
+func NewI3() (I3, error) {
+	return &impl3{}, errors.Errorf("case: new return non nil error")
+}
+
+type impl3 struct {
+}
+
+func (impl *impl3) Say(a string) {
+	fmt.Println(a)
+}
+
+type I4 interface {
+	Say(string)
+}
+
+func NewI4() (I4, error, string) {
+	return &impl4{}, nil, "case: new return non error type"
+}
+
+type impl4 struct {
+}
+
+func (impl *impl4) Say(a string) {
+	fmt.Println(a)
+}
+
 type M struct {
 	I  I
 	I1 I1
+	I2 I2
+	// I3 I3 // 测试非nil error
+	// I4 I4 // 测试非error类型
 }
 
 func TestInject(t *testing.T) {
@@ -69,6 +122,15 @@ func TestInject(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := ioc.RegisterProvider(NewName); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioc.RegisterProvider(NewI2); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioc.RegisterProvider(NewI3); err != nil {
+		t.Fatal(err)
+	}
+	if err := ioc.RegisterProvider(NewI4); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,4 +167,5 @@ func TestInject(t *testing.T) {
 	if m.I1.Name() != cas2 {
 		t.Fatalf("Bad name: %v != %v\n", m.I1.Name(), cas2)
 	}
+	m.I2.Say(cas2)
 }
