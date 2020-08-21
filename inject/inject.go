@@ -109,6 +109,11 @@ var (
 )
 
 func (ioc *Ioc) find(typ reflect.Type) (r reflect.Value, err error) {
+	value, ok := ioc.cache[typ]
+	if ok {
+		return value, nil
+	}
+
 	// 在provider里寻找初始化函数
 	provider, ok := ioc.providerMap[typ]
 	if !ok {
