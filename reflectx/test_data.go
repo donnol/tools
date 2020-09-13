@@ -47,25 +47,28 @@ type Basic struct {
 	Name string `json:"name"` // 名字
 }
 
-// Model 模型
-//
-// 模型注释
-//
-// 模型描述.
-// 模型描述2.
-type Model struct {
-	InnerModel
-	// 级别类型:1 P1;2 P2;3 P3
-	Level       int      `json:"level"` // 级别
-	LevelPtr    *int     // 级别
-	Position    float64  // 位置
-	PositionPtr *float64 // 位置
-	Head        string   // 头
-	HeadPtr     *string  // 头
-	IsTurbo     bool     // 是否涡轮
-	IsTurboPtr  *bool    // 是否涡轮
-	// Help func() // 帮助函数
-}
+// 结构体必须这样定义，否则拿不到它的doc
+type (
+	// Model 模型
+	//
+	// 模型注释
+	//
+	// 模型描述.
+	// 模型描述2.
+	Model struct {
+		InnerModel
+		// 级别类型:1 P1;2 P2;3 P3
+		Level       int      `json:"level"` // 级别
+		LevelPtr    *int     // 级别
+		Position    float64  // 位置
+		PositionPtr *float64 // 位置
+		Head        string   // 头
+		HeadPtr     *string  // 头
+		IsTurbo     bool     // 是否涡轮
+		IsTurboPtr  *bool    // 是否涡轮
+		// Help func() // 帮助函数
+	}
+)
 
 // InnerModel 内部模型
 type InnerModel struct {

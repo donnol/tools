@@ -8,6 +8,9 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/donnol/tools/importpath"
+	"github.com/donnol/tools/parser"
 )
 
 // Field 字段
@@ -148,8 +151,40 @@ const (
 	descriptionKey = "description"
 )
 
-// 返回结构体注释，字段名注释映射和错误
 func resolve(structName string) (map[string]string, map[string]string, error) {
+	return resolveWithParser(structName)
+}
+
+func resolveWithParser(structName string) (map[string]string, map[string]string, error) {
+	var structCommentMap = make(map[string]string)
+	var fieldCommentMap = make(map[string]string)
+
+	parser := parser.New(parser.Option{})
+	ip := &importpath.ImportPath{}
+	path, err := ip.GetByCurrentDir()
+	if err != nil {
+		return structCommentMap, fieldCommentMap, err
+	}
+	structs, err := parser.ParseAST(path)
+	if err != nil {
+		return structCommentMap, fieldCommentMap, err
+	}
+	for _, oneStruct := range structs {
+		if oneStruct.Name != structName {
+			continue
+		}
+		structCommentMap[commentKey] = oneStruct.Comment
+		structCommentMap[descriptionKey] = oneStruct.Doc
+		for _, field := range oneStruct.Fields {
+			fieldCommentMap[field.Name] = field.Comment
+		}
+	}
+
+	return structCommentMap, fieldCommentMap, nil
+}
+
+// 返回结构体注释，字段名注释映射和错误
+func resolveWithGoDoc(structName string) (map[string]string, map[string]string, error) {
 	var structCommentMap = make(map[string]string)
 	var fieldCommentMap = make(map[string]string)
 
