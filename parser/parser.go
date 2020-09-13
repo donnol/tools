@@ -14,7 +14,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 
 	_ "bytes"
@@ -220,13 +219,14 @@ func (p *Parser) methodSet(pkg *types.Package) {
 		}
 		typ := obj.Type()
 		for _, t := range []types.Type{typ, types.NewPointer(typ)} {
-			fmt.Printf("Method set of %s:\n", t)
+			// fmt.Printf("Method set of %s:\n", t)
 			mset := types.NewMethodSet(t)
 			for i := 0; i < mset.Len(); i++ {
 				sel := mset.At(i)
-				fmt.Println("sel: ", sel, "type:", sel.Type(), reflect.TypeOf(sel.Type().Underlying()), "obj:", sel.Obj())
+				_ = sel
+				// fmt.Println("sel: ", sel, "type:", sel.Type(), reflect.TypeOf(sel.Type().Underlying()), "obj:", sel.Obj())
 			}
-			fmt.Println()
+			// fmt.Println()
 		}
 	}
 }

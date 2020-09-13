@@ -34,7 +34,8 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 		debug.Debug("=== obj: %+v\n", obj)
 
 		doc := strings.TrimSpace(n.Doc.Text())
-		v.parseTypesType(tv.Type, obj, doc, "")
+		comment := n.Comment.Text()
+		v.parseTypesType(tv.Type, obj, doc, comment)
 
 	case *ast.Field:
 		debug.Debug("=== field: %+v, %+v, %v, %v\n", n, n.Type, strings.TrimSpace(n.Doc.Text()), n.Comment.Text())
@@ -52,7 +53,7 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 				Comment: n.Comment.Text(),
 			}
 		}
-		v.parseTypesType(tv.Type, nil, "", "")
+		v.parseTypesType(tv.Type, nil, n.Doc.Text(), n.Comment.Text())
 
 	case *ast.FieldList:
 		debug.Debug("=== fieldList: %+v\n", n.List)
@@ -144,7 +145,7 @@ func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment st
 
 	case *types.Pointer:
 		debug.Debug("=== pointer: %+v, %+v\n", tv, tv.Elem())
-		v.parseTypesType(tv.Elem(), obj, "", "")
+		v.parseTypesType(tv.Elem(), obj, doc, comment)
 
 	case *types.Named:
 		methods := []Method{}
@@ -192,7 +193,8 @@ func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment st
 				Id:      obj.Id(),
 				Name:    obj.Name(),
 				Type:    types.TypeString(obj.Type(), pkgNameQualifier(qualifierParam{pkgPath: v.pkgPath})),
-				Comment: doc,
+				Doc:     doc,
+				Comment: comment,
 			},
 			Fields: fields,
 		})
