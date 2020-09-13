@@ -92,8 +92,8 @@ func getFields(s Struct) []Field {
 // collectStructComment 收集结构体的注释
 func collectStructComment(refType reflect.Type, s *Struct) error {
 	// 解析-获取结构体注释
-	r := make(map[string]string)
-	f := make(map[string]string)
+	var r map[string]string
+	var f map[string]string
 	var err error
 	if r, f, err = resolve(s.Name); err != nil {
 		return fmt.Errorf("resolve output failed, error is %v", err)
@@ -169,15 +169,26 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 	if err != nil {
 		return structCommentMap, fieldCommentMap, err
 	}
+
+	parts := strings.Split(structName, ".")
+	var name = structName
+	if len(parts) > 1 {
+		name = parts[len(parts)-1]
+	}
+	var exist bool
 	for _, oneStruct := range structs {
-		if oneStruct.Name != structName {
+		if oneStruct.Name != name {
 			continue
 		}
+		exist = true
 		structCommentMap[commentKey] = oneStruct.Comment
 		structCommentMap[descriptionKey] = oneStruct.Doc
 		for _, field := range oneStruct.Fields {
 			fieldCommentMap[field.Name] = field.Comment
 		}
+	}
+	if !exist {
+		fmt.Printf("Can't find comment info of %s", structName)
 	}
 
 	return structCommentMap, fieldCommentMap, nil
