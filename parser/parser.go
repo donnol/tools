@@ -22,6 +22,7 @@ import (
 	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/ast/astutil"
+	"golang.org/x/tools/go/packages"
 )
 
 // 为什么要这样写，因为：https://github.com/golang/go/issues/27477
@@ -140,6 +141,32 @@ func (p *Parser) getFullDir(importPath string) (fullDir string, err error) {
 		return
 	}
 	fullDir = buildPkg.Dir
+
+	return
+}
+
+// ParseByGoPackages 使用x/tools/go/packages解析指定导入路径
+func (p *Parser) ParseByGoPackages(importPath string) (err error) {
+	cfg := &packages.Config{
+		Mode: packages.NeedFiles |
+			packages.NeedCompiledGoFiles |
+			packages.NeedSyntax |
+			packages.NeedModule |
+			packages.NeedImports |
+			packages.NeedTypes |
+			packages.NeedTypesInfo |
+			packages.NeedName,
+	}
+	pkgs, err := packages.Load(cfg, importPath)
+	if err != nil {
+		return
+	}
+	// TODO:
+	for _, pkg := range pkgs {
+		fmt.Printf("pkg: %#v, %+v\n", pkg, pkg.Module)
+		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
+		// 这里已经拿到*ast.File信息了
+	}
 
 	return
 }

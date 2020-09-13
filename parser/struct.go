@@ -47,7 +47,7 @@ func (s Struct) MakeInterface() string {
 			continue
 		}
 		methods = append(methods, m.Origin)
-		fmt.Printf("method: %+v, %s\n", m.Origin, m.Signature)
+		// fmt.Printf("method: %+v, %s\n", m.Origin, m.Signature)
 	}
 
 	if len(methods) == 0 {
