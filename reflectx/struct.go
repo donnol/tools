@@ -159,22 +159,27 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 	var structCommentMap = make(map[string]string)
 	var fieldCommentMap = make(map[string]string)
 
-	parser := parser.New(parser.Option{})
 	ip := &importpath.ImportPath{}
 	path, err := ip.GetByCurrentDir()
 	if err != nil {
 		return structCommentMap, fieldCommentMap, err
 	}
+
+	name := structName
+	dotIndex := strings.LastIndex(structName, ".")
+	if dotIndex != -1 {
+		if dotIndex != 0 {
+			path = structName[:dotIndex]
+		}
+		name = structName[dotIndex+1:]
+	}
+
+	parser := parser.New(parser.Option{})
 	structs, err := parser.ParseAST(path)
 	if err != nil {
 		return structCommentMap, fieldCommentMap, err
 	}
 
-	parts := strings.Split(structName, ".")
-	var name = structName
-	if len(parts) > 1 {
-		name = parts[len(parts)-1]
-	}
 	var exist bool
 	for _, oneStruct := range structs {
 		if oneStruct.Name != name {
