@@ -186,10 +186,10 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 			continue
 		}
 		exist = true
-		structCommentMap[commentKey] = oneStruct.Comment
-		structCommentMap[descriptionKey] = oneStruct.Doc
+		structCommentMap[commentKey] = strings.TrimSpace(oneStruct.Comment)
+		structCommentMap[descriptionKey] = strings.TrimSpace(oneStruct.Doc)
 		for _, field := range oneStruct.Fields {
-			fieldCommentMap[field.Name] = field.Comment
+			fieldCommentMap[field.Name] = strings.TrimSpace(field.Comment)
 		}
 	}
 	if !exist {
