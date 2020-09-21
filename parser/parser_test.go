@@ -54,3 +54,17 @@ func TestParseASTReplaceImportPath(t *testing.T) {
 		t.Fatalf("%+v", err)
 	}
 }
+
+func TestParseByGoPackages(t *testing.T) {
+	p := New(Option{})
+	ip := &importpath.ImportPath{}
+	path, err := ip.GetByCurrentDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = p.ParseByGoPackages(path)
+	if err != nil {
+		t.Fatalf("%+v", err)
+	}
+}

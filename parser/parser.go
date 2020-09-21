@@ -165,7 +165,32 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 	for _, pkg := range pkgs {
 		fmt.Printf("pkg: %#v, %+v\n", pkg, pkg.Module)
 		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
+
+		_ = pkg.Types
+		_ = pkg.TypesInfo
+
 		// 这里已经拿到*ast.File信息了
+		for _, astFile := range pkg.Syntax {
+			fmt.Printf("astFile: %+v\n", astFile)
+
+			for _, decl := range astFile.Decls {
+				fmt.Printf("decl: %+v\n", decl)
+				switch declValue := decl.(type) {
+				case *ast.GenDecl:
+					fmt.Printf("gen decl: %+v\n", declValue)
+				case *ast.BadDecl:
+					fmt.Printf("bad decl: %+v\n", declValue)
+				case *ast.FuncDecl:
+					fmt.Printf("func decl: %+v\n", declValue)
+				case ast.Expr:
+					fmt.Printf("expr decl: %+v\n", declValue)
+				case ast.Node:
+					fmt.Printf("node decl: %+v\n", declValue)
+
+					// more...
+				}
+			}
+		}
 	}
 
 	return
