@@ -163,7 +163,7 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 	}
 	// TODO:
 	for _, pkg := range pkgs {
-		fmt.Printf("pkg: %#v, %+v\n", pkg, pkg.Module)
+		debug.Debug("pkg: %#v, %+v\n", pkg, pkg.Module)
 		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
 
 		_ = pkg.Types
@@ -171,21 +171,69 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 
 		// 这里已经拿到*ast.File信息了
 		for _, astFile := range pkg.Syntax {
-			fmt.Printf("astFile: %+v\n", astFile)
+			debug.Debug("astFile: %+v\n", astFile)
 
 			for _, decl := range astFile.Decls {
-				fmt.Printf("decl: %+v\n", decl)
+				debug.Debug("decl: %+v\n", decl)
 				switch declValue := decl.(type) {
 				case *ast.GenDecl:
-					fmt.Printf("gen decl: %+v\n", declValue)
+					debug.Debug("gen decl: %+v\n", declValue)
+					switch declValue.Tok {
+					case token.TYPE:
+						debug.Debug("gen decl type: %+v\n", declValue)
+						for _, spec := range declValue.Specs {
+							debug.Debug("gen decl type spec: %+v\n", spec)
+							switch specValue := spec.(type) {
+							case *ast.TypeSpec:
+								debug.Debug("gen decl type spec type: %+v, %+v\n", specValue, specValue.Type)
+								switch exprValue := specValue.Type.(type) {
+								case *ast.StructType:
+									fmt.Printf("gen decl type spec expr: %+v, %+v\n", specValue, exprValue)
+									for _, field := range exprValue.Fields.List {
+										fmt.Printf("gen decl type spec expr struct field: %+v\n", field)
+										fmt.Printf("=== gen decl type spec expr struct field info: %+v, %+v, %+v, %+v, %+v\n", field.Names, field.Type, field.Tag, field.Comment, field.Doc)
+										switch field.Type.(type) {
+										case *ast.SelectorExpr:
+										case *ast.ArrayType:
+										case *ast.StructType:
+											// more...
+										}
+									}
+								case *ast.StarExpr:
+								case *ast.TypeAssertExpr:
+								case *ast.ArrayType:
+								case *ast.BadExpr:
+								case *ast.SelectorExpr:
+								case *ast.SliceExpr:
+								case *ast.BasicLit:
+								case *ast.BinaryExpr:
+								case *ast.CallExpr:
+								case *ast.ChanType:
+								case *ast.CompositeLit:
+								case *ast.Ellipsis:
+								case *ast.FuncLit:
+								case *ast.FuncType:
+								case *ast.Ident:
+								case *ast.IndexExpr:
+								case *ast.InterfaceType:
+								case *ast.KeyValueExpr:
+								case *ast.MapType:
+								case *ast.ParenExpr:
+								case *ast.UnaryExpr:
+								}
+							case *ast.ImportSpec:
+							case *ast.ValueSpec:
+							}
+						}
+					}
 				case *ast.BadDecl:
-					fmt.Printf("bad decl: %+v\n", declValue)
+					debug.Debug("bad decl: %+v\n", declValue)
 				case *ast.FuncDecl:
-					fmt.Printf("func decl: %+v\n", declValue)
+					debug.Debug("func decl: %+v\n", declValue)
 				case ast.Expr:
-					fmt.Printf("expr decl: %+v\n", declValue)
+					debug.Debug("expr decl: %+v\n", declValue)
 				case ast.Node:
-					fmt.Printf("node decl: %+v\n", declValue)
+					debug.Debug("node decl: %+v\n", declValue)
 
 					// more...
 				}

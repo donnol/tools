@@ -10,12 +10,17 @@ import (
 )
 
 type visitor struct {
-	pkgPath string
-	info    *types.Info
-	structs []Struct
+	// 如: github.com/pkg/errors
+	pkgPath string // 包路径
 
-	methodMap map[string][]Method
-	fieldMap  map[string]Field
+	// 如：errors.Frame
+	info *types.Info // 类型信息
+
+	// 如：[]Struct{...}
+	structs []Struct `json:"-"` // 结构体信息
+
+	methodMap map[string][]Method // 方法集
+	fieldMap  map[string]Field    // 字段集
 }
 
 // Visit 断言节点类型，然后从info里拿到types.Type信息，再使用parseTypesType方法获取具体类型信息
