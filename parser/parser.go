@@ -244,6 +244,22 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 	return
 }
 
+func InspectDecl(decl ast.Decl) {
+
+}
+
+func InspectSpec(spec ast.Spec) {
+
+}
+
+func InspectExpr(expr ast.Expr) {
+
+}
+
+func InspectStmt(stmt ast.Stmt) {
+
+}
+
 func (p *Parser) parseDir(fset *token.FileSet, fullDir string) (pkgs map[string]*ast.Package, err error) {
 	const (
 		testSuffix = "_test"
