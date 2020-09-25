@@ -23,6 +23,14 @@ type visitor struct {
 	fieldMap  map[string]Field    // 字段集
 }
 
+func newVisitor() *visitor {
+	return &visitor{
+		structs:   make([]Struct, 0, 16),
+		methodMap: make(map[string][]Method),
+		fieldMap:  make(map[string]Field),
+	}
+}
+
 // Visit 断言节点类型，然后从info里拿到types.Type信息，再使用parseTypesType方法获取具体类型信息
 // 顺序是乱的
 func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {

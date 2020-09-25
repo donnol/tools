@@ -101,13 +101,9 @@ func (p *Parser) ParseAST(importPath string) (structs []Struct, err error) {
 		}
 
 		// 遍历ast
-		vis := &visitor{
-			pkgPath:   importPath,
-			info:      info,
-			structs:   make([]Struct, 0, 16),
-			methodMap: make(map[string][]Method),
-			fieldMap:  make(map[string]Field),
-		}
+		vis := newVisitor()
+		vis.pkgPath = importPath
+		vis.info = info
 		ast.Walk(vis, pkg)
 
 		tmpStructs := make([]Struct, 0, len(vis.structs))
@@ -161,103 +157,30 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 	if err != nil {
 		return
 	}
-	// TODO:
 	for _, pkg := range pkgs {
 		debug.Debug("pkg: %#v, %+v\n", pkg, pkg.Module)
-		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
 
+		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
+		_ = pkg.PkgPath
+		_ = pkg.Module
+
+		// 类型信息
 		_ = pkg.Types
 		_ = pkg.TypesInfo
 
-		// 这里已经拿到*ast.File信息了
+		// 解析*ast.File信息
 		for _, astFile := range pkg.Syntax {
 			debug.Debug("astFile: %+v\n", astFile)
 
 			for _, decl := range astFile.Decls {
 				debug.Debug("decl: %+v\n", decl)
-				switch declValue := decl.(type) {
-				case *ast.GenDecl:
-					debug.Debug("gen decl: %+v\n", declValue)
-					switch declValue.Tok {
-					case token.TYPE:
-						debug.Debug("gen decl type: %+v\n", declValue)
-						for _, spec := range declValue.Specs {
-							debug.Debug("gen decl type spec: %+v\n", spec)
-							switch specValue := spec.(type) {
-							case *ast.TypeSpec:
-								debug.Debug("gen decl type spec type: %+v, %+v\n", specValue, specValue.Type)
-								switch exprValue := specValue.Type.(type) {
-								case *ast.StructType:
-									fmt.Printf("gen decl type spec expr: %+v, %+v\n", specValue, exprValue)
-									for _, field := range exprValue.Fields.List {
-										fmt.Printf("gen decl type spec expr struct field: %+v\n", field)
-										fmt.Printf("=== gen decl type spec expr struct field info: %+v, %+v, %+v, %+v, %+v\n", field.Names, field.Type, field.Tag, field.Comment, field.Doc)
-										switch field.Type.(type) {
-										case *ast.SelectorExpr:
-										case *ast.ArrayType:
-										case *ast.StructType:
-											// more...
-										}
-									}
-								case *ast.StarExpr:
-								case *ast.TypeAssertExpr:
-								case *ast.ArrayType:
-								case *ast.BadExpr:
-								case *ast.SelectorExpr:
-								case *ast.SliceExpr:
-								case *ast.BasicLit:
-								case *ast.BinaryExpr:
-								case *ast.CallExpr:
-								case *ast.ChanType:
-								case *ast.CompositeLit:
-								case *ast.Ellipsis:
-								case *ast.FuncLit:
-								case *ast.FuncType:
-								case *ast.Ident:
-								case *ast.IndexExpr:
-								case *ast.InterfaceType:
-								case *ast.KeyValueExpr:
-								case *ast.MapType:
-								case *ast.ParenExpr:
-								case *ast.UnaryExpr:
-								}
-							case *ast.ImportSpec:
-							case *ast.ValueSpec:
-							}
-						}
-					}
-				case *ast.BadDecl:
-					debug.Debug("bad decl: %+v\n", declValue)
-				case *ast.FuncDecl:
-					debug.Debug("func decl: %+v\n", declValue)
-				case ast.Expr:
-					debug.Debug("expr decl: %+v\n", declValue)
-				case ast.Node:
-					debug.Debug("node decl: %+v\n", declValue)
 
-					// more...
-				}
+				inspectDecl(decl)
 			}
 		}
 	}
 
 	return
-}
-
-func InspectDecl(decl ast.Decl) {
-
-}
-
-func InspectSpec(spec ast.Spec) {
-
-}
-
-func InspectExpr(expr ast.Expr) {
-
-}
-
-func InspectStmt(stmt ast.Stmt) {
-
 }
 
 func (p *Parser) parseDir(fset *token.FileSet, fullDir string) (pkgs map[string]*ast.Package, err error) {
