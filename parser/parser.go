@@ -157,29 +157,14 @@ func (p *Parser) ParseByGoPackages(importPath string) (result Packages, err erro
 	if err != nil {
 		return
 	}
+
+	result.ImportPath = importPath
 	result.Pkgs = make([]Package, 0, len(pkgs))
+	inspector := NewInspector(InspectOption{})
 	for _, pkg := range pkgs {
-		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
-		_ = pkg.PkgPath
-		_ = pkg.Module
+		tmpPkg := inspector.InspectPkg(pkg)
 
-		// 类型信息
-		_ = pkg.Types
-		_ = pkg.TypesInfo
-
-		// 解析*ast.File信息
-		var structs []Struct
-		for _, astFile := range pkg.Syntax {
-			for _, decl := range astFile.Decls {
-				inspectDecl(decl)
-			}
-		}
-
-		result.ImportPath = importPath
-		result.Pkgs = append(result.Pkgs, Package{
-			Package: pkg,
-			Structs: structs,
-		})
+		result.Pkgs = append(result.Pkgs, tmpPkg)
 	}
 
 	return
