@@ -5,7 +5,29 @@ import (
 	"go/types"
 
 	"github.com/donnol/tools/importpath"
+	"golang.org/x/tools/go/packages"
 )
+
+type Packages struct {
+	ImportPath string
+	Pkgs       []Package
+}
+
+func (pkgs Packages) LookupPkg(name string) (Package, bool) {
+	pkg := Package{}
+	for _, single := range pkgs.Pkgs {
+		if single.Name == name {
+			return single, true
+		}
+	}
+	return pkg, false
+}
+
+type Package struct {
+	*packages.Package
+
+	Structs []Struct
+}
 
 // Struct 结构体
 type Struct struct {

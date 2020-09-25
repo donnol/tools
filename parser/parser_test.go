@@ -63,8 +63,9 @@ func TestParseByGoPackages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = p.ParseByGoPackages(path)
+	r, err := p.ParseByGoPackages(path)
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
+	t.Logf("r: %+v\n", r)
 }

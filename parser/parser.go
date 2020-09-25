@@ -142,7 +142,7 @@ func (p *Parser) getFullDir(importPath string) (fullDir string, err error) {
 }
 
 // ParseByGoPackages 使用x/tools/go/packages解析指定导入路径
-func (p *Parser) ParseByGoPackages(importPath string) (err error) {
+func (p *Parser) ParseByGoPackages(importPath string) (result Packages, err error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles |
 			packages.NeedCompiledGoFiles |
@@ -157,9 +157,8 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 	if err != nil {
 		return
 	}
+	result.Pkgs = make([]Package, 0, len(pkgs))
 	for _, pkg := range pkgs {
-		debug.Debug("pkg: %#v, %+v\n", pkg, pkg.Module)
-
 		// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
 		_ = pkg.PkgPath
 		_ = pkg.Module
@@ -169,15 +168,18 @@ func (p *Parser) ParseByGoPackages(importPath string) (err error) {
 		_ = pkg.TypesInfo
 
 		// 解析*ast.File信息
+		var structs []Struct
 		for _, astFile := range pkg.Syntax {
-			debug.Debug("astFile: %+v\n", astFile)
-
 			for _, decl := range astFile.Decls {
-				debug.Debug("decl: %+v\n", decl)
-
 				inspectDecl(decl)
 			}
 		}
+
+		result.ImportPath = importPath
+		result.Pkgs = append(result.Pkgs, Package{
+			Package: pkg,
+			Structs: structs,
+		})
 	}
 
 	return

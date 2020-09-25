@@ -3,8 +3,6 @@ package parser
 import (
 	"go/ast"
 	"go/token"
-
-	"github.com/donnol/tools/internal/utils/debug"
 )
 
 type Inspector struct {
@@ -19,7 +17,6 @@ func inspectDecl(decl ast.Decl) {
 	case *ast.GenDecl:
 		if declValue.Tok == token.TYPE {
 			for _, spec := range declValue.Specs {
-				debug.Debug("spec of decl: %+v\n", spec)
 				inspectSpec(spec)
 			}
 		}
