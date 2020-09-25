@@ -11,6 +11,9 @@ import (
 )
 
 type Inspector struct {
+	pkg *packages.Package
+
+	structMap map[string]Struct // 名称 -> 结构体
 }
 
 type InspectOption struct {
@@ -20,19 +23,22 @@ func NewInspector(opt InspectOption) *Inspector {
 	return &Inspector{}
 }
 
-func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
-	// 用pkg.PkgPath和pkg.Module里的目录信息即可拿到导入路径对应的目录信息
-	_ = pkg.PkgPath
-	_ = pkg.Module
+func (ins *Inspector) reset(pkg *packages.Package) {
+	ins.pkg = pkg
+	ins.structMap = make(map[string]Struct)
+}
 
-	// 类型信息
-	_ = pkg.Types
-	_ = pkg.TypesInfo
+func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
+	ins.reset(pkg)
 
 	// 解析*ast.File信息
-	var structs []Struct
 	for _, astFile := range pkg.Syntax {
 		ins.InspectFile(astFile)
+	}
+
+	structs := make([]Struct, 0, len(ins.structMap))
+	for _, single := range ins.structMap {
+		structs = append(structs, single)
 	}
 
 	return Package{
@@ -84,6 +90,17 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) {
 	case *ast.TypeSpec:
 		// 这里拿到类型信息: 名称，注释，文档
 		debug.Debug("TypeSpec name: %s, comment: %s, doc: %s\n", specValue.Name, specValue.Comment.Text(), specValue.Doc.Text())
+		ins.structMap[specValue.Name.Name] = Struct{
+			PkgPath: ins.pkg.PkgPath,
+			PkgName: ins.pkg.Name,
+			Field: Field{
+				Id:      ins.pkg.TypesInfo.Types[specValue.Type].Type.String(),
+				Name:    specValue.Name.Name,
+				Type:    toString(specValue.Type),
+				Doc:     specValue.Doc.Text(),
+				Comment: specValue.Comment.Text(),
+			},
+		}
 
 		// 再拿field
 		ins.inspectExpr(specValue.Type)

@@ -67,5 +67,11 @@ func TestParseByGoPackages(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%+v", err)
 	}
-	t.Logf("r: %+v\n", r)
+	for _, single := range r.Pkgs {
+		for _, stru := range single.Structs {
+			if stru.Name == "Struct" {
+				t.Logf("=== struct: %+v\n", stru)
+			}
+		}
+	}
 }
