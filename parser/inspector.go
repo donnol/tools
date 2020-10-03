@@ -71,14 +71,15 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) {
 	case *ast.FuncDecl:
 		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
+		funcType := &types.Func{}
 		obj := ins.pkg.TypesInfo.Defs[declValue.Name]
 		switch objTyp := obj.Type().(type) {
 		case *types.Signature:
-			debug.Debug("objTyp: %+v, %s\n", objTyp, toString(objTyp))
+			debug.Debug("objTyp sig: %+v, %s\n", objTyp, toString(objTyp))
+			funcType = types.NewFunc(declValue.Type.Func, ins.pkg.Types, obj.Name(), objTyp)
 		}
-		typ := &types.Func{}
 		method := Method{
-			Origin:    typ,
+			Origin:    funcType,
 			Name:      obj.Name(),
 			Signature: toString(obj.Type()),
 		}

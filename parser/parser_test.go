@@ -71,7 +71,23 @@ func TestParseByGoPackages(t *testing.T) {
 		for _, stru := range single.Structs {
 			if stru.Name == "Struct" {
 				t.Logf("=== struct: %+v\n", stru)
+
+				id := stru.MakeInterface()
+				if id != "" {
+					_ = id
+					t.Logf("interface:\n%s\n", id)
+				}
 			}
 		}
 	}
 }
+
+// var _ IStruct2 = &Struct{}
+
+// type IStruct2 interface {
+// 	Demo(in types.Array) types.Basic
+// 	MakeInterface() string
+// 	PointerMethod(in types.Basic) types.Slice
+// 	String(f Field, ip importpath.ImportPath)
+// 	TypeAlias(p Field, ip importpath.ImportPath)
+// }
