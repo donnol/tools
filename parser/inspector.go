@@ -13,14 +13,24 @@ import (
 type Inspector struct {
 	pkg *packages.Package
 
-	structMap map[string]Struct // 名称 -> 结构体
+	structMap map[string]Struct   // 名称 -> 结构体
+	fields    []Field             // 字段列表
+	methodMap map[string][]Method // 名称 -> 方法列表
 }
 
 type InspectOption struct {
 }
 
 func NewInspector(opt InspectOption) *Inspector {
-	return &Inspector{}
+	return &Inspector{
+		methodMap: make(map[string][]Method),
+	}
+}
+
+func (ins *Inspector) getFieldsAndReset() []Field {
+	fields := ins.fields
+	ins.fields = nil
+	return fields
 }
 
 func (ins *Inspector) reset(pkg *packages.Package) {
@@ -37,7 +47,9 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 	}
 
 	structs := make([]Struct, 0, len(ins.structMap))
-	for _, single := range ins.structMap {
+	for structName, single := range ins.structMap {
+		methods := ins.methodMap[structName]
+		single.Methods = methods
 		structs = append(structs, single)
 	}
 
@@ -59,16 +71,40 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) {
 	case *ast.FuncDecl:
 		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
+		obj := ins.pkg.TypesInfo.Defs[declValue.Name]
+		switch objTyp := obj.Type().(type) {
+		case *types.Signature:
+			debug.Debug("objTyp: %+v, %s\n", objTyp, toString(objTyp))
+		}
+		typ := &types.Func{}
+		method := Method{
+			Origin:    typ,
+			Name:      obj.Name(),
+			Signature: toString(obj.Type()),
+		}
+		debug.Debug("method: %+v\n", method)
+
 		ins.inspectExpr(declValue.Type) // 函数签名
 		ins.inspectStmt(declValue.Body) // 函数体
 
-		// method
+		// method receiver: func (x *X) XXX()里的(x *X)部分
+		recvName := ""
 		if declValue.Recv != nil {
 			debug.Debug("FundDecl recv: %v\n", declValue.Recv.List)
-			for _, single := range declValue.Recv.List {
-				ins.inspectExpr(single.Type)
+
+			for i, single := range declValue.Recv.List {
+				debug.Debug("name: %+v, %+v, %v\n", single.Names, single.Type, toString(single.Type))
+				debug.Debug("Recv Field Type: %+v, i: %d\n", single.Type, i)
+
+				fieldTyp := single.Type
+				if singleTyp, ok := single.Type.(*ast.StarExpr); ok {
+					fieldTyp = singleTyp.X
+				}
+				recvName = toString(fieldTyp)
+				ins.inspectExpr(fieldTyp)
 			}
 		}
+		ins.methodMap[recvName] = append(ins.methodMap[recvName], method)
 
 	case *ast.GenDecl:
 		switch declValue.Tok {
@@ -90,7 +126,8 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) {
 	case *ast.TypeSpec:
 		// 这里拿到类型信息: 名称，注释，文档
 		debug.Debug("TypeSpec name: %s, comment: %s, doc: %s\n", specValue.Name, specValue.Comment.Text(), specValue.Doc.Text())
-		ins.structMap[specValue.Name.Name] = Struct{
+
+		structOne := Struct{
 			PkgPath: ins.pkg.PkgPath,
 			PkgName: ins.pkg.Name,
 			Field: Field{
@@ -104,6 +141,8 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) {
 
 		// 再拿field
 		ins.inspectExpr(specValue.Type)
+		structOne.Fields = ins.getFieldsAndReset()
+		ins.structMap[specValue.Name.Name] = structOne
 	}
 }
 
@@ -115,7 +154,24 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) {
 		for _, field := range exprValue.Fields.List {
 			// 拿field的名称，类型，tag，注释，文档
 			debug.Debug("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
+
 			ins.inspectExpr(field.Type)
+			name := ""
+			if len(field.Names) != 0 {
+				for _, s := range field.Names {
+					name += s.Name
+				}
+			} else {
+				// 匿名结构体
+				name = toString(field.Type)
+			}
+			ins.fields = append(ins.fields, Field{
+				Id:      name,
+				Name:    name,
+				Type:    toString(field.Type),
+				Doc:     field.Doc.Text(),
+				Comment: field.Comment.Text(),
+			})
 		}
 	case *ast.StarExpr:
 		ins.inspectExpr(exprValue.X)

@@ -59,6 +59,10 @@ func (s Struct) Demo(in types.Array) types.Basic {
 	return types.Basic{}
 }
 
+func (s *Struct) PointerMethod(in types.Basic) types.Slice {
+	return types.Slice{}
+}
+
 // --- 测试方法
 
 // MMakeInterface 根据结构体的方法生成相应接口
@@ -95,6 +99,7 @@ func interfacePrefix(name, is string) string {
 
 type Method struct {
 	Origin    *types.Func
+	Name      string
 	Signature string
 }
 
