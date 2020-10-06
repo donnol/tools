@@ -182,6 +182,8 @@ func MakeStmtResult() StmtResult {
 }
 
 type FieldResult struct {
+	RecvName string
+
 	Fields []Field
 }
 

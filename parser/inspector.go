@@ -104,17 +104,8 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 		if declValue.Recv != nil {
 			debug.Debug("FundDecl recv: %v\n", declValue.Recv.List)
 
-			for i, single := range declValue.Recv.List {
-				debug.Debug("name: %+v, %+v, %v\n", single.Names, single.Type, toString(single.Type))
-				debug.Debug("Recv Field Type: %+v, i: %d\n", single.Type, i)
-
-				fieldTyp := single.Type
-				if singleTyp, ok := single.Type.(*ast.StarExpr); ok {
-					fieldTyp = singleTyp.X
-				}
-				recvName = toString(fieldTyp)
-				ins.inspectExpr(fieldTyp)
-			}
+			fieldResult := ins.inspectFields(declValue.Recv)
+			recvName = fieldResult.RecvName
 		}
 		result.methodMap[recvName] = append(result.methodMap[recvName], method)
 
@@ -249,6 +240,13 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList) (result FieldResult) 
 	for _, field := range fields.List {
 		// 拿field的名称，类型，tag，注释，文档
 		debug.Debug("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
+
+		// 获取receiver name
+		fieldTyp := field.Type
+		if singleTyp, ok := field.Type.(*ast.StarExpr); ok {
+			fieldTyp = singleTyp.X
+		}
+		result.RecvName = toString(fieldTyp)
 
 		ins.inspectExpr(field.Type)
 
