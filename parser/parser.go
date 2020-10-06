@@ -142,7 +142,7 @@ func (p *Parser) getFullDir(importPath string) (fullDir string, err error) {
 }
 
 // ParseByGoPackages 使用x/tools/go/packages解析指定导入路径
-func (p *Parser) ParseByGoPackages(importPath string) (result Packages, err error) {
+func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err error) {
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles |
 			packages.NeedCompiledGoFiles |
@@ -153,12 +153,12 @@ func (p *Parser) ParseByGoPackages(importPath string) (result Packages, err erro
 			packages.NeedTypesInfo |
 			packages.NeedName,
 	}
-	pkgs, err := packages.Load(cfg, importPath)
+	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
 		return
 	}
 
-	result.ImportPath = importPath
+	result.Patterns = patterns
 	result.Pkgs = make([]Package, 0, len(pkgs))
 	inspector := NewInspector(InspectOption{})
 	for _, pkg := range pkgs {

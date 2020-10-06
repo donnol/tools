@@ -9,8 +9,8 @@ import (
 )
 
 type Packages struct {
-	ImportPath string
-	Pkgs       []Package
+	Patterns []string
+	Pkgs     []Package
 }
 
 func (pkgs Packages) LookupPkg(name string) (Package, bool) {
