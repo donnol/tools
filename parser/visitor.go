@@ -17,7 +17,7 @@ type visitor struct {
 	info *types.Info // 类型信息
 
 	// 如：[]Struct{...}
-	structs []Struct `json:"-"` // 结构体信息
+	structs []Struct // 结构体信息
 
 	methodMap map[string][]Method // 方法集
 	fieldMap  map[string]Field    // 字段集

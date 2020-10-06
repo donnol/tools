@@ -12,43 +12,38 @@ import (
 
 type Inspector struct {
 	pkg *packages.Package
-
-	structMap map[string]Struct   // 名称 -> 结构体
-	fields    []Field             // 字段列表
-	methodMap map[string][]Method // 名称 -> 方法列表
 }
 
 type InspectOption struct {
 }
 
 func NewInspector(opt InspectOption) *Inspector {
-	return &Inspector{
-		methodMap: make(map[string][]Method),
-	}
-}
-
-func (ins *Inspector) getFieldsAndReset() []Field {
-	fields := ins.fields
-	ins.fields = nil
-	return fields
-}
-
-func (ins *Inspector) reset(pkg *packages.Package) {
-	ins.pkg = pkg
-	ins.structMap = make(map[string]Struct)
+	return &Inspector{}
 }
 
 func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
-	ins.reset(pkg)
+	if pkg == nil {
+		panic("input pkg is nil")
+	}
+	ins.pkg = pkg
 
 	// 解析*ast.File信息
+	structMap := make(map[string]Struct)
+	methodsMap := make(map[string][]Method)
 	for _, astFile := range pkg.Syntax {
-		ins.InspectFile(astFile)
+		fileResult := ins.InspectFile(astFile)
+
+		for k, v := range fileResult.structMap {
+			structMap[k] = v
+		}
+		for k, v := range fileResult.methodMap {
+			methodsMap[k] = append(methodsMap[k], v...)
+		}
 	}
 
-	structs := make([]Struct, 0, len(ins.structMap))
-	for structName, single := range ins.structMap {
-		methods := ins.methodMap[structName]
+	structs := make([]Struct, 0, len(structMap))
+	for structName, single := range structMap {
+		methods := methodsMap[structName]
 		single.Methods = methods
 		structs = append(structs, single)
 	}
@@ -59,13 +54,29 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 	}
 }
 
-func (ins *Inspector) InspectFile(file *ast.File) {
+func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
+	result = MakeFileResult()
+
+	structMap := make(map[string]Struct)
+	methodsMap := make(map[string][]Method)
 	for _, decl := range file.Decls {
-		ins.inspectDecl(decl)
+		declResult := ins.inspectDecl(decl)
+		for k, v := range declResult.structMap {
+			structMap[k] = v
+		}
+		for k, v := range declResult.methodMap {
+			methodsMap[k] = append(methodsMap[k], v...)
+		}
 	}
+	result.structMap = structMap
+	result.methodMap = methodsMap
+
+	return
 }
 
-func (ins *Inspector) inspectDecl(decl ast.Decl) {
+func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
+	result = MakeDeclResult()
+
 	switch declValue := decl.(type) {
 	case *ast.BadDecl:
 	case *ast.FuncDecl:
@@ -105,7 +116,7 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) {
 				ins.inspectExpr(fieldTyp)
 			}
 		}
-		ins.methodMap[recvName] = append(ins.methodMap[recvName], method)
+		result.methodMap[recvName] = append(result.methodMap[recvName], method)
 
 	case *ast.GenDecl:
 		switch declValue.Tok {
@@ -114,13 +125,20 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) {
 		case token.VAR:
 		case token.TYPE:
 			for _, spec := range declValue.Specs {
-				ins.inspectSpec(spec)
+				specResult := ins.inspectSpec(spec)
+				for k, v := range specResult.structMap {
+					result.structMap[k] = v
+				}
 			}
 		}
 	}
+
+	return
 }
 
-func (ins *Inspector) inspectSpec(spec ast.Spec) {
+func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
+	result = MakeSpecResult()
+
 	switch specValue := spec.(type) {
 	case *ast.ImportSpec:
 	case *ast.ValueSpec:
@@ -141,39 +159,22 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) {
 		}
 
 		// 再拿field
-		ins.inspectExpr(specValue.Type)
-		structOne.Fields = ins.getFieldsAndReset()
-		ins.structMap[specValue.Name.Name] = structOne
+		exprResult := ins.inspectExpr(specValue.Type)
+		structOne.Fields = exprResult.Fields
+		result.structMap[specValue.Name.Name] = structOne
 	}
+
+	return
 }
 
-func (ins *Inspector) inspectExpr(expr ast.Expr) {
+func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
+	result = MakeExprResult()
+
 	switch exprValue := expr.(type) {
 	case *ast.StructType:
-		var _ *ast.Field // 是一个Node，但不是一个Expr
+		fieldResult := ins.inspectFields(exprValue.Fields)
+		result.Fields = fieldResult.Fields
 
-		for _, field := range exprValue.Fields.List {
-			// 拿field的名称，类型，tag，注释，文档
-			debug.Debug("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
-
-			ins.inspectExpr(field.Type)
-			name := ""
-			if len(field.Names) != 0 {
-				for _, s := range field.Names {
-					name += s.Name
-				}
-			} else {
-				// 匿名结构体
-				name = toString(field.Type)
-			}
-			ins.fields = append(ins.fields, Field{
-				Id:      name,
-				Name:    name,
-				Type:    toString(field.Type),
-				Doc:     field.Doc.Text(),
-				Comment: field.Comment.Text(),
-			})
-		}
 	case *ast.StarExpr:
 		ins.inspectExpr(exprValue.X)
 	case *ast.TypeAssertExpr:
@@ -190,10 +191,7 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) {
 	case *ast.Ellipsis:
 	case *ast.FuncLit:
 	case *ast.FuncType:
-		for _, field := range exprValue.Params.List {
-			debug.Debug("FuncType params name: %v, type: %+v\n", field.Names, field.Type)
-			ins.inspectExpr(field.Type)
-		}
+		ins.inspectFields(exprValue.Params)
 	case *ast.Ident:
 	case *ast.IndexExpr:
 	case *ast.InterfaceType:
@@ -202,9 +200,13 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) {
 	case *ast.ParenExpr:
 	case *ast.UnaryExpr:
 	}
+
+	return
 }
 
-func (ins *Inspector) inspectStmt(stmt ast.Stmt) {
+func (ins *Inspector) inspectStmt(stmt ast.Stmt) (result StmtResult) {
+	result = MakeStmtResult()
+
 	switch stmtValue := stmt.(type) {
 	case *ast.AssignStmt:
 	case *ast.SelectStmt:
@@ -232,6 +234,44 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt) {
 	case *ast.ReturnStmt:
 	case *ast.TypeSwitchStmt:
 	}
+
+	return
+}
+
+func (ins *Inspector) inspectFields(fields *ast.FieldList) (result FieldResult) {
+	if fields == nil {
+		return
+	}
+	result = MakeFieldResult()
+
+	var _ *ast.Field // 是一个Node，但不是一个Expr
+
+	for _, field := range fields.List {
+		// 拿field的名称，类型，tag，注释，文档
+		debug.Debug("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
+
+		ins.inspectExpr(field.Type)
+
+		name := ""
+		if len(field.Names) != 0 {
+			for _, s := range field.Names {
+				name += s.Name
+			}
+		} else {
+			// 匿名结构体
+			name = toString(field.Type)
+		}
+
+		result.Fields = append(result.Fields, Field{
+			Id:      name,
+			Name:    name,
+			Type:    toString(field.Type),
+			Doc:     field.Doc.Text(),
+			Comment: field.Comment.Text(),
+		})
+	}
+
+	return
 }
 
 func toString(v interface{}) string {

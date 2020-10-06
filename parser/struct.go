@@ -129,3 +129,64 @@ func (i PkgInfo) GetDir() string {
 func (i PkgInfo) GetPkgName() string {
 	return i.pkgName
 }
+
+type FileResult struct {
+	structMap map[string]Struct   // 名称 -> 结构体
+	methodMap map[string][]Method // 名称 -> 方法列表
+}
+
+func MakeFileResult() FileResult {
+	return FileResult{
+		structMap: make(map[string]Struct),
+		methodMap: make(map[string][]Method),
+	}
+}
+
+type DeclResult struct {
+	structMap map[string]Struct
+	methodMap map[string][]Method
+}
+
+func MakeDeclResult() DeclResult {
+	return DeclResult{
+		structMap: make(map[string]Struct),
+		methodMap: make(map[string][]Method),
+	}
+}
+
+type SpecResult struct {
+	structMap map[string]Struct // 名称 -> 结构体
+}
+
+func MakeSpecResult() SpecResult {
+	return SpecResult{
+		structMap: make(map[string]Struct),
+	}
+}
+
+type ExprResult struct {
+	Fields []Field
+}
+
+func MakeExprResult() ExprResult {
+	return ExprResult{
+		Fields: make([]Field, 0),
+	}
+}
+
+type StmtResult struct {
+}
+
+func MakeStmtResult() StmtResult {
+	return StmtResult{}
+}
+
+type FieldResult struct {
+	Fields []Field
+}
+
+func MakeFieldResult() FieldResult {
+	return FieldResult{
+		Fields: make([]Field, 0),
+	}
+}
