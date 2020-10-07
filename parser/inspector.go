@@ -55,6 +55,9 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 }
 
 func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
+	if file == nil {
+		return
+	}
 	result = MakeFileResult()
 
 	structMap := make(map[string]Struct)
@@ -75,10 +78,15 @@ func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
 }
 
 func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
+	if decl == nil {
+		return
+	}
 	result = MakeDeclResult()
 
 	switch declValue := decl.(type) {
 	case *ast.BadDecl:
+		panic(fmt.Errorf("BadDecl: %+v", declValue))
+
 	case *ast.FuncDecl:
 		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
@@ -128,11 +136,18 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 }
 
 func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
+	if spec == nil {
+		return
+	}
 	result = MakeSpecResult()
 
 	switch specValue := spec.(type) {
 	case *ast.ImportSpec:
+		debug.Debug("ImportSpec, name: %v, path: %v\n", specValue.Name, specValue.Path)
+
 	case *ast.ValueSpec:
+		debug.Debug("ValueSpec, name: %+v, type: %+v, value: %+v\n", specValue.Names, specValue.Type, specValue.Values)
+
 	case *ast.TypeSpec:
 		// 这里拿到类型信息: 名称，注释，文档
 		debug.Debug("TypeSpec name: %s, comment: %s, doc: %s\n", specValue.Name, specValue.Comment.Text(), specValue.Doc.Text())
@@ -159,6 +174,9 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 }
 
 func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
+	if expr == nil {
+		return
+	}
 	result = MakeExprResult()
 
 	switch exprValue := expr.(type) {
@@ -166,64 +184,154 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
 		fieldResult := ins.inspectFields(exprValue.Fields)
 		result.Fields = fieldResult.Fields
 
-	case *ast.StarExpr:
+	case *ast.StarExpr: // *T
 		ins.inspectExpr(exprValue.X)
-	case *ast.TypeAssertExpr:
-	case *ast.ArrayType:
+	case *ast.TypeAssertExpr: // X.(*T)
+		ins.inspectExpr(exprValue.X)
+		ins.inspectExpr(exprValue.Type)
+	case *ast.ArrayType: // [L]T
+		ins.inspectExpr(exprValue.Len)
+		ins.inspectExpr(exprValue.Elt)
 	case *ast.BadExpr:
-	case *ast.SelectorExpr:
+		panic(fmt.Errorf("BadExpr: %+v", exprValue))
+	case *ast.SelectorExpr: // X.M
 		debug.Debug("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
-	case *ast.SliceExpr:
-	case *ast.BasicLit:
-	case *ast.BinaryExpr:
-	case *ast.CallExpr:
-	case *ast.ChanType:
-	case *ast.CompositeLit:
-	case *ast.Ellipsis:
+		ins.inspectExpr(exprValue.X)
+	case *ast.SliceExpr: // []T, slice[1:3:5]
+		ins.inspectExpr(exprValue.X)
+		ins.inspectExpr(exprValue.Low)
+		ins.inspectExpr(exprValue.High)
+		ins.inspectExpr(exprValue.Max)
+	case *ast.BasicLit: // 33 40.0 0x1f
+	case *ast.BinaryExpr: // X+Y X-Y X*Y X/Y X%Y
+		ins.inspectExpr(exprValue.X)
+		ins.inspectExpr(exprValue.Y)
+	case *ast.CallExpr: // M(1, 2)
+		ins.inspectExpr(exprValue.Fun)
+		for _, arg := range exprValue.Args {
+			ins.inspectExpr(arg)
+		}
+	case *ast.ChanType: // chan T, <-chan T, chan<- T
+		ins.inspectExpr(exprValue.Value)
+	case *ast.CompositeLit: // T{Name: Value}
+		ins.inspectExpr(exprValue.Type)
+		for _, elt := range exprValue.Elts {
+			ins.inspectExpr(elt)
+		}
+	case *ast.Ellipsis: // ...int, [...]Arr
+		ins.inspectExpr(exprValue.Elt)
 	case *ast.FuncLit:
+		ins.inspectExpr(exprValue.Type)
+		ins.inspectStmt(exprValue.Body)
 	case *ast.FuncType:
 		ins.inspectFields(exprValue.Params)
+		ins.inspectFields(exprValue.Results)
 	case *ast.Ident:
-	case *ast.IndexExpr:
-	case *ast.InterfaceType:
-	case *ast.KeyValueExpr:
-	case *ast.MapType:
-	case *ast.ParenExpr:
-	case *ast.UnaryExpr:
+		if exprValue != nil {
+			debug.Debug("Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
+		} else {
+			debug.Debug("Ident is nil: %+v\n", expr)
+		}
+	case *ast.IndexExpr: // s[1], arr[1]
+		ins.inspectExpr(exprValue.X)
+		ins.inspectExpr(exprValue.Index)
+	case *ast.InterfaceType: // interface { A(); B() }
+		ins.inspectFields(exprValue.Methods)
+	case *ast.KeyValueExpr: // key:value
+		ins.inspectExpr(exprValue.Key)
+		ins.inspectExpr(exprValue.Value)
+	case *ast.MapType: // map[string]T
+		ins.inspectExpr(exprValue.Key)
+		ins.inspectExpr(exprValue.Value)
+	case *ast.ParenExpr: // (1==1)
+		ins.inspectExpr(exprValue.X)
+	case *ast.UnaryExpr: // *a
+		ins.inspectExpr(exprValue.X)
 	}
 
 	return
 }
 
 func (ins *Inspector) inspectStmt(stmt ast.Stmt) (result StmtResult) {
+	if stmt == nil {
+		return
+	}
 	result = MakeStmtResult()
 
 	switch stmtValue := stmt.(type) {
-	case *ast.AssignStmt:
-	case *ast.SelectStmt:
-	case *ast.SendStmt:
-	case *ast.SwitchStmt:
+	case *ast.AssignStmt: // a, b := 1, 2
+		for _, lhs := range stmtValue.Lhs {
+			ins.inspectExpr(lhs)
+		}
+		for _, rhs := range stmtValue.Rhs {
+			ins.inspectExpr(rhs)
+		}
+	case *ast.SelectStmt: // select { }
+		ins.inspectStmt(stmtValue.Body)
+	case *ast.SendStmt: // c <- 1
+		ins.inspectExpr(stmtValue.Chan)
+		ins.inspectExpr(stmtValue.Value)
+	case *ast.SwitchStmt: // switch { }
+		ins.inspectStmt(stmtValue.Init)
+		ins.inspectExpr(stmtValue.Tag)
+		ins.inspectStmt(stmtValue.Body)
 	case *ast.BadStmt:
+		panic(fmt.Errorf("BadStmt: %+v", stmtValue))
 	case *ast.BlockStmt:
 		for _, single := range stmtValue.List {
 			ins.inspectStmt(single)
 		}
 	case *ast.BranchStmt:
+		ins.inspectExpr(stmtValue.Label)
 	case *ast.CaseClause:
+		for _, one := range stmtValue.List {
+			ins.inspectExpr(one)
+		}
+		for _, one := range stmtValue.Body {
+			ins.inspectStmt(one)
+		}
 	case *ast.CommClause:
+		ins.inspectStmt(stmtValue.Comm)
+		for _, one := range stmtValue.Body {
+			ins.inspectStmt(one)
+		}
 	case *ast.DeclStmt:
 		ins.inspectDecl(stmtValue.Decl)
 	case *ast.DeferStmt:
+		ins.inspectExpr(stmtValue.Call)
 	case *ast.EmptyStmt:
 	case *ast.ExprStmt:
-	case *ast.ForStmt:
+		ins.inspectExpr(stmtValue.X)
+	case *ast.ForStmt: // for i:=0; i< l; i++ { }
+		ins.inspectStmt(stmtValue.Init)
+		ins.inspectExpr(stmtValue.Cond)
+		ins.inspectStmt(stmtValue.Post)
+		ins.inspectStmt(stmtValue.Body)
 	case *ast.GoStmt:
+		ins.inspectExpr(stmtValue.Call)
 	case *ast.IfStmt:
+		ins.inspectStmt(stmtValue.Init)
+		ins.inspectExpr(stmtValue.Cond)
+		ins.inspectStmt(stmtValue.Body)
+		ins.inspectStmt(stmtValue.Else)
 	case *ast.IncDecStmt:
+		ins.inspectExpr(stmtValue.X)
 	case *ast.LabeledStmt:
-	case *ast.RangeStmt:
+		ins.inspectExpr(stmtValue.Label)
+		ins.inspectStmt(stmtValue.Stmt)
+	case *ast.RangeStmt: // for key, value := range slice { }
+		ins.inspectExpr(stmtValue.Key)
+		ins.inspectExpr(stmtValue.Value)
+		ins.inspectExpr(stmtValue.X)
+		ins.inspectStmt(stmtValue.Body)
 	case *ast.ReturnStmt:
-	case *ast.TypeSwitchStmt:
+		for _, one := range stmtValue.Results {
+			ins.inspectExpr(one)
+		}
+	case *ast.TypeSwitchStmt: // switch x := m(); a := x.(type) { }
+		ins.inspectStmt(stmtValue.Init)
+		ins.inspectStmt(stmtValue.Assign)
+		ins.inspectStmt(stmtValue.Body)
 	}
 
 	return

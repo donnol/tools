@@ -192,3 +192,6 @@ func MakeFieldResult() FieldResult {
 		Fields: make([]Field, 0),
 	}
 }
+
+type TokenResult struct {
+}
