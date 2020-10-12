@@ -174,10 +174,14 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 		name = structName[dotIndex+1:]
 	}
 
-	parser := parser.New(parser.Option{})
-	structs, err := parser.ParseAST(path)
+	parserObj := parser.New(parser.Option{})
+	pkg, err := parserObj.ParseByGoPackages(path)
 	if err != nil {
 		return structCommentMap, fieldCommentMap, err
+	}
+	structs := make([]parser.Struct, 0, len(pkg.Pkgs))
+	for _, pkg := range pkg.Pkgs {
+		structs = append(structs, pkg.Structs...)
 	}
 
 	var exist bool
