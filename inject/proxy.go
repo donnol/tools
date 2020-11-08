@@ -49,16 +49,24 @@ var (
 )
 
 // Wrap 从一个provider生成一个新的provider
+// 如果mock为nil或者不是结构体指针，则直接返回provider
 func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
+	if mock == nil {
+		return provider
+	}
+
+	mockValue := reflect.ValueOf(mock)
+	mockType := mockValue.Type()
+	if mockType.Kind() != reflect.Ptr && mockType.Elem().Kind() != reflect.Struct {
+		return provider
+	}
+
 	// provider有参数，有返回值
 	pv := reflect.ValueOf(provider)
 	pvt := pv.Type()
 	if pvt.Kind() != reflect.Func {
 		panic("provider不是函数")
 	}
-
-	mockValue := reflect.ValueOf(mock)
-	mockType := mockValue.Type()
 
 	// 使用新类型
 	return reflect.MakeFunc(pvt, func(args []reflect.Value) []reflect.Value {
