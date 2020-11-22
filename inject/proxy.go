@@ -36,6 +36,20 @@ type Hook interface {
 	After(ProxyContext)
 }
 
+type Caller interface {
+	Call(args []reflect.Value) []reflect.Value
+}
+
+type Around func(pctx ProxyContext, caller Caller) Caller
+
+func (around Around) Before(pctx ProxyContext) {
+
+}
+
+func (around Around) After(pctx ProxyContext) {
+
+}
+
 type proxyImpl struct {
 	hooks []Hook // 钩子列表，LIFO
 }
@@ -125,23 +139,32 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 					MethodName:    methodType.Name,
 				}
 
+				// 每个方法一个hook，如果同一时间有多个请求呢？
+				// 每个请求一个hook，开销可能太大。
+				// 并且，如果要每个请求一个hook，那么就需要通过参数传进来，怎么传呢？
+				// 在请求进来，ctx初始化时，顺带初始化proxy
+				globalHooks := make([]Hook, len(impl.hooks))
+				copy(globalHooks, impl.hooks)
+				specHooks := make([]Hook, len(hooks))
+				copy(specHooks, hooks)
+
 				newMethod := reflect.MakeFunc(methodType.Type, func(args []reflect.Value) []reflect.Value {
 					// 执行前钩子
 					for hi := len(hooks) - 1; hi >= 0; hi-- {
-						hooks[hi].Before(pctx)
+						specHooks[hi].Before(pctx)
 					}
 					for hi := len(impl.hooks) - 1; hi >= 0; hi-- {
-						impl.hooks[hi].Before(pctx)
+						globalHooks[hi].Before(pctx)
 					}
 
 					result := method.Call(args)
 
 					// 执行后钩子
 					for hi := len(hooks) - 1; hi >= 0; hi-- {
-						hooks[hi].After(pctx)
+						specHooks[hi].After(pctx)
 					}
 					for hi := len(impl.hooks) - 1; hi >= 0; hi-- {
-						impl.hooks[hi].After(pctx)
+						globalHooks[hi].After(pctx)
 					}
 
 					return result

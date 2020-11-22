@@ -144,15 +144,19 @@ func (p *Parser) getFullDir(importPath string) (fullDir string, err error) {
 // ParseByGoPackages 使用x/tools/go/packages解析指定导入路径
 func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err error) {
 	cfg := &packages.Config{
-		Mode: packages.NeedFiles |
+		Mode: packages.NeedName |
+			packages.NeedFiles |
 			packages.NeedCompiledGoFiles |
-			packages.NeedSyntax |
-			packages.NeedModule |
 			packages.NeedImports |
+			packages.NeedDeps |
+			packages.NeedExportsFile |
 			packages.NeedTypes |
+			packages.NeedSyntax |
 			packages.NeedTypesInfo |
-			packages.NeedName,
+			packages.NeedTypesSizes |
+			packages.NeedModule,
 	}
+	// pattern可以是文件目录，也可以是包导入路径，如：'~/a/b/c', 'bytes', 'github.com/donnol/tools'...
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
 		return
@@ -160,8 +164,11 @@ func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err err
 
 	result.Patterns = patterns
 	result.Pkgs = make([]Package, 0, len(pkgs))
-	inspector := NewInspector(InspectOption{})
+	inspector := NewInspector(InspectOption{
+		Parser: p,
+	})
 	for _, pkg := range pkgs {
+		p.fset = pkg.Fset
 		tmpPkg := inspector.InspectPkg(pkg)
 
 		result.Pkgs = append(result.Pkgs, tmpPkg)
@@ -258,6 +265,8 @@ func (p *Parser) methodSet(pkg *types.Package) {
 }
 
 func (p *Parser) replaceFileImportPath(fileName string, file *ast.File) error {
+	var err error
+
 	// 替换import path
 	for _, fi := range file.Imports {
 		path := strings.Trim(fi.Path.Value, `"`)
@@ -268,7 +277,6 @@ func (p *Parser) replaceFileImportPath(fileName string, file *ast.File) error {
 			rewrote := astutil.RewriteImport(p.fset, file, path, topath)
 
 			debug.Debug("From %s to %s, rewrote: %v\n", p.fromPath, p.toPath, rewrote)
-
 		}
 	}
 
@@ -280,14 +288,10 @@ func (p *Parser) replaceFileImportPath(fileName string, file *ast.File) error {
 		return err
 	}
 
-	// 输出ast节点信息到文件
-	var output = p.output
-	if p.output == nil {
-		// 将内容输出到原文件
-		output, err = os.OpenFile(fileName, os.O_RDWR|os.O_TRUNC, os.ModePerm)
-		if err != nil {
-			return err
-		}
+	// 将内容输出到原文件
+	output, err := os.OpenFile(fileName, os.O_RDWR|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
 	}
 	_, err = output.Write([]byte(content))
 	if err != nil {

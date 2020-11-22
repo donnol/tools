@@ -3,8 +3,14 @@ package parser
 import (
 	"fmt"
 	"go/types"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/importpath"
+	"github.com/donnol/tools/internal/utils/debug"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -23,10 +29,117 @@ func (pkgs Packages) LookupPkg(name string) (Package, bool) {
 	return pkg, false
 }
 
+func (pkg Package) NewGoFileWithSuffix(suffix string) (file string) {
+	part := strings.ReplaceAll(pkg.PkgPath, pkg.Module.Path, "")
+	debug.Debug("pkg: %+v, module: %+v, %s\n", pkg.PkgPath, pkg.Module, part)
+
+	dir := filepath.Join(pkg.Module.Dir, part)
+	file = filepath.Join(dir, suffix+".go")
+
+	return
+}
+
+func (pkg Package) SaveInterface(file string) error {
+	var gocontent = "package " + pkg.Name + "\n"
+
+	var content string
+	for _, single := range pkg.Structs {
+		content += single.MakeInterface() + "\n\n"
+	}
+	if content == "" {
+		return nil
+	}
+	gocontent += content
+
+	// TODO:检查是否重复
+
+	if file == "" {
+		file = pkg.NewGoFileWithSuffix("interface")
+	}
+	// 写入
+	formatContent, err := format.Format(file, gocontent, false)
+	if err != nil {
+		return err
+	}
+	debug.Debug("content: %s, file: %s\n", formatContent, file)
+
+	if err = ioutil.WriteFile(file, []byte(formatContent), os.ModePerm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pkg Package) SaveMock(file string) error {
+	var gocontent = "package " + pkg.Name + "\n"
+
+	var content string
+	for _, single := range pkg.Interfaces {
+		content += single.MakeMock() + "\n\n"
+	}
+	if content == "" {
+		return nil
+	}
+	gocontent += content
+
+	// TODO:检查是否重复
+
+	if file == "" {
+		file = pkg.NewGoFileWithSuffix("mock")
+	}
+	// 写入
+	formatContent, err := format.Format(file, gocontent, false)
+	if err != nil {
+		return err
+	}
+	debug.Debug("content: %s, file: %s\n", formatContent, file)
+
+	if err = ioutil.WriteFile(file, []byte(formatContent), os.ModePerm); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type Package struct {
 	*packages.Package
 
-	Structs []Struct
+	Structs    []Struct
+	Interfaces []Interface
+}
+
+type Interface struct {
+	*types.Interface
+
+	PkgPath string
+	PkgName string
+	Name    string
+	Methods []Method // 方法列表
+}
+
+func (s Interface) MakeMock() string {
+	var is string
+	var ms string
+	for _, m := range s.Methods {
+		is += fmt.Sprintf("\n%sFunc %s\n", m.Name, m.Signature)
+
+		ms += fmt.Sprintf("\nfunc (*%s) %s%s{\n panic(\"Need to be implement!\") \n}\n", s.makeMockName(), m.Name, strings.TrimLeft(m.Signature, "func"))
+	}
+
+	is = mockPrefix(s.makeMockName(), is)
+
+	is += `var _ ` + s.Name + ` = &` + s.makeMockName() + "{}\n"
+	is += ms
+
+	return is
+}
+
+func (s Interface) makeMockName() string {
+	return s.Name + "Mock"
+}
+
+func mockPrefix(name, is string) string {
+	return "type " + name + " struct{ " + is + "}\n"
 }
 
 // Struct 结构体
@@ -105,9 +218,12 @@ type Method struct {
 
 // Field 字段
 type Field struct {
-	Id      string // 唯一标志
-	Name    string // 名称
-	Type    string // 类型，包含包导入路径
+	Id   string // 唯一标志
+	Name string // 名称
+
+	TypesType types.Type // 原始类型
+	Type      string     // 类型，包含包导入路径
+
 	Doc     string // 文档
 	Comment string // 注释
 }
@@ -131,36 +247,42 @@ func (i PkgInfo) GetPkgName() string {
 }
 
 type FileResult struct {
-	structMap map[string]Struct   // 名称 -> 结构体
-	methodMap map[string][]Method // 名称 -> 方法列表
+	structMap    map[string]Struct    // 名称 -> 结构体
+	methodMap    map[string][]Method  // 名称 -> 方法列表
+	interfaceMap map[string]Interface // 名称 -> 接口
 }
 
 func MakeFileResult() FileResult {
 	return FileResult{
-		structMap: make(map[string]Struct),
-		methodMap: make(map[string][]Method),
+		structMap:    make(map[string]Struct),
+		methodMap:    make(map[string][]Method),
+		interfaceMap: make(map[string]Interface),
 	}
 }
 
 type DeclResult struct {
-	structMap map[string]Struct
-	methodMap map[string][]Method
+	structMap    map[string]Struct
+	methodMap    map[string][]Method
+	interfaceMap map[string]Interface // 名称 -> 接口
 }
 
 func MakeDeclResult() DeclResult {
 	return DeclResult{
-		structMap: make(map[string]Struct),
-		methodMap: make(map[string][]Method),
+		structMap:    make(map[string]Struct),
+		methodMap:    make(map[string][]Method),
+		interfaceMap: make(map[string]Interface),
 	}
 }
 
 type SpecResult struct {
-	structMap map[string]Struct // 名称 -> 结构体
+	structMap    map[string]Struct    // 名称 -> 结构体
+	interfaceMap map[string]Interface // 名称 -> 接口
 }
 
 func MakeSpecResult() SpecResult {
 	return SpecResult{
-		structMap: make(map[string]Struct),
+		structMap:    make(map[string]Struct),
+		interfaceMap: make(map[string]Interface),
 	}
 }
 

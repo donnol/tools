@@ -11,14 +11,19 @@ import (
 )
 
 type Inspector struct {
+	parser *Parser
+
 	pkg *packages.Package
 }
 
 type InspectOption struct {
+	Parser *Parser
 }
 
 func NewInspector(opt InspectOption) *Inspector {
-	return &Inspector{}
+	return &Inspector{
+		parser: opt.Parser,
+	}
 }
 
 func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
@@ -30,7 +35,18 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 	// 解析*ast.File信息
 	structMap := make(map[string]Struct)
 	methodsMap := make(map[string][]Method)
-	for _, astFile := range pkg.Syntax {
+	interfaceMap := make(map[string]Interface)
+	for i, astFile := range pkg.Syntax {
+		// 替换import path
+		if ins.parser.replaceImportPath {
+			fileName := pkg.CompiledGoFiles[i]
+			fmt.Printf("%v\n", pkg.CompiledGoFiles)
+			if err := ins.parser.replaceFileImportPath(fileName, astFile); err != nil {
+				panic(fmt.Errorf("replaceFileImportPath failed: %+v", err))
+			}
+			continue
+		}
+
 		fileResult := ins.InspectFile(astFile)
 
 		for k, v := range fileResult.structMap {
@@ -38,6 +54,9 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 		}
 		for k, v := range fileResult.methodMap {
 			methodsMap[k] = append(methodsMap[k], v...)
+		}
+		for k, v := range fileResult.interfaceMap {
+			interfaceMap[k] = v
 		}
 	}
 
@@ -47,10 +66,15 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 		single.Methods = methods
 		structs = append(structs, single)
 	}
+	inters := make([]Interface, 0, len(interfaceMap))
+	for _, single := range interfaceMap {
+		inters = append(inters, single)
+	}
 
 	return Package{
-		Package: pkg,
-		Structs: structs,
+		Package:    pkg,
+		Structs:    structs,
+		Interfaces: inters,
 	}
 }
 
@@ -62,6 +86,7 @@ func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
 
 	structMap := make(map[string]Struct)
 	methodsMap := make(map[string][]Method)
+	interfaceMap := make(map[string]Interface)
 	for _, decl := range file.Decls {
 		declResult := ins.inspectDecl(decl)
 		for k, v := range declResult.structMap {
@@ -70,9 +95,13 @@ func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
 		for k, v := range declResult.methodMap {
 			methodsMap[k] = append(methodsMap[k], v...)
 		}
+		for k, v := range declResult.interfaceMap {
+			interfaceMap[k] = v
+		}
 	}
 	result.structMap = structMap
 	result.methodMap = methodsMap
+	result.interfaceMap = interfaceMap
 
 	return
 }
@@ -128,6 +157,9 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 				for k, v := range specResult.structMap {
 					result.structMap[k] = v
 				}
+				for k, v := range specResult.interfaceMap {
+					result.interfaceMap[k] = v
+				}
 			}
 		}
 	}
@@ -150,24 +182,46 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 
 	case *ast.TypeSpec:
 		// 这里拿到类型信息: 名称，注释，文档
-		debug.Debug("TypeSpec name: %s, comment: %s, doc: %s\n", specValue.Name, specValue.Comment.Text(), specValue.Doc.Text())
+		debug.Debug("TypeSpec name: %s, type: %+v, comment: %s, doc: %s\n", specValue.Name, specValue.Type, specValue.Comment.Text(), specValue.Doc.Text())
 
-		structOne := Struct{
-			PkgPath: ins.pkg.PkgPath,
-			PkgName: ins.pkg.Name,
-			Field: Field{
-				Id:      ins.pkg.TypesInfo.Types[specValue.Type].Type.String(),
-				Name:    specValue.Name.Name,
-				Type:    toString(specValue.Type),
-				Doc:     specValue.Doc.Text(),
-				Comment: specValue.Comment.Text(),
-			},
+		switch specValue.Type.(type) {
+		case *ast.InterfaceType:
+			exprResult := ins.inspectExpr(specValue.Type)
+			debug.Debug("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
+			methods := make([]Method, 0, len(exprResult.Fields))
+			for _, field := range exprResult.Fields {
+				methods = append(methods, Method{
+					Name:      field.Name,
+					Signature: field.Type,
+				})
+			}
+			inter := Interface{
+				Interface: ins.pkg.TypesInfo.Types[specValue.Type].Type.(*types.Interface),
+				Name:      specValue.Name.Name,
+				PkgPath:   ins.pkg.PkgPath,
+				PkgName:   ins.pkg.Name,
+				Methods:   methods,
+			}
+			debug.Debug("mock: %s\n", inter.MakeMock())
+			result.interfaceMap[specValue.Name.Name] = inter
+		default:
+			structOne := Struct{
+				PkgPath: ins.pkg.PkgPath,
+				PkgName: ins.pkg.Name,
+				Field: Field{
+					Id:      ins.pkg.TypesInfo.Types[specValue.Type].Type.String(),
+					Name:    specValue.Name.Name,
+					Type:    toString(specValue.Type),
+					Doc:     specValue.Doc.Text(),
+					Comment: specValue.Comment.Text(),
+				},
+			}
+
+			// 再拿field
+			exprResult := ins.inspectExpr(specValue.Type)
+			structOne.Fields = exprResult.Fields
+			result.structMap[specValue.Name.Name] = structOne
 		}
-
-		// 再拿field
-		exprResult := ins.inspectExpr(specValue.Type)
-		structOne.Fields = exprResult.Fields
-		result.structMap[specValue.Name.Name] = structOne
 	}
 
 	return
@@ -236,7 +290,8 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
 		ins.inspectExpr(exprValue.X)
 		ins.inspectExpr(exprValue.Index)
 	case *ast.InterfaceType: // interface { A(); B() }
-		ins.inspectFields(exprValue.Methods)
+		fieldResult := ins.inspectFields(exprValue.Methods)
+		result.Fields = fieldResult.Fields
 	case *ast.KeyValueExpr: // key:value
 		ins.inspectExpr(exprValue.Key)
 		ins.inspectExpr(exprValue.Value)
@@ -369,11 +424,12 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList) (result FieldResult) 
 		}
 
 		result.Fields = append(result.Fields, Field{
-			Id:      name,
-			Name:    name,
-			Type:    toString(field.Type),
-			Doc:     field.Doc.Text(),
-			Comment: field.Comment.Text(),
+			Id:        name,
+			Name:      name,
+			TypesType: ins.pkg.TypesInfo.TypeOf(field.Type),
+			Type:      toString(field.Type),
+			Doc:       field.Doc.Text(),
+			Comment:   field.Comment.Text(),
 		})
 	}
 

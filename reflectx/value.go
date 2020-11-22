@@ -1,10 +1,16 @@
 package reflectx
 
 import (
+	"database/sql"
 	"fmt"
+	"math/rand"
 	"reflect"
+	"strconv"
+	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/donnol/tools/internal/utils/debug"
 )
 
 var (
@@ -150,4 +156,303 @@ func CopyStructField(refType reflect.Type, refValue reflect.Value) (reflect.Type
 	}
 
 	return newType, newValue
+}
+
+// SetStructRandom 设置结构体随机值
+func SetStructRandom(v interface{}) {
+	var refValue reflect.Value
+	var refType reflect.Type
+
+	if vv, ok := v.(reflect.Value); ok {
+		refValue = vv.Elem()
+	} else if !IsStructPointer(v) {
+		panic(fmt.Errorf("v is not a struct pointer"))
+	} else {
+		refValue = reflect.ValueOf(v).Elem()
+	}
+
+	refType = refValue.Type()
+
+	for i := 0; i < refType.NumField(); i++ {
+		fieldValue := refValue.Field(i)
+		fieldType := refType.Field(i)
+
+		value := getTypeRandomValue(fieldType.Type)
+
+		fieldValue.Set(value)
+	}
+}
+
+var (
+	timeType        = reflect.TypeOf((*time.Time)(nil)).Elem()
+	sqlNullTimeType = reflect.TypeOf((*sql.NullTime)(nil)).Elem()
+)
+
+func isTimeType(typ reflect.Type) bool {
+	return typ == timeType || typ == sqlNullTimeType
+}
+
+func getTimeTypeValue(typ reflect.Type) reflect.Value {
+	var value reflect.Value
+
+	switch typ {
+	case timeType:
+		t := getRandomTime()
+		value = reflect.ValueOf(t)
+	case sqlNullTimeType:
+		nt := sql.NullTime{}
+		b := getRandomBool()
+		nt.Valid = b
+		if b {
+			t := getRandomTime()
+			nt.Time = t
+		}
+		value = reflect.ValueOf(nt)
+	}
+
+	return value
+}
+
+func getRandomTime() time.Time {
+	y := rand.Intn(3000)
+	m := rand.Intn(12) + 1
+	d := rand.Intn(31) + 1
+	hour := rand.Intn(24)
+	min := rand.Intn(60) + 1
+	sec := rand.Intn(60) + 1
+	nsec := rand.Intn(1000)
+	t := time.Date(y, time.Month(m), d, hour, min, sec, nsec, time.Local)
+	return t
+}
+
+func getRandomBool() bool {
+	var value bool
+	n := rand.Intn(2)
+	if n == 0 {
+		value = false
+	} else {
+		value = true
+	}
+	return value
+}
+
+func toNegative(n int) int {
+	b := getRandomBool()
+	if b && n != 0 {
+		n = -n
+	}
+	return n
+}
+
+type specialType struct {
+	typ     reflect.Type
+	handler func(typ reflect.Type) reflect.Value
+}
+
+var (
+	specTypeMap = new(sync.Map)
+)
+
+func init() {
+	// 注册时间类型
+	RegisterSpecType(timeType, getTimeTypeValue)
+	RegisterSpecType(sqlNullTimeType, getTimeTypeValue)
+}
+
+// RegisterSpecType 注册特别类型
+func RegisterSpecType(typ reflect.Type, handler func(typ reflect.Type) reflect.Value) {
+	specTypeMap.Store(typ, specialType{
+		typ:     typ,
+		handler: handler,
+	})
+}
+
+func inSpecType(typ reflect.Type) (handler func(typ reflect.Type) reflect.Value, ok bool) {
+	v, ok := specTypeMap.Load(typ)
+	if ok {
+		st, ok := v.(specialType)
+		if ok {
+			return st.handler, ok
+		}
+	}
+	return nil, false
+}
+
+func getTypeRandomValue(typ reflect.Type) reflect.Value {
+	var value reflect.Value
+
+	// 特殊类型
+	specHandler, isSpec := inSpecType(typ)
+	if isSpec {
+		return specHandler(typ)
+	}
+
+	// 常用类型
+	switch typ.Kind() {
+	case reflect.Invalid:
+
+	case reflect.Bool:
+		n := getRandomBool()
+		value = reflect.ValueOf(n)
+
+	case reflect.Int:
+		n := rand.Int()
+		n = toNegative(n)
+		value = reflect.ValueOf(n)
+	case reflect.Int8:
+		n := rand.Intn(128)
+		n = toNegative(n)
+		value = reflect.ValueOf(int8(n))
+	case reflect.Int16:
+		n := rand.Intn(32768)
+		n = toNegative(n)
+		value = reflect.ValueOf(int16(n))
+	case reflect.Int32:
+		n := rand.Int31()
+		n = int32(toNegative(int(n)))
+		value = reflect.ValueOf(n)
+	case reflect.Int64:
+		n := rand.Int63()
+		n = int64(toNegative(int(n)))
+		value = reflect.ValueOf(n)
+
+	case reflect.Uint:
+		n := rand.Int()
+		value = reflect.ValueOf(uint(n))
+	case reflect.Uint8:
+		n := rand.Intn(256)
+		value = reflect.ValueOf(uint8(n))
+	case reflect.Uint16:
+		n := rand.Intn(65536)
+		value = reflect.ValueOf(uint16(n))
+	case reflect.Uint32:
+		n := rand.Int31()
+		value = reflect.ValueOf(uint32(n))
+	case reflect.Uint64:
+		n := rand.Int63()
+		value = reflect.ValueOf(uint64(n))
+
+	case reflect.Uintptr:
+
+	case reflect.Float32:
+		n := rand.Float32()
+		value = reflect.ValueOf(n)
+	case reflect.Float64:
+		n := rand.Float64()
+		value = reflect.ValueOf(n)
+
+	case reflect.Complex64:
+		real, imag := rand.Float32(), rand.Float32()
+		v := complex(real, imag)
+		value = reflect.ValueOf(v)
+	case reflect.Complex128:
+		real, imag := rand.Float64(), rand.Float64()
+		v := complex(real, imag)
+		value = reflect.ValueOf(v)
+
+	case reflect.Array:
+		// 先建立类型，再用类型新建值
+		value = reflect.New(reflect.ArrayOf(typ.Len(), typ.Elem())).Elem()
+		for i := 0; i < typ.Len(); i++ {
+			arrayValue := getTypeRandomValue(typ.Elem())
+			value.Index(i).Set(arrayValue)
+		}
+
+	case reflect.Chan:
+		// value = reflect.New(reflect.ChanOf(typ.ChanDir(), typ.Elem())).Elem()
+		n := rand.Intn(10)
+		value = reflect.MakeChan(typ, n)
+		// 开个线程往chan发消息？
+
+	case reflect.Func:
+		value = reflect.MakeFunc(typ, func(args []reflect.Value) []reflect.Value {
+			var values []reflect.Value
+
+			// 我怎么知道要跑什么逻辑呢？
+			// 随便打印个随机数吧
+			n := rand.Int()
+			fmt.Println(n)
+
+			return values
+		})
+
+	case reflect.Interface:
+		// https://github.com/golang/go/issues/4146
+		// 2012年的issue，2020了还没实现，好难受
+
+		// value是个nil
+		// 当调用value.Method(i)时会报错：panic: reflect: Method on nil interface value
+		debug.Debug("typ: %+v\n", typ)
+		value = reflect.New(typ).Elem()
+		debug.Debug("value: %+v\n", value)
+
+		// 需要借助mock struct才行，具体可参考inject的proxy
+		// for i := 0; i < typ.NumMethod(); i++ {
+		//	method := typ.Method(i)
+
+		//	newmethod := getTypeRandomValue(method.Type)
+
+		//	value.Method(i).Set(newmethod)
+		// }
+
+	case reflect.Map:
+		n := rand.Intn(10)
+		value = reflect.MakeMap(typ)
+		keyTyp := typ.Key()
+		for i := 0; i < n; i++ {
+			key := getTypeRandomValue(keyTyp)
+			mapValue := getTypeRandomValue(typ.Elem())
+
+			value.SetMapIndex(key, mapValue)
+		}
+
+	case reflect.Ptr:
+		// 假设typ: *string
+		// reflect.New会添加多一层指针
+		value = reflect.New(typ) // **string
+		debug.Debug("call reflect.New: %+v\n", value.Type())
+
+		// 取Elem解一层指针
+		value = value.Elem() // *string
+		debug.Debug("call value.Elem: %+v\n", value.Type())
+
+		// 获取原始类型随机值
+		e := getTypeRandomValue(typ.Elem()) // string
+		debug.Debug("get random value: %+v\n", e.Type())
+
+		// 通过中间value，给原变量赋指针值
+		tv := reflect.New(typ.Elem()).Elem() // 新建原始类型指针: string
+		debug.Debug("call reflect.New to new origin value: %+v\n", tv.Type())
+
+		tv.Set(e) // 设置值
+
+		// 将中间变量地址赋给结果
+		value.Set(tv.Addr())
+
+	case reflect.Slice:
+		n := rand.Intn(64)
+		value = reflect.MakeSlice(typ, 0, n)
+		for i := 0; i < n; i++ {
+			value = reflect.Append(value, getTypeRandomValue(typ.Elem()))
+		}
+
+	case reflect.String:
+		s := ""
+		n := rand.Intn(64)
+		for i := 0; i < n; i++ {
+			j := rand.Int()
+			s += strconv.Itoa(j)
+		}
+		value = reflect.ValueOf(s)
+
+	case reflect.Struct:
+		s := reflect.New(typ)
+		SetStructRandom(s)
+		value = s.Elem()
+
+	case reflect.UnsafePointer:
+
+	}
+
+	return value
 }
