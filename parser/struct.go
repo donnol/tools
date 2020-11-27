@@ -118,24 +118,117 @@ type Interface struct {
 }
 
 func (s Interface) MakeMock() string {
+	mockType := s.makeMockName()
+	mockRecv := s.makeMockRecv()
+
 	var is string
 	var ms string
 	for _, m := range s.Methods {
-		is += fmt.Sprintf("\n%sFunc %s\n", m.Name, m.Signature)
+		fieldName, fieldType, methodSig, returnStmt, call := s.processFunc(m)
 
-		ms += fmt.Sprintf("\nfunc (*%s) %s%s{\n panic(\"Need to be implement!\") \n}\n", s.makeMockName(), m.Name, strings.TrimLeft(m.Signature, "func"))
+		is += fmt.Sprintf("\n%s %s\n", fieldName, fieldType)
+
+		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType, methodSig, returnStmt, mockRecv, call)
 	}
 
-	is = mockPrefix(s.makeMockName(), is)
+	is = mockPrefix(mockType, is)
 
-	is += `var _ ` + s.Name + ` = &` + s.makeMockName() + "{}\n"
+	is += `var _ ` + s.Name + ` = &` + mockType + "{}\n"
 	is += ms
+
+	debug.Debug("is: %s\n", is)
 
 	return is
 }
 
+const (
+	sep         = ","
+	leftParent  = "("
+	rightParent = ")"
+)
+
+// func(ctx context.Context, m M) (err error) -> (ctx, m)
+// func(context.Context,M) (error) -> (p0, p1)
+func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string) {
+
+	fieldName = m.Name + "Func"
+	fieldType = m.Signature
+
+	sigType := m.Origin.Type().(*types.Signature)
+	if sigType.Variadic() {
+		//  在这里获取完整签名字符串时，还是正常的：func(interface{}, string, ...interface{}) error
+		typStr := types.TypeString(sigType, pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+		debug.Debug("typ: %+v, str: %s\n", sigType, typStr)
+	}
+	params := sigType.Params()
+	for i := 0; i < params.Len(); i++ {
+		pvar := params.At(i)
+		name := pvar.Name()
+
+		// 参数名可能为空，需要置默认值
+		if name == "" {
+			name = fmt.Sprintf("p%d", i)
+		}
+
+		// 解析进来之后，不定参数类型变成了slice：[]interface{}
+		typStr := types.TypeString(pvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+
+		// 处理最后一个是不定参数的情况
+		var paramTypePrefix string
+		if sigType.Variadic() && i == params.Len()-1 {
+			paramTypePrefix = "..."
+			debug.Debug("typ: %+v, str: %s, params: %v\n", pvar.Type(), typStr, params.String())
+		}
+
+		// FIXME:感觉不太好，怎么办呢？
+		// 当是不定参数，typStr会从...interface{}变为[]interface{}，因此，需要再将它重新变回来
+		if paramTypePrefix != "" && strings.Index(typStr, "[]") == 0 {
+			typStr = typStr[2:]
+		}
+		methodSig += name + " " + paramTypePrefix + typStr + sep
+
+		call += name + paramTypePrefix + sep
+	}
+	methodSig = strings.TrimRight(methodSig, sep)
+	methodSig = m.Name + leftParent + methodSig + rightParent
+
+	res := sigType.Results()
+	returnStmt = "return"
+	if res.Len() == 0 {
+		returnStmt = " "
+	}
+	var resString string
+	for i := 0; i < res.Len(); i++ {
+		rvar := res.At(i)
+		name := rvar.Name()
+
+		resString += name + " " + types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath})) + sep
+	}
+	resString = strings.TrimRight(resString, sep)
+	resString = leftParent + resString + rightParent
+	methodSig = methodSig + resString
+
+	debug.Debug("methodSig: %v\n", methodSig)
+
+	call = strings.TrimRight(call, sep)
+	call = leftParent + call + rightParent
+	call = fieldName + call
+
+	return
+}
+
 func (s Interface) makeMockName() string {
-	return s.Name + "Mock"
+	name := s.Name
+	// 如果首个字符是I，则去掉
+	index := strings.Index(name, "I")
+	if index == 0 {
+		name = name[1:]
+	}
+	return name + "Mock"
+}
+
+func (s Interface) makeMockRecv() string {
+	return "mockRecv"
 }
 
 func mockPrefix(name, is string) string {

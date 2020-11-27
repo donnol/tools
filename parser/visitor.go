@@ -126,27 +126,6 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 	return v
 }
 
-type qualifierParam struct {
-	pkgPath string
-}
-
-var (
-	// 包名
-	// 包名有可能不等于包路径的最后一部分的（最后一个'/'后面的部分）
-	pkgNameQualifier = func(qp qualifierParam) types.Qualifier {
-		return func(pkg *types.Package) string {
-			name := pkg.Name()
-
-			// 如果是同一个包内的，省略包名
-			if pkg.Path() == qp.pkgPath {
-				return ""
-			}
-
-			return name
-		}
-	}
-)
-
 // 解析类型提取所需信息
 func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment string) {
 	pkgSelType := types.TypeString(t, pkgNameQualifier(qualifierParam{pkgPath: v.pkgPath}))

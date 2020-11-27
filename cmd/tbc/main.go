@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"go/types"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/donnol/tools/importpath"
+	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/donnol/tools/parser"
 
 	"github.com/spf13/cobra"
@@ -38,6 +40,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&to, "to", "", "", "specify to path with replace")
 	var output string
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "specify output file")
+	var interf string
+	rootCmd.PersistentFlags().StringVarP(&interf, "interface", "", "", "specify interface")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -182,7 +186,75 @@ func addSubCommand(rootCmd *cobra.Command) {
 			}
 			for _, pkg := range pkgs.Pkgs {
 				if err = pkg.SaveMock(""); err != nil {
-					log.Fatal(err)
+					log.Printf("gen mock failed, pkg: %+v, err: %+v\n", pkg, err)
+				}
+			}
+		},
+	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "impl",
+		Short: "TODO: find implement by given interface in specify path",
+		Long: `find implement by given interface in specify path, like: 
+			'tbc impl --interface=io.Writer'
+			will get some structs like
+			type MyWriter struct {}
+			func (w *MyWriter) Write(data []byte) (n int, err error)
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+
+			// 标志
+			flags := cmd.Flags()
+			interf, _ := flags.GetString("interface")
+			path, _ := flags.GetString("path")
+			rec, _ := flags.GetBool("recursive")
+			fmt.Printf("| impl | %+v, %+v, %+v\n", interf, path, rec)
+
+			ip := &importpath.ImportPath{}
+			paths, err := getPaths(ip, path, rec)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if len(paths) == 0 {
+				log.Fatalf("找不到有效路径，请使用-p指定或设置-r！")
+			}
+			fmt.Printf("dirs: %+v\n", paths)
+
+			// 解析
+			p := parser.New(parser.Option{})
+
+			// 获取接口类型
+			var interType *types.Interface
+			importPath, typ := ip.SplitImportPathWithType(interf)
+			inters, err := p.ParseByGoPackages(importPath)
+			if err != nil {
+				log.Fatal(err)
+			}
+			debug.Debug("inters: %+v\n", inters)
+			for _, pkg := range inters.Pkgs {
+				fmt.Printf("pkg: %+v\n", pkg)
+				for _, one := range pkg.Interfaces {
+					if one.Name != typ {
+						continue
+					}
+					interType = one.Interface
+
+					debug.Debug("interface: %+v\n", one.Interface)
+				}
+			}
+
+			pkgs, err := p.ParseByGoPackages(paths...)
+			if err != nil {
+				log.Fatal(err)
+			}
+			for _, pkg := range pkgs.Pkgs {
+				fmt.Printf("find %d structs in %s\n", len(pkg.Structs), pkg.PkgPath)
+				for i, one := range pkg.Structs {
+					if !types.Implements(one.TypesType, interType) {
+						continue
+					}
+					fmt.Printf("	No.%d struct info: %+v\n", i, one.PkgPath+"."+one.Name)
 				}
 			}
 		},
@@ -192,15 +264,29 @@ func addSubCommand(rootCmd *cobra.Command) {
 func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error) {
 	var err error
 
+	dir, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	var paths []string
+
 	if path == "" {
 		path, err = ip.GetByCurrentDir()
 		if err != nil {
 			return nil, err
 		}
-	}
-	dir, err := os.Getwd()
-	if err != nil {
-		return nil, err
+
+		haveGoFile, err := checkDirHaveGoFile(dir)
+		if err != nil {
+			return nil, err
+		}
+		if haveGoFile {
+			paths = append(paths, path)
+		}
+	} else {
+		// 手动指定的path，不校验是否存在go文件，由用户自己保证
+		paths = append(paths, path)
 	}
 
 	modDir, modPath, err := ip.GetModFilePath(dir)
@@ -209,14 +295,6 @@ func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error
 	}
 	fmt.Printf("dir: %s, modDir: %s, modPath: %s\n", dir, modDir, modPath)
 
-	var paths []string
-	haveGoFile, err := checkDirHaveGoFile(dir)
-	if err != nil {
-		return nil, err
-	}
-	if haveGoFile {
-		paths = append(paths, path)
-	}
 	if rec {
 		dirs, err := collectGoFileDir(dir)
 		if err != nil {
@@ -232,7 +310,11 @@ func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error
 // collectGoFileDir 在指定目录下收集含有go文件的子目录
 func collectGoFileDir(dir string) ([]string, error) {
 	var dirs []string
-	if err := filepath.Walk(dir, filepath.WalkFunc(func(childDir string, info os.FileInfo, err error) error {
+	if err := filepath.Walk(dir, filepath.WalkFunc(func(childDir string, info os.FileInfo, ierr error) error {
+		if ierr != nil {
+			fmt.Printf("walk got err: %+v\n", ierr)
+		}
+
 		if childDir == dir {
 			return nil
 		}

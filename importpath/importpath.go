@@ -1,6 +1,7 @@
 package importpath
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -96,4 +97,12 @@ func getPkgPathFromDir() (pkgPath string, err error) {
 	pkgPath = filepath.Join(modPath, relPart)
 
 	return
+}
+
+func (p *ImportPath) SplitImportPathWithType(importPathWithType string) (string, string) {
+	lastDotIndex := strings.LastIndex(importPathWithType, ".")
+	if lastDotIndex == -1 || lastDotIndex == len(importPathWithType)-1 || lastDotIndex == 0 {
+		panic(fmt.Errorf("路径有问题: %s", importPathWithType))
+	}
+	return importPathWithType[:lastDotIndex], importPathWithType[lastDotIndex+1:]
 }

@@ -188,13 +188,11 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 		case *ast.InterfaceType:
 			exprResult := ins.inspectExpr(specValue.Type)
 			debug.Debug("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
-			methods := make([]Method, 0, len(exprResult.Fields))
-			for _, field := range exprResult.Fields {
-				methods = append(methods, Method{
-					Name:      field.Name,
-					Signature: field.Type,
-				})
-			}
+
+			interType := ins.pkg.TypesInfo.TypeOf(specValue.Type)
+			r := parseTypesType(interType, parseTypesTypeOption{pkgPath: ins.pkg.PkgPath})
+			methods := r.methods
+
 			inter := Interface{
 				Interface: ins.pkg.TypesInfo.Types[specValue.Type].Type.(*types.Interface),
 				Name:      specValue.Name.Name,
@@ -204,16 +202,18 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 			}
 			debug.Debug("mock: %s\n", inter.MakeMock())
 			result.interfaceMap[specValue.Name.Name] = inter
+
 		default:
 			structOne := Struct{
 				PkgPath: ins.pkg.PkgPath,
 				PkgName: ins.pkg.Name,
 				Field: Field{
-					Id:      ins.pkg.TypesInfo.Types[specValue.Type].Type.String(),
-					Name:    specValue.Name.Name,
-					Type:    toString(specValue.Type),
-					Doc:     specValue.Doc.Text(),
-					Comment: specValue.Comment.Text(),
+					Id:        ins.pkg.TypesInfo.Types[specValue.Type].Type.String(),
+					Name:      specValue.Name.Name,
+					TypesType: ins.pkg.TypesInfo.Types[specValue.Type].Type,
+					Type:      toString(specValue.Type),
+					Doc:       specValue.Doc.Text(),
+					Comment:   specValue.Comment.Text(),
 				},
 			}
 
