@@ -1,11 +1,11 @@
 package reflectx
 
-type IStructMock struct {
+type StructMock struct {
 	GetFieldsFunc func() []Field
 }
 
-var _ IStruct = &IStructMock{}
+var _ IStruct = &StructMock{}
 
-func (*IStructMock) GetFields() []Field {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) GetFields() []Field {
+	return mockRecv.GetFieldsFunc()
 }

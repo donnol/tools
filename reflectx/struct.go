@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/donnol/tools/importpath"
+	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/donnol/tools/parser"
 )
 
@@ -197,7 +198,7 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 		}
 	}
 	if !exist {
-		fmt.Printf("Can't find comment info of %s", structName)
+		debug.Debug("Can't find comment info of %s", structName)
 	}
 
 	return structCommentMap, fieldCommentMap, nil

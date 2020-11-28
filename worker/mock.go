@@ -1,6 +1,6 @@
 package worker
 
-type IWorkerMock struct {
+type WorkerMock struct {
 	PushFunc func(job Job) error
 
 	StartFunc func()
@@ -8,16 +8,16 @@ type IWorkerMock struct {
 	StopFunc func()
 }
 
-var _ IWorker = &IWorkerMock{}
+var _ IWorker = &WorkerMock{}
 
-func (*IWorkerMock) Push(job Job) error {
-	panic("Need to be implement!")
+func (mockRecv *WorkerMock) Push(job Job) error {
+	return mockRecv.PushFunc(job)
 }
 
-func (*IWorkerMock) Start() {
-	panic("Need to be implement!")
+func (mockRecv *WorkerMock) Start() {
+	mockRecv.StartFunc()
 }
 
-func (*IWorkerMock) Stop() {
-	panic("Need to be implement!")
+func (mockRecv *WorkerMock) Stop() {
+	mockRecv.StopFunc()
 }

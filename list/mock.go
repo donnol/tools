@@ -1,11 +1,11 @@
 package list
 
-type IStringListMock struct {
+type StringListMock struct {
 	FilterFunc func(s string) StringList
 }
 
-var _ IStringList = &IStringListMock{}
+var _ IStringList = &StringListMock{}
 
-func (*IStringListMock) Filter(s string) StringList {
-	panic("Need to be implement!")
+func (mockRecv *StringListMock) Filter(s string) StringList {
+	return mockRecv.FilterFunc(s)
 }

@@ -14,23 +14,23 @@ type CacheMock struct {
 
 var _ Cache = &CacheMock{}
 
-func (*CacheMock) Get(key string) interface{} {
-	panic("Need to be implement!")
+func (mockRecv *CacheMock) Get(key string) interface{} {
+	return mockRecv.GetFunc(key)
 }
 
-func (*CacheMock) Lookup(key string) (interface{}, bool) {
-	panic("Need to be implement!")
+func (mockRecv *CacheMock) Lookup(key string) (interface{}, bool) {
+	return mockRecv.LookupFunc(key)
 }
 
-func (*CacheMock) Set(key string, value interface{}) bool {
-	panic("Need to be implement!")
+func (mockRecv *CacheMock) Set(key string, value interface{}) bool {
+	return mockRecv.SetFunc(key, value)
 }
 
-func (*CacheMock) SetNX(key string, value interface{}, expire time.Duration) bool {
-	panic("Need to be implement!")
+func (mockRecv *CacheMock) SetNX(key string, value interface{}, expire time.Duration) bool {
+	return mockRecv.SetNXFunc(key, value, expire)
 }
 
-type ImemImplMock struct {
+type memImplMock struct {
 	GetFunc func(key string) interface{}
 
 	LookupFunc func(key string) (interface{}, bool)
@@ -40,20 +40,20 @@ type ImemImplMock struct {
 	SetNXFunc func(key string, value interface{}, expire time.Duration) bool
 }
 
-var _ ImemImpl = &ImemImplMock{}
+var _ ImemImpl = &memImplMock{}
 
-func (*ImemImplMock) Get(key string) interface{} {
-	panic("Need to be implement!")
+func (mockRecv *memImplMock) Get(key string) interface{} {
+	return mockRecv.GetFunc(key)
 }
 
-func (*ImemImplMock) Lookup(key string) (interface{}, bool) {
-	panic("Need to be implement!")
+func (mockRecv *memImplMock) Lookup(key string) (interface{}, bool) {
+	return mockRecv.LookupFunc(key)
 }
 
-func (*ImemImplMock) Set(key string, value interface{}) bool {
-	panic("Need to be implement!")
+func (mockRecv *memImplMock) Set(key string, value interface{}) bool {
+	return mockRecv.SetFunc(key, value)
 }
 
-func (*ImemImplMock) SetNX(key string, value interface{}, expire time.Duration) bool {
-	panic("Need to be implement!")
+func (mockRecv *memImplMock) SetNX(key string, value interface{}, expire time.Duration) bool {
+	return mockRecv.SetNXFunc(key, value, expire)
 }

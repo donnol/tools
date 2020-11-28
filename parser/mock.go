@@ -8,75 +8,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-type IInspectorMock struct {
-	InspectFileFunc func(file *ast.File) (result FileResult)
-
-	InspectPkgFunc func(pkg *packages.Package) Package
-}
-
-var _ IInspector = &IInspectorMock{}
-
-func (*IInspectorMock) InspectFile(file *ast.File) (result FileResult) {
-	panic("Need to be implement!")
-}
-
-func (*IInspectorMock) InspectPkg(pkg *packages.Package) Package {
-	panic("Need to be implement!")
-}
-
-type IParserMock struct {
-	GetPkgInfoFunc func() PkgInfo
-
-	ParseASTFunc func(importPath string) (structs []Struct, err error)
-
-	ParseByGoPackagesFunc func(patterns ...string) (result Packages, err error)
-}
-
-var _ IParser = &IParserMock{}
-
-func (*IParserMock) GetPkgInfo() PkgInfo {
-	panic("Need to be implement!")
-}
-
-func (*IParserMock) ParseAST(importPath string) (structs []Struct, err error) {
-	panic("Need to be implement!")
-}
-
-func (*IParserMock) ParseByGoPackages(patterns ...string) (result Packages, err error) {
-	panic("Need to be implement!")
-}
-
-type IvisitorMock struct {
-	VisitFunc func(node ast.Node) (w ast.Visitor)
-}
-
-var _ Ivisitor = &IvisitorMock{}
-
-func (*IvisitorMock) Visit(node ast.Node) (w ast.Visitor) {
-	panic("Need to be implement!")
-}
-
-type IInterfaceMock struct {
-	MakeMockFunc func() string
-}
-
-var _ IInterface = &IInterfaceMock{}
-
-func (*IInterfaceMock) MakeMock() string {
-	panic("Need to be implement!")
-}
-
-type IPackagesMock struct {
-	LookupPkgFunc func(name string) (Package, bool)
-}
-
-var _ IPackages = &IPackagesMock{}
-
-func (*IPackagesMock) LookupPkg(name string) (Package, bool) {
-	panic("Need to be implement!")
-}
-
-type IPackageMock struct {
+type PackageMock struct {
 	NewGoFileWithSuffixFunc func(suffix string) (file string)
 
 	SaveInterfaceFunc func(file string) error
@@ -84,21 +16,21 @@ type IPackageMock struct {
 	SaveMockFunc func(file string) error
 }
 
-var _ IPackage = &IPackageMock{}
+var _ IPackage = &PackageMock{}
 
-func (*IPackageMock) NewGoFileWithSuffix(suffix string) (file string) {
-	panic("Need to be implement!")
+func (mockRecv *PackageMock) NewGoFileWithSuffix(suffix string) (file string) {
+	return mockRecv.NewGoFileWithSuffixFunc(suffix)
 }
 
-func (*IPackageMock) SaveInterface(file string) error {
-	panic("Need to be implement!")
+func (mockRecv *PackageMock) SaveInterface(file string) error {
+	return mockRecv.SaveInterfaceFunc(file)
 }
 
-func (*IPackageMock) SaveMock(file string) error {
-	panic("Need to be implement!")
+func (mockRecv *PackageMock) SaveMock(file string) error {
+	return mockRecv.SaveMockFunc(file)
 }
 
-type IStructMock struct {
+type StructMock struct {
 	DemoFunc func(in types.Array) types.Basic
 
 	MakeInterfaceFunc func() string
@@ -110,40 +42,108 @@ type IStructMock struct {
 	TypeAliasFunc func(p Field, ip importpath.ImportPath)
 }
 
-var _ IStruct = &IStructMock{}
+var _ IStruct = &StructMock{}
 
-func (*IStructMock) Demo(in types.Array) types.Basic {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) Demo(in types.Array) types.Basic {
+	return mockRecv.DemoFunc(in)
 }
 
-func (*IStructMock) MakeInterface() string {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) MakeInterface() string {
+	return mockRecv.MakeInterfaceFunc()
 }
 
-func (*IStructMock) PointerMethod(in types.Basic) types.Slice {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) PointerMethod(in types.Basic) types.Slice {
+	return mockRecv.PointerMethodFunc(in)
 }
 
-func (*IStructMock) String(f Field, ip importpath.ImportPath) {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) String(f Field, ip importpath.ImportPath) {
+	mockRecv.StringFunc(f, ip)
 }
 
-func (*IStructMock) TypeAlias(p Field, ip importpath.ImportPath) {
-	panic("Need to be implement!")
+func (mockRecv *StructMock) TypeAlias(p Field, ip importpath.ImportPath) {
+	mockRecv.TypeAliasFunc(p, ip)
 }
 
-type IPkgInfoMock struct {
+type PkgInfoMock struct {
 	GetDirFunc func() string
 
 	GetPkgNameFunc func() string
 }
 
-var _ IPkgInfo = &IPkgInfoMock{}
+var _ IPkgInfo = &PkgInfoMock{}
 
-func (*IPkgInfoMock) GetDir() string {
-	panic("Need to be implement!")
+func (mockRecv *PkgInfoMock) GetDir() string {
+	return mockRecv.GetDirFunc()
 }
 
-func (*IPkgInfoMock) GetPkgName() string {
-	panic("Need to be implement!")
+func (mockRecv *PkgInfoMock) GetPkgName() string {
+	return mockRecv.GetPkgNameFunc()
+}
+
+type InspectorMock struct {
+	InspectFileFunc func(file *ast.File) (result FileResult)
+
+	InspectPkgFunc func(pkg *packages.Package) Package
+}
+
+var _ IInspector = &InspectorMock{}
+
+func (mockRecv *InspectorMock) InspectFile(file *ast.File) (result FileResult) {
+	return mockRecv.InspectFileFunc(file)
+}
+
+func (mockRecv *InspectorMock) InspectPkg(pkg *packages.Package) Package {
+	return mockRecv.InspectPkgFunc(pkg)
+}
+
+type ParserMock struct {
+	GetPkgInfoFunc func() PkgInfo
+
+	ParseASTFunc func(importPath string) (structs []Struct, err error)
+
+	ParseByGoPackagesFunc func(patterns ...string) (result Packages, err error)
+}
+
+var _ IParser = &ParserMock{}
+
+func (mockRecv *ParserMock) GetPkgInfo() PkgInfo {
+	return mockRecv.GetPkgInfoFunc()
+}
+
+func (mockRecv *ParserMock) ParseAST(importPath string) (structs []Struct, err error) {
+	return mockRecv.ParseASTFunc(importPath)
+}
+
+func (mockRecv *ParserMock) ParseByGoPackages(patterns ...string) (result Packages, err error) {
+	return mockRecv.ParseByGoPackagesFunc(patterns...)
+}
+
+type visitorMock struct {
+	VisitFunc func(node ast.Node) (w ast.Visitor)
+}
+
+var _ Ivisitor = &visitorMock{}
+
+func (mockRecv *visitorMock) Visit(node ast.Node) (w ast.Visitor) {
+	return mockRecv.VisitFunc(node)
+}
+
+type InterfaceMock struct {
+	MakeMockFunc func() string
+}
+
+var _ IInterface = &InterfaceMock{}
+
+func (mockRecv *InterfaceMock) MakeMock() string {
+	return mockRecv.MakeMockFunc()
+}
+
+type PackagesMock struct {
+	LookupPkgFunc func(name string) (Package, bool)
+}
+
+var _ IPackages = &PackagesMock{}
+
+func (mockRecv *PackagesMock) LookupPkg(name string) (Package, bool) {
+	return mockRecv.LookupPkgFunc(name)
 }

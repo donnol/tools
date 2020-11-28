@@ -2,7 +2,7 @@ package dbdoc
 
 import "io"
 
-type ITableMock struct {
+type TableMock struct {
 	MakeGraphFunc func() *Table
 
 	NewFunc func() *Table
@@ -20,36 +20,36 @@ type ITableMock struct {
 	WriteFunc func(w io.Writer) *Table
 }
 
-var _ ITable = &ITableMock{}
+var _ ITable = &TableMock{}
 
-func (*ITableMock) MakeGraph() *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) MakeGraph() *Table {
+	return mockRecv.MakeGraphFunc()
 }
 
-func (*ITableMock) New() *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) New() *Table {
+	return mockRecv.NewFunc()
 }
 
-func (*ITableMock) Resolve(v interface{}) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) Resolve(v interface{}) *Table {
+	return mockRecv.ResolveFunc(v)
 }
 
-func (*ITableMock) SetComment(comment string) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) SetComment(comment string) *Table {
+	return mockRecv.SetCommentFunc(comment)
 }
 
-func (*ITableMock) SetDescription(description string) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) SetDescription(description string) *Table {
+	return mockRecv.SetDescriptionFunc(description)
 }
 
-func (*ITableMock) SetMapper(f Mapper) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) SetMapper(f Mapper) *Table {
+	return mockRecv.SetMapperFunc(f)
 }
 
-func (*ITableMock) SetTypeMapper(f Mapper) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) SetTypeMapper(f Mapper) *Table {
+	return mockRecv.SetTypeMapperFunc(f)
 }
 
-func (*ITableMock) Write(w io.Writer) *Table {
-	panic("Need to be implement!")
+func (mockRecv *TableMock) Write(w io.Writer) *Table {
+	return mockRecv.WriteFunc(w)
 }

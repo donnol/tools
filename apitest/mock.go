@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type IATMock struct {
+type ATMock struct {
 	DebugFunc func() *AT
 
 	EqualFunc func(args ...interface{}) *AT
@@ -39,68 +39,68 @@ type IATMock struct {
 	WriteFileFunc func(w io.Writer) *AT
 }
 
-var _ IAT = &IATMock{}
+var _ IAT = &ATMock{}
 
-func (*IATMock) Debug() *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) Debug() *AT {
+	return mockRecv.DebugFunc()
 }
 
-func (*IATMock) Equal(args ...interface{}) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) Equal(args ...interface{}) *AT {
+	return mockRecv.EqualFunc(args...)
 }
 
-func (*IATMock) EqualCode(wantCode int) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) EqualCode(wantCode int) *AT {
+	return mockRecv.EqualCodeFunc(wantCode)
 }
 
-func (*IATMock) EqualThen(f func(*AT) error, args ...interface{}) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) EqualThen(f func(*AT) error, args ...interface{}) *AT {
+	return mockRecv.EqualThenFunc(f, args...)
 }
 
-func (*IATMock) Err() error {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) Err() error {
+	return mockRecv.ErrFunc()
 }
 
-func (*IATMock) MonkeyRun() *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) MonkeyRun() *AT {
+	return mockRecv.MonkeyRunFunc()
 }
 
-func (*IATMock) New() *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) New() *AT {
+	return mockRecv.NewFunc()
 }
 
-func (*IATMock) PressureRun(n int, c int) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) PressureRun(n int, c int) *AT {
+	return mockRecv.PressureRunFunc(n, c)
 }
 
-func (*IATMock) PressureRunBatch(param []PressureParam) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) PressureRunBatch(param []PressureParam) *AT {
+	return mockRecv.PressureRunBatchFunc(param)
 }
 
-func (*IATMock) Result(r interface{}) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) Result(r interface{}) *AT {
+	return mockRecv.ResultFunc(r)
 }
 
-func (*IATMock) Run() *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) Run() *AT {
+	return mockRecv.RunFunc()
 }
 
-func (*IATMock) SetCookies(cookies []*http.Cookie) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) SetCookies(cookies []*http.Cookie) *AT {
+	return mockRecv.SetCookiesFunc(cookies)
 }
 
-func (*IATMock) SetHeader(header http.Header) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) SetHeader(header http.Header) *AT {
+	return mockRecv.SetHeaderFunc(header)
 }
 
-func (*IATMock) SetParam(param interface{}) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) SetParam(param interface{}) *AT {
+	return mockRecv.SetParamFunc(param)
 }
 
-func (*IATMock) SetPort(port string) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) SetPort(port string) *AT {
+	return mockRecv.SetPortFunc(port)
 }
 
-func (*IATMock) WriteFile(w io.Writer) *AT {
-	panic("Need to be implement!")
+func (mockRecv *ATMock) WriteFile(w io.Writer) *AT {
+	return mockRecv.WriteFileFunc(w)
 }

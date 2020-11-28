@@ -1,107 +1,5 @@
 package log
 
-type LoggerMock struct {
-	SetNotifyFunc func(notify Notifier)
-
-	FatalfFunc func(format string, v ...interface{})
-
-	ErrorfFunc func(format string, v ...interface{})
-
-	WarnfFunc func(format string, v ...interface{})
-
-	InfofFunc func(format string, v ...interface{})
-
-	DebugfFunc func(format string, v ...interface{})
-
-	TracefFunc func(format string, v ...interface{})
-}
-
-var _ Logger = &LoggerMock{}
-
-func (*LoggerMock) SetNotify(notify Notifier) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Fatalf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Errorf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Warnf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Infof(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Debugf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*LoggerMock) Tracef(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-type IloggerMock struct {
-	DebugfFunc func(format string, v ...interface{})
-
-	ErrorfFunc func(format string, v ...interface{})
-
-	FatalfFunc func(format string, v ...interface{})
-
-	InfofFunc func(format string, v ...interface{})
-
-	SetNotifyFunc func(notify Notifier)
-
-	TracefFunc func(format string, v ...interface{})
-
-	WarnfFunc func(format string, v ...interface{})
-}
-
-var _ Ilogger = &IloggerMock{}
-
-func (*IloggerMock) Debugf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) Errorf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) Fatalf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) Infof(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) SetNotify(notify Notifier) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) Tracef(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IloggerMock) Warnf(format string, v ...interface{}) {
-	panic("Need to be implement!")
-}
-
-type ILevelMock struct {
-	AllFunc func() []Level
-}
-
-var _ ILevel = &ILevelMock{}
-
-func (*ILevelMock) All() []Level {
-	panic("Need to be implement!")
-}
-
 type NotifierMock struct {
 	LevelsFunc func() []Level
 
@@ -110,10 +8,112 @@ type NotifierMock struct {
 
 var _ Notifier = &NotifierMock{}
 
-func (*NotifierMock) Levels() []Level {
-	panic("Need to be implement!")
+func (mockRecv *NotifierMock) Levels() []Level {
+	return mockRecv.LevelsFunc()
 }
 
-func (*NotifierMock) Notify(msg string) {
-	panic("Need to be implement!")
+func (mockRecv *NotifierMock) Notify(msg string) {
+	mockRecv.NotifyFunc(msg)
+}
+
+type LoggerMock struct {
+	DebugfFunc func(format string, v ...interface{})
+
+	ErrorfFunc func(format string, v ...interface{})
+
+	FatalfFunc func(format string, v ...interface{})
+
+	InfofFunc func(format string, v ...interface{})
+
+	SetNotifyFunc func(notify Notifier)
+
+	TracefFunc func(format string, v ...interface{})
+
+	WarnfFunc func(format string, v ...interface{})
+}
+
+var _ Logger = &LoggerMock{}
+
+func (mockRecv *LoggerMock) Debugf(format string, v ...interface{}) {
+	mockRecv.DebugfFunc(format, v...)
+}
+
+func (mockRecv *LoggerMock) Errorf(format string, v ...interface{}) {
+	mockRecv.ErrorfFunc(format, v...)
+}
+
+func (mockRecv *LoggerMock) Fatalf(format string, v ...interface{}) {
+	mockRecv.FatalfFunc(format, v...)
+}
+
+func (mockRecv *LoggerMock) Infof(format string, v ...interface{}) {
+	mockRecv.InfofFunc(format, v...)
+}
+
+func (mockRecv *LoggerMock) SetNotify(notify Notifier) {
+	mockRecv.SetNotifyFunc(notify)
+}
+
+func (mockRecv *LoggerMock) Tracef(format string, v ...interface{}) {
+	mockRecv.TracefFunc(format, v...)
+}
+
+func (mockRecv *LoggerMock) Warnf(format string, v ...interface{}) {
+	mockRecv.WarnfFunc(format, v...)
+}
+
+type LevelMock struct {
+	AllFunc func() []Level
+}
+
+var _ ILevel = &LevelMock{}
+
+func (mockRecv *LevelMock) All() []Level {
+	return mockRecv.AllFunc()
+}
+
+type loggerMock struct {
+	DebugfFunc func(format string, v ...interface{})
+
+	ErrorfFunc func(format string, v ...interface{})
+
+	FatalfFunc func(format string, v ...interface{})
+
+	InfofFunc func(format string, v ...interface{})
+
+	SetNotifyFunc func(notify Notifier)
+
+	TracefFunc func(format string, v ...interface{})
+
+	WarnfFunc func(format string, v ...interface{})
+}
+
+var _ Ilogger = &loggerMock{}
+
+func (mockRecv *loggerMock) Debugf(format string, v ...interface{}) {
+	mockRecv.DebugfFunc(format, v...)
+}
+
+func (mockRecv *loggerMock) Errorf(format string, v ...interface{}) {
+	mockRecv.ErrorfFunc(format, v...)
+}
+
+func (mockRecv *loggerMock) Fatalf(format string, v ...interface{}) {
+	mockRecv.FatalfFunc(format, v...)
+}
+
+func (mockRecv *loggerMock) Infof(format string, v ...interface{}) {
+	mockRecv.InfofFunc(format, v...)
+}
+
+func (mockRecv *loggerMock) SetNotify(notify Notifier) {
+	mockRecv.SetNotifyFunc(notify)
+}
+
+func (mockRecv *loggerMock) Tracef(format string, v ...interface{}) {
+	mockRecv.TracefFunc(format, v...)
+}
+
+func (mockRecv *loggerMock) Warnf(format string, v ...interface{}) {
+	mockRecv.WarnfFunc(format, v...)
 }

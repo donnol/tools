@@ -2,36 +2,68 @@ package inject
 
 import "reflect"
 
-type IproxyImplMock struct {
-	AddHookFunc func(hooks ...Hook)
-
-	WrapFunc func(provider interface{}, mock interface{}, hooks ...Hook) interface{}
-}
-
-var _ IproxyImpl = &IproxyImplMock{}
-
-func (*IproxyImplMock) AddHook(hooks ...Hook) {
-	panic("Need to be implement!")
-}
-
-func (*IproxyImplMock) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
-	panic("Need to be implement!")
-}
-
-type IIocMock struct {
+type IocMock struct {
 	InjectFunc func(v interface{}) (err error)
 
 	RegisterProviderFunc func(v interface{}) (err error)
 }
 
-var _ IIoc = &IIocMock{}
+var _ IIoc = &IocMock{}
 
-func (*IIocMock) Inject(v interface{}) (err error) {
-	panic("Need to be implement!")
+func (mockRecv *IocMock) Inject(v interface{}) (err error) {
+	return mockRecv.InjectFunc(v)
 }
 
-func (*IIocMock) RegisterProvider(v interface{}) (err error) {
-	panic("Need to be implement!")
+func (mockRecv *IocMock) RegisterProvider(v interface{}) (err error) {
+	return mockRecv.RegisterProviderFunc(v)
+}
+
+type ProxyContextMock struct {
+	LogfFunc func(format string, args ...interface{})
+
+	StringFunc func() string
+}
+
+var _ IProxyContext = &ProxyContextMock{}
+
+func (mockRecv *ProxyContextMock) Logf(format string, args ...interface{}) {
+	mockRecv.LogfFunc(format, args...)
+}
+
+func (mockRecv *ProxyContextMock) String() string {
+	return mockRecv.StringFunc()
+}
+
+type AroundMock struct {
+	AfterFunc func(pctx ProxyContext)
+
+	BeforeFunc func(pctx ProxyContext)
+}
+
+var _ IAround = &AroundMock{}
+
+func (mockRecv *AroundMock) After(pctx ProxyContext) {
+	mockRecv.AfterFunc(pctx)
+}
+
+func (mockRecv *AroundMock) Before(pctx ProxyContext) {
+	mockRecv.BeforeFunc(pctx)
+}
+
+type proxyImplMock struct {
+	AddHookFunc func(hooks ...Hook)
+
+	WrapFunc func(provider interface{}, mock interface{}, hooks ...Hook) interface{}
+}
+
+var _ IproxyImpl = &proxyImplMock{}
+
+func (mockRecv *proxyImplMock) AddHook(hooks ...Hook) {
+	mockRecv.AddHookFunc(hooks...)
+}
+
+func (mockRecv *proxyImplMock) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
+	return mockRecv.WrapFunc(provider, mock, hooks...)
 }
 
 type ProxyMock struct {
@@ -42,28 +74,28 @@ type ProxyMock struct {
 
 var _ Proxy = &ProxyMock{}
 
-func (*ProxyMock) AddHook(...Hook) {
-	panic("Need to be implement!")
+func (mockRecv *ProxyMock) AddHook(p0 ...Hook) {
+	mockRecv.AddHookFunc(p0...)
 }
 
-func (*ProxyMock) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
-	panic("Need to be implement!")
+func (mockRecv *ProxyMock) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
+	return mockRecv.WrapFunc(provider, mock, hooks...)
 }
 
 type HookMock struct {
-	BeforeFunc func(ProxyContext)
-
 	AfterFunc func(ProxyContext)
+
+	BeforeFunc func(ProxyContext)
 }
 
 var _ Hook = &HookMock{}
 
-func (*HookMock) Before(ProxyContext) {
-	panic("Need to be implement!")
+func (mockRecv *HookMock) After(p0 ProxyContext) {
+	mockRecv.AfterFunc(p0)
 }
 
-func (*HookMock) After(ProxyContext) {
-	panic("Need to be implement!")
+func (mockRecv *HookMock) Before(p0 ProxyContext) {
+	mockRecv.BeforeFunc(p0)
 }
 
 type CallerMock struct {
@@ -72,38 +104,6 @@ type CallerMock struct {
 
 var _ Caller = &CallerMock{}
 
-func (*CallerMock) Call(args []reflect.Value) []reflect.Value {
-	panic("Need to be implement!")
-}
-
-type IProxyContextMock struct {
-	LogfFunc func(format string, args ...interface{})
-
-	StringFunc func() string
-}
-
-var _ IProxyContext = &IProxyContextMock{}
-
-func (*IProxyContextMock) Logf(format string, args ...interface{}) {
-	panic("Need to be implement!")
-}
-
-func (*IProxyContextMock) String() string {
-	panic("Need to be implement!")
-}
-
-type IAroundMock struct {
-	AfterFunc func(pctx ProxyContext)
-
-	BeforeFunc func(pctx ProxyContext)
-}
-
-var _ IAround = &IAroundMock{}
-
-func (*IAroundMock) After(pctx ProxyContext) {
-	panic("Need to be implement!")
-}
-
-func (*IAroundMock) Before(pctx ProxyContext) {
-	panic("Need to be implement!")
+func (mockRecv *CallerMock) Call(args []reflect.Value) []reflect.Value {
+	return mockRecv.CallFunc(args)
 }

@@ -1,6 +1,6 @@
 package importpath
 
-type IImportPathMock struct {
+type ImportPathMock struct {
 	GetByCurrentDirFunc func() (path string, err error)
 
 	GetCurrentDirModFilePathFunc func() (modDir string, modPath string, err error)
@@ -8,16 +8,16 @@ type IImportPathMock struct {
 	GetModFilePathFunc func(dir string) (modDir string, modPath string, err error)
 }
 
-var _ IImportPath = &IImportPathMock{}
+var _ IImportPath = &ImportPathMock{}
 
-func (*IImportPathMock) GetByCurrentDir() (path string, err error) {
-	panic("Need to be implement!")
+func (mockRecv *ImportPathMock) GetByCurrentDir() (path string, err error) {
+	return mockRecv.GetByCurrentDirFunc()
 }
 
-func (*IImportPathMock) GetCurrentDirModFilePath() (modDir string, modPath string, err error) {
-	panic("Need to be implement!")
+func (mockRecv *ImportPathMock) GetCurrentDirModFilePath() (modDir string, modPath string, err error) {
+	return mockRecv.GetCurrentDirModFilePathFunc()
 }
 
-func (*IImportPathMock) GetModFilePath(dir string) (modDir string, modPath string, err error) {
-	panic("Need to be implement!")
+func (mockRecv *ImportPathMock) GetModFilePath(dir string) (modDir string, modPath string, err error) {
+	return mockRecv.GetModFilePathFunc(dir)
 }
