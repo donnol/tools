@@ -5,6 +5,8 @@ import (
 	"log"
 	"reflect"
 	"strings"
+
+	"github.com/donnol/tools/internal/utils/debug"
 )
 
 // Proxy 在层间依赖调用时插入钩子调用，类似AOP
@@ -149,6 +151,8 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 				copy(specHooks, hooks)
 
 				newMethod := reflect.MakeFunc(methodType.Type, func(args []reflect.Value) []reflect.Value {
+					var result []reflect.Value
+
 					// 执行前钩子
 					for hi := len(hooks) - 1; hi >= 0; hi-- {
 						specHooks[hi].Before(pctx)
@@ -157,7 +161,23 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 						globalHooks[hi].Before(pctx)
 					}
 
-					result := method.Call(args)
+					// 怎么可以使用传进来的args呢？
+					// 除非是方法作者，不然怎么知道他写的方法的参数是什么，是不是可以使用呢？
+					debug.Debug("args: %+v\n", args)
+
+					// Around
+					result = func(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value {
+
+						fmt.Printf("args: %+v\n", args)
+
+						result := method.Call(args)
+
+						fmt.Printf("result: %+v\n", result)
+
+						return result
+					}(pctx, method, args)
+
+					debug.Debug("result: %+v\n", result)
 
 					// 执行后钩子
 					for hi := len(hooks) - 1; hi >= 0; hi-- {

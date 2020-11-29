@@ -27,6 +27,9 @@ func (impl *userImpl) Add(name string) int {
 }
 
 func (impl *userImpl) Get(id int) string {
+	if impl.id == id {
+		return impl.name
+	}
 	return impl.name
 }
 
