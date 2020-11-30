@@ -456,3 +456,15 @@ func getTypeRandomValue(typ reflect.Type) reflect.Value {
 
 	return value
 }
+
+// ToInterface 如果in数组里存在无法取Interface的Value，则会置为nil
+func ToInterface(in []reflect.Value) (out []interface{}) {
+	out = make([]interface{}, len(in))
+	for i, one := range in {
+		if !one.CanInterface() {
+			continue
+		}
+		out[i] = one.Interface()
+	}
+	return
+}

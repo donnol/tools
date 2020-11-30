@@ -11,8 +11,7 @@ import (
 
 // Proxy 在层间依赖调用时插入钩子调用，类似AOP
 type Proxy interface {
-	AddHook(...Hook)                                                        // 添加钩子，支持多个，全局使用，LIFO
-	Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} // 包装provider，可指定Hook
+	Around(provider interface{}, mock interface{}, arounder Arounder) interface{}
 }
 
 func NewProxy() Proxy {
@@ -26,47 +25,50 @@ type ProxyContext struct {
 }
 
 func (pctx ProxyContext) String() string {
-	return fmt.Sprintf("[PkgPath: %s, InterfaceName: %s, MethodName: %s]", pctx.PkgPath, pctx.InterfaceName, pctx.MethodName)
+	return fmt.Sprintf(pctx.bracket("PkgPath: %s InterfaceName: %s MethodName: %s"), pctx.PkgPath, pctx.InterfaceName, pctx.MethodName)
 }
 
 func (pctx ProxyContext) Logf(format string, args ...interface{}) {
-	log.Output(1, fmt.Sprintf(pctx.String()+": "+format, args...))
+	pctx.logf(pctx.String()+": "+format, args...)
 }
 
-type Hook interface {
-	Before(ProxyContext)
-	After(ProxyContext)
+func (pctx ProxyContext) LogShortf(format string, args ...interface{}) {
+	pctx.logf(pctx.bracket(pctx.MethodName)+": "+format, args...)
 }
 
-type Caller interface {
-	Call(args []reflect.Value) []reflect.Value
+func (pctx ProxyContext) logf(format string, args ...interface{}) {
+	err := log.Output(3, fmt.Sprintf(format, args...))
+	if err != nil {
+		fmt.Printf("Output failed: %+v\n", err)
+	}
 }
 
-type Around func(pctx ProxyContext, caller Caller) Caller
-
-func (around Around) Before(pctx ProxyContext) {
-
+func (pctx ProxyContext) bracket(s string) string {
+	return "[" + s + "]"
 }
 
-func (around Around) After(pctx ProxyContext) {
+type Arounder interface {
+	Around(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value
+}
 
+type AroundFunc func(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value
+
+func (around AroundFunc) Around(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value {
+	return around(pctx, method, args)
 }
 
 type proxyImpl struct {
-	hooks []Hook // 钩子列表，LIFO
-}
-
-func (impl *proxyImpl) AddHook(hooks ...Hook) {
-	impl.hooks = append(impl.hooks, hooks...)
 }
 
 var (
 	MockFieldNameSuffixes = [...]string{"Func", "Handler"} // mock结构体字段名称后缀
 )
 
-// Wrap 从一个provider生成一个新的provider
-// 如果mock为nil或者不是结构体指针，则直接返回provider
-func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hook) interface{} {
+func (impl *proxyImpl) Around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+	return impl.around(provider, mock, arounder)
+}
+
+func (impl *proxyImpl) around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
 	if mock == nil {
 		return provider
 	}
@@ -84,7 +86,8 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 		panic("provider不是函数")
 	}
 
-	// 使用新类型
+	// 使用新的类型一样的函数
+	// 在注入的时候会被调用
 	return reflect.MakeFunc(pvt, func(args []reflect.Value) []reflect.Value {
 
 		result := pv.Call(args)
@@ -112,8 +115,6 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 				field := newValue.Field(i)
 				fieldType := newValueType.Field(i)
 
-				// 需要写死后缀，感觉不好，但是暂时没想到更好的处理办法
-				// 或者可以添加一个method tag，根据这个tag指定的名称来找方法
 				var name = fieldType.Name
 				for _, suffix := range MockFieldNameSuffixes {
 					name = strings.TrimSuffix(name, suffix)
@@ -126,7 +127,7 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 					if !ok {
 						panic(fmt.Errorf("找不到名称对应的方法"))
 					}
-					fmt.Printf("tag: %+v\n", methodTag)
+					debug.Debug("tag: %+v\n", methodTag)
 					name = methodTag
 
 					method = firstOut.MethodByName(name)
@@ -135,57 +136,27 @@ func (impl *proxyImpl) Wrap(provider interface{}, mock interface{}, hooks ...Hoo
 						panic(fmt.Errorf("使用tag也找不到名称对应的方法"))
 					}
 				}
+				debug.Debug("method: %+v\n", method)
+
 				pctx := ProxyContext{
 					PkgPath:       firstOutType.PkgPath(),
 					InterfaceName: firstOutType.Name(),
 					MethodName:    methodType.Name,
 				}
+				debug.Debug("pctx: %+v\n", pctx)
 
-				// 每个方法一个hook，如果同一时间有多个请求呢？
-				// 每个请求一个hook，开销可能太大。
-				// 并且，如果要每个请求一个hook，那么就需要通过参数传进来，怎么传呢？
-				// 在请求进来，ctx初始化时，顺带初始化proxy
-				globalHooks := make([]Hook, len(impl.hooks))
-				copy(globalHooks, impl.hooks)
-				specHooks := make([]Hook, len(hooks))
-				copy(specHooks, hooks)
-
+				// newMethod会在实际请求时被调用
+				// 当被调用时，newMethod内部就会调用绑定好的Arounder，然后将原函数method和参数args传入
+				// 在Around方法执行完后即可获得结果
 				newMethod := reflect.MakeFunc(methodType.Type, func(args []reflect.Value) []reflect.Value {
 					var result []reflect.Value
 
-					// 执行前钩子
-					for hi := len(hooks) - 1; hi >= 0; hi-- {
-						specHooks[hi].Before(pctx)
-					}
-					for hi := len(impl.hooks) - 1; hi >= 0; hi-- {
-						globalHooks[hi].Before(pctx)
-					}
-
-					// 怎么可以使用传进来的args呢？
-					// 除非是方法作者，不然怎么知道他写的方法的参数是什么，是不是可以使用呢？
 					debug.Debug("args: %+v\n", args)
 
-					// Around
-					result = func(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value {
-
-						fmt.Printf("args: %+v\n", args)
-
-						result := method.Call(args)
-
-						fmt.Printf("result: %+v\n", result)
-
-						return result
-					}(pctx, method, args)
+					// Around是对整个结构的统一包装，如果需要对不同方法做不同处理，可以根据pctx里的方法名在Around接口的实现里做处理
+					result = arounder.Around(pctx, method, args)
 
 					debug.Debug("result: %+v\n", result)
-
-					// 执行后钩子
-					for hi := len(hooks) - 1; hi >= 0; hi-- {
-						specHooks[hi].After(pctx)
-					}
-					for hi := len(impl.hooks) - 1; hi >= 0; hi-- {
-						globalHooks[hi].After(pctx)
-					}
 
 					return result
 				})

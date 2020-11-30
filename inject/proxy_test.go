@@ -1,8 +1,13 @@
 package inject
 
 import (
+	"context"
+	"fmt"
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/donnol/tools/reflectx"
 )
 
 // define model
@@ -10,6 +15,7 @@ import (
 type IUserModel interface {
 	Add(name string) int
 	Get(id int) string
+	GetContext(ctx context.Context, id int) string
 }
 
 func NewIUser() IUserModel {
@@ -33,10 +39,15 @@ func (impl *userImpl) Get(id int) string {
 	return impl.name
 }
 
+func (impl *userImpl) GetContext(ctx context.Context, id int) string {
+	return impl.Get(id)
+}
+
 // UserMock mock结构体，字段数量和需要实现的接口的方法数一致，并且名称是方法名加后缀'Func'，字段类型与方法签名一致
 type UserMock struct {
-	AddFunc   func(name string) int
-	GetHelper func(id int) string `method:"Get"` // 表示这个字段关联的方法是Get
+	AddFunc        func(name string) int
+	GetHelper      func(id int) string `method:"Get"` // 表示这个字段关联的方法是Get
+	GetContextFunc func(ctx context.Context, id int) string
 }
 
 func (mock *UserMock) Add(name string) int {
@@ -47,6 +58,10 @@ func (mock *UserMock) Get(id int) string {
 	return mock.GetHelper(id)
 }
 
+func (mock *UserMock) GetContext(ctx context.Context, id int) string {
+	return mock.GetContextFunc(ctx, id)
+}
+
 var _ IUserModel = &UserMock{}
 
 // define service
@@ -54,6 +69,7 @@ var _ IUserModel = &UserMock{}
 type IUserSrv interface {
 	Add(name string) int
 	Get(id int) string
+	GetContext(ctx context.Context, id int) string
 }
 
 func NewIUserSrv(
@@ -77,9 +93,14 @@ func (impl *userSrvImpl) Get(id int) string {
 	return impl.userModel.Get(id)
 }
 
+func (impl *userSrvImpl) GetContext(ctx context.Context, id int) string {
+	return impl.userModel.GetContext(ctx, id)
+}
+
 type UserSrvMock struct {
-	AddFunc func(name string) int
-	GetFunc func(id int) string
+	AddFunc        func(name string) int
+	GetFunc        func(id int) string
+	GetContextFunc func(ctx context.Context, id int) string
 }
 
 func (mock *UserSrvMock) Add(name string) int {
@@ -90,49 +111,60 @@ func (mock *UserSrvMock) Get(id int) string {
 	return mock.GetFunc(id)
 }
 
+func (mock *UserSrvMock) GetContext(ctx context.Context, id int) string {
+	return mock.GetContextFunc(ctx, id)
+}
+
 var _ IUserSrv = &UserSrvMock{}
-
-// hook
-type timeHook struct {
-	begin time.Time
-	end   time.Time
-}
-
-func (hook *timeHook) Before(pctx ProxyContext) {
-	hook.begin = time.Now()
-	pctx.Logf("begin: %v\n", hook.begin)
-}
-
-func (hook *timeHook) After(pctx ProxyContext) {
-	hook.end = time.Now()
-	pctx.Logf("end: %v\n", hook.end)
-
-	// 计算耗时
-	used := hook.end.Sub(hook.begin)
-	pctx.Logf("used: %v\n", used)
-
-	// 将耗时写入到时序数据库，再利用图表展示出来
-}
 
 type userHook struct {
 }
 
-func (hook *userHook) Before(pctx ProxyContext) {
-	pctx.Logf("user before\n")
-}
+type testKeyType string
 
-func (hook *userHook) After(pctx ProxyContext) {
-	pctx.Logf("user after\n")
-}
+const (
+	testKey testKeyType = "testKey"
+)
 
-var _ Hook = &userHook{}
+// 在这个方法里的变量就是随请求而变的
+func (hook *userHook) Around(pctx ProxyContext, method reflect.Value, args []reflect.Value) []reflect.Value {
+	pctx.LogShortf("Around\n")
+
+	// 如果正在执行的方法不同，可以做不同的处理
+	// 特别是在需要结合参数来处理时
+	switch pctx.MethodName {
+	case "Add":
+		fmt.Printf("| userHook | welcome to method Add\n")
+		fmt.Printf("| userHook | args: %+v\n", reflectx.ToInterface(args))
+	case "Get":
+		fmt.Printf("| userHook | welcome to method Get\n")
+		fmt.Printf("| userHook | args: %+v\n", reflectx.ToInterface(args))
+	case "GetContext":
+		fmt.Printf("| userHook | welcome to method GetContext\n")
+		iargs := reflectx.ToInterface(args)
+		fmt.Printf("| userHook | args: %+v\n", iargs)
+		ctx := iargs[0].(context.Context)
+		fmt.Printf("| userHook | args context: %+v, value: %v\n", ctx, ctx.Value(testKey))
+	}
+
+	begin := time.Now()
+	fmt.Printf("| userHook | begin: %p\n", &begin)
+
+	// 不调原有的方法，重写为其它方法都行
+	result := method.Call(args)
+
+	pctx.Logf("| userHook | used time: %v\n", time.Since(begin))
+
+	return result
+}
 
 func TestProxy(t *testing.T) {
+	ctx := context.Background()
+
 	ioc := NewIoc(true)
 
 	proxy := NewProxy()
-	proxy.AddHook(&timeHook{})                                          // 设置全局hook
-	userModelProvider := proxy.Wrap(NewIUser, &UserMock{}, &userHook{}) // 包装provider，并指定专用hook
+	userModelProvider := proxy.Around(NewIUser, &UserMock{}, &userHook{})
 
 	// 注册
 	if err := ioc.RegisterProvider(userModelProvider); err != nil {
@@ -158,4 +190,14 @@ func TestProxy(t *testing.T) {
 	if gname != name {
 		t.Fatalf("Bad result, %v != %v\n", gname, name)
 	}
+	ins.userSrv.GetContext(ctx, id)
+
+	ctx = context.WithValue(ctx, testKey, "testValue")
+	// 再执行一次同样的，Around方法里的变量是不一样的
+	id = ins.userSrv.Add(name)
+	gname = ins.userSrv.Get(id)
+	if gname != name {
+		t.Fatalf("Bad result, %v != %v\n", gname, name)
+	}
+	ins.userSrv.GetContext(ctx, id)
 }
