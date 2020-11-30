@@ -5,6 +5,106 @@ import (
 	"net/http"
 )
 
+type ATMockMock struct {
+	DebugFunc func() *AT
+
+	EqualFunc func(args ...interface{}) *AT
+
+	EqualCodeFunc func(wantCode int) *AT
+
+	EqualThenFunc func(f func(*AT) error, args ...interface{}) *AT
+
+	ErrFunc func() error
+
+	MonkeyRunFunc func() *AT
+
+	NewFunc func() *AT
+
+	PressureRunFunc func(n int, c int) *AT
+
+	PressureRunBatchFunc func(param []PressureParam) *AT
+
+	ResultFunc func(r interface{}) *AT
+
+	RunFunc func() *AT
+
+	SetCookiesFunc func(cookies []*http.Cookie) *AT
+
+	SetHeaderFunc func(header http.Header) *AT
+
+	SetParamFunc func(param interface{}) *AT
+
+	SetPortFunc func(port string) *AT
+
+	WriteFileFunc func(w io.Writer) *AT
+}
+
+var _ IATMock = &ATMockMock{}
+
+func (mockRecv *ATMockMock) Debug() *AT {
+	return mockRecv.DebugFunc()
+}
+
+func (mockRecv *ATMockMock) Equal(args ...interface{}) *AT {
+	return mockRecv.EqualFunc(args...)
+}
+
+func (mockRecv *ATMockMock) EqualCode(wantCode int) *AT {
+	return mockRecv.EqualCodeFunc(wantCode)
+}
+
+func (mockRecv *ATMockMock) EqualThen(f func(*AT) error, args ...interface{}) *AT {
+	return mockRecv.EqualThenFunc(f, args...)
+}
+
+func (mockRecv *ATMockMock) Err() error {
+	return mockRecv.ErrFunc()
+}
+
+func (mockRecv *ATMockMock) MonkeyRun() *AT {
+	return mockRecv.MonkeyRunFunc()
+}
+
+func (mockRecv *ATMockMock) New() *AT {
+	return mockRecv.NewFunc()
+}
+
+func (mockRecv *ATMockMock) PressureRun(n int, c int) *AT {
+	return mockRecv.PressureRunFunc(n, c)
+}
+
+func (mockRecv *ATMockMock) PressureRunBatch(param []PressureParam) *AT {
+	return mockRecv.PressureRunBatchFunc(param)
+}
+
+func (mockRecv *ATMockMock) Result(r interface{}) *AT {
+	return mockRecv.ResultFunc(r)
+}
+
+func (mockRecv *ATMockMock) Run() *AT {
+	return mockRecv.RunFunc()
+}
+
+func (mockRecv *ATMockMock) SetCookies(cookies []*http.Cookie) *AT {
+	return mockRecv.SetCookiesFunc(cookies)
+}
+
+func (mockRecv *ATMockMock) SetHeader(header http.Header) *AT {
+	return mockRecv.SetHeaderFunc(header)
+}
+
+func (mockRecv *ATMockMock) SetParam(param interface{}) *AT {
+	return mockRecv.SetParamFunc(param)
+}
+
+func (mockRecv *ATMockMock) SetPort(port string) *AT {
+	return mockRecv.SetPortFunc(port)
+}
+
+func (mockRecv *ATMockMock) WriteFile(w io.Writer) *AT {
+	return mockRecv.WriteFileFunc(w)
+}
+
 type ATMock struct {
 	DebugFunc func() *AT
 

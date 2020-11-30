@@ -8,3 +8,17 @@ type ImemImpl interface {
 	Set(key string, value interface{}) bool
 	SetNX(key string, value interface{}, expire time.Duration) bool
 }
+
+type ICacheMock interface {
+	Get(key string) interface{}
+	Lookup(key string) (interface{}, bool)
+	Set(key string, value interface{}) bool
+	SetNX(key string, value interface{}, expire time.Duration) bool
+}
+
+type ImemImplMock interface {
+	Get(key string) interface{}
+	Lookup(key string) (interface{}, bool)
+	Set(key string, value interface{}) bool
+	SetNX(key string, value interface{}, expire time.Duration) bool
+}
