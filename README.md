@@ -10,25 +10,44 @@ useful tools.
 
 ```sh
 $ tbc --help
-a tool named to be continued
-
 Usage:
   tbc [flags]
   tbc [command]
 
 Available Commands:
   help        Help about any command
+  impl        find implement by given interface in specify path
   interface   gen struct interface
+  mock        gen interface mock struct
+  replace     replace import path
 
 Flags:
-  -h, --help          help for tbc
-  -p, --path string   specify import path
-  -r, --recursive     recursively process dir from current
+      --from string        specify from path with replace
+  -h, --help               help for tbc
+      --interface string   specify interface
+  -o, --output string      specify output file
+  -p, --path string        specify import path
+  -r, --recursive          recursively process dir from current
+      --to string          specify to path with replace
 
 Use "tbc [command] --help" for more information about a command.
 ```
 
 ### 生成结构体接口
+
+```sh
+gen struct interface, like: 
+			type M struct {
+				// ...
+			}
+			func (m *M) String() string {
+				return "m.name"
+			}
+			got: 
+			type IM interface {
+				String() string
+			}
+```
 
 ```go
 type M struct {}
@@ -66,6 +85,34 @@ import (
 ```
 
 ### 生成mock结构体
+
+```sh
+gen interface mock struct, like: type I interface { String() string }, 
+			gen mock: 
+				type Mock struct { StringFunc func() string } 
+				var _ I = &Mock{}
+				func (mock *Mock) String() string {
+					return mock.StringFunc()
+				}
+			after that, you can use like below:
+				var mock = &Mock{
+					// init the func like the normal field
+					StringFunc: func() string {
+						return "jd"								
+					},	
+				}
+				fmt.Println(mock.String())
+```
+
+### 找接口实现
+
+```sh
+find implement by given interface in specify path, like: 
+			'tbc impl --interface=io.Writer'
+			will get some structs like
+			type MyWriter struct {}
+			func (w *MyWriter) Write(data []byte) (n int, err error)
+```
 
 ## inject
 

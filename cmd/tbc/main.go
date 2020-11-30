@@ -194,7 +194,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "impl",
-		Short: "TODO: find implement by given interface in specify path",
+		Short: "find implement by given interface in specify path",
 		Long: `find implement by given interface in specify path, like: 
 			'tbc impl --interface=io.Writer'
 			will get some structs like
