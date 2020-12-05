@@ -296,7 +296,16 @@ func (s Struct) MakeInterface() string {
 }
 
 func (s Struct) makeInterfaceName() string {
-	return "I" + s.Name
+	// 考虑到结构体名称是非导出有后缀的，如：fileImpl
+	// 1. 针对非导出，将首字母变大写
+	// 2. 针对impl后缀，直接去掉
+	name := s.Name
+	name = strings.Title(name)
+	index := strings.Index(name, "Impl")
+	if index != -1 {
+		name = name[:index]
+	}
+	return "I" + name
 }
 
 func interfacePrefix(name, is string) string {
