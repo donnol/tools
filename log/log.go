@@ -4,26 +4,14 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
-	"time"
 )
 
 const (
 	calldepth = 3
 	skip      = 5
 )
-
-var (
-	logRand *rand.Rand
-)
-
-func init() {
-	// 初始化随机数生成器
-	source := rand.NewSource(time.Now().Unix())
-	logRand = rand.New(source)
-}
 
 // Notifier 通知接口
 type Notifier interface {
@@ -168,8 +156,7 @@ func Tracef(format string, v ...interface{}) {
 }
 
 func getFormat(level Level, format string) string {
-	r := logRand.Int63()
-	return fmt.Sprintf("|%d| [%s] %s", r, level, format)
+	return fmt.Sprintf("[%s] %s", level, format)
 }
 
 func printf(level Level, format string, v ...interface{}) {
