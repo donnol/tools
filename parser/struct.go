@@ -121,19 +121,35 @@ func (s Interface) MakeMock() string {
 	mockType := s.makeMockName()
 	mockRecv := s.makeMockRecv()
 
+	cc := fmt.Sprintf(`%sCommonProxyContext`, LcFirst(mockType))
+
 	var is string
+	var pc string
 	var ms string
 	for _, m := range s.Methods {
 		fieldName, fieldType, methodSig, returnStmt, call := s.processFunc(m)
 
 		is += fmt.Sprintf("\n%s %s\n", fieldName, fieldType)
 
+		pc += fmt.Sprintf(`%s%sProxyContext = func() (pctx inject.ProxyContext) { 
+			pctx = %s
+			pctx.MethodName = "%s"
+			return
+		} () 
+		`, mockType, m.Name, cc, m.Name)
+
 		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType, methodSig, returnStmt, mockRecv, call)
 	}
 
 	is = mockPrefix(mockType, is)
 
-	is += `var _ ` + s.Name + ` = &` + mockType + "{}\n"
+	is += `var (_ ` + s.Name + ` = &` + mockType + "{}\n\n"
+	is += fmt.Sprintf(`%s = inject.ProxyContext {
+		PkgPath: "%s",
+		InterfaceName: "%s",
+	}
+	`, cc, s.PkgPath, s.Name)
+	is += pc + `)`
 	is += ms
 
 	debug.Debug("is: %s\n", is)

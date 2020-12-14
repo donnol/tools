@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 	"go/types"
+	"unicode"
 
 	"github.com/donnol/tools/internal/utils/debug"
 )
@@ -113,4 +114,18 @@ func parseTypesType(t types.Type, opt parseTypesTypeOption) (r struct {
 	}
 
 	return
+}
+
+func UcFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToUpper(v)) + str[i+1:]
+	}
+	return ""
+}
+
+func LcFirst(str string) string {
+	for i, v := range str {
+		return string(unicode.ToLower(v)) + str[i+1:]
+	}
+	return ""
 }
