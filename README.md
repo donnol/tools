@@ -114,6 +114,38 @@ find implement by given interface in specify path, like:
 			func (w *MyWriter) Write(data []byte) (n int, err error)
 ```
 
+### 生成函数/方法调用图
+
+如有以下代码：
+
+```go
+func A() {
+	B()
+
+	E()
+}
+func B() {
+	C()
+}
+func C() {
+	d := D{}
+	d.D()
+}
+type D struct{}
+func (d D) D() {
+
+}
+func E() {
+	// more call
+}
+```
+
+生成：
+
+`A -> B -> C -> d.D`
+
+`A -> E`
+
 ## inject
 
 依赖注入

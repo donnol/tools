@@ -36,11 +36,12 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 	structMap := make(map[string]Struct)
 	methodsMap := make(map[string][]Method)
 	interfaceMap := make(map[string]Interface)
+	funcMap := make(map[string]Func)
 	for i, astFile := range pkg.Syntax {
 		// 替换import path
 		if ins.parser.replaceImportPath {
 			fileName := pkg.CompiledGoFiles[i]
-			fmt.Printf("%v\n", pkg.CompiledGoFiles)
+			debug.Debug("%v\n", pkg.CompiledGoFiles)
 			if err := ins.parser.replaceFileImportPath(fileName, astFile); err != nil {
 				panic(fmt.Errorf("replaceFileImportPath failed: %+v", err))
 			}
@@ -58,6 +59,9 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 		for k, v := range fileResult.interfaceMap {
 			interfaceMap[k] = v
 		}
+		for k, v := range fileResult.funcMap {
+			funcMap[k] = v
+		}
 	}
 
 	structs := make([]Struct, 0, len(structMap))
@@ -70,11 +74,16 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 	for _, single := range interfaceMap {
 		inters = append(inters, single)
 	}
+	funcs := make([]Func, 0, len(funcMap))
+	for _, single := range funcMap {
+		funcs = append(funcs, single)
+	}
 
 	return Package{
 		Package:    pkg,
 		Structs:    structs,
 		Interfaces: inters,
+		Funcs:      funcs,
 	}
 }
 
@@ -87,8 +96,9 @@ func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
 	structMap := make(map[string]Struct)
 	methodsMap := make(map[string][]Method)
 	interfaceMap := make(map[string]Interface)
+	funcMap := make(map[string]Func)
 	for _, decl := range file.Decls {
-		declResult := ins.inspectDecl(decl)
+		declResult := ins.inspectDecl(decl, "")
 		for k, v := range declResult.structMap {
 			structMap[k] = v
 		}
@@ -98,15 +108,19 @@ func (ins *Inspector) InspectFile(file *ast.File) (result FileResult) {
 		for k, v := range declResult.interfaceMap {
 			interfaceMap[k] = v
 		}
+		for k, v := range declResult.funcMap {
+			funcMap[k] = v
+		}
 	}
 	result.structMap = structMap
 	result.methodMap = methodsMap
 	result.interfaceMap = interfaceMap
+	result.funcMap = funcMap
 
 	return
 }
 
-func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
+func (ins *Inspector) inspectDecl(decl ast.Decl, from string) (result DeclResult) {
 	if decl == nil {
 		return
 	}
@@ -128,23 +142,34 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 		}
 		method := Method{
 			Origin:    funcType,
+			PkgPath:   obj.Pkg().Path(),
 			Name:      obj.Name(),
 			Signature: toString(obj.Type()),
 		}
-		debug.Debug("method: %+v\n", method)
+		from = method.Name
 
-		ins.inspectExpr(declValue.Type) // 函数签名
-		ins.inspectStmt(declValue.Body) // 函数体
+		ins.inspectExpr(declValue.Type, from)               // 函数签名
+		stmtResult := ins.inspectStmt(declValue.Body, from) // 函数体
+		for _, oneFunc := range stmtResult.funcMap {
+			method.Calls = append(method.Calls, oneFunc)
+		}
+
+		debug.Debug(from+"method: %+v\n", method)
 
 		// method receiver: func (x *X) XXX()里的(x *X)部分
-		recvName := ""
-		if declValue.Recv != nil {
+		var recvName string
+		if declValue.Recv != nil { // 方法
 			debug.Debug("FundDecl recv: %v\n", declValue.Recv.List)
 
-			fieldResult := ins.inspectFields(declValue.Recv)
+			fieldResult := ins.inspectFields(declValue.Recv, from)
 			recvName = fieldResult.RecvName
+			method.Recv = recvName
+
+			result.methodMap[recvName] = append(result.methodMap[recvName], method)
 		}
-		result.methodMap[recvName] = append(result.methodMap[recvName], method)
+
+		// 函数和方法
+		result.funcMap[obj.Name()] = method
 
 	case *ast.GenDecl:
 		switch declValue.Tok {
@@ -153,7 +178,7 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 		case token.VAR:
 		case token.TYPE:
 			for _, spec := range declValue.Specs {
-				specResult := ins.inspectSpec(spec)
+				specResult := ins.inspectSpec(spec, from)
 				for k, v := range specResult.structMap {
 					result.structMap[k] = v
 				}
@@ -167,7 +192,7 @@ func (ins *Inspector) inspectDecl(decl ast.Decl) (result DeclResult) {
 	return
 }
 
-func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
+func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult) {
 	if spec == nil {
 		return
 	}
@@ -186,7 +211,7 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 
 		switch specValue.Type.(type) {
 		case *ast.InterfaceType:
-			exprResult := ins.inspectExpr(specValue.Type)
+			exprResult := ins.inspectExpr(specValue.Type, from)
 			debug.Debug("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
 
 			interType := ins.pkg.TypesInfo.TypeOf(specValue.Type)
@@ -218,7 +243,7 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 			}
 
 			// 再拿field
-			exprResult := ins.inspectExpr(specValue.Type)
+			exprResult := ins.inspectExpr(specValue.Type, from)
 			structOne.Fields = exprResult.Fields
 			result.structMap[specValue.Name.Name] = structOne
 		}
@@ -227,7 +252,7 @@ func (ins *Inspector) inspectSpec(spec ast.Spec) (result SpecResult) {
 	return
 }
 
-func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
+func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult) {
 	if expr == nil {
 		return
 	}
@@ -235,79 +260,154 @@ func (ins *Inspector) inspectExpr(expr ast.Expr) (result ExprResult) {
 
 	switch exprValue := expr.(type) {
 	case *ast.StructType:
-		fieldResult := ins.inspectFields(exprValue.Fields)
+		fieldResult := ins.inspectFields(exprValue.Fields, from)
 		result.Fields = fieldResult.Fields
 
 	case *ast.StarExpr: // *T
-		ins.inspectExpr(exprValue.X)
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+
 	case *ast.TypeAssertExpr: // X.(*T)
-		ins.inspectExpr(exprValue.X)
-		ins.inspectExpr(exprValue.Type)
+		ins.inspectExpr(exprValue.X, from)
+		ins.inspectExpr(exprValue.Type, from)
+
 	case *ast.ArrayType: // [L]T
-		ins.inspectExpr(exprValue.Len)
-		ins.inspectExpr(exprValue.Elt)
+		ins.inspectExpr(exprValue.Len, from)
+		ins.inspectExpr(exprValue.Elt, from)
+
 	case *ast.BadExpr:
 		panic(fmt.Errorf("BadExpr: %+v", exprValue))
+
 	case *ast.SelectorExpr: // X.M
 		debug.Debug("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
-		ins.inspectExpr(exprValue.X)
+
+		pkgID, ok := exprValue.X.(*ast.Ident)
+		if ok {
+			if so, ok := ins.pkg.TypesInfo.Uses[pkgID].(*types.PkgName); ok {
+				pkgPath := so.Imported().Path()
+				fmt.Printf(from+"SelectorExpr typ: %#v\n", pkgPath)
+				result.pkgPath = pkgPath
+			}
+		}
+
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+
 	case *ast.SliceExpr: // []T, slice[1:3:5]
-		ins.inspectExpr(exprValue.X)
-		ins.inspectExpr(exprValue.Low)
-		ins.inspectExpr(exprValue.High)
-		ins.inspectExpr(exprValue.Max)
+		ins.inspectExpr(exprValue.X, from)
+		ins.inspectExpr(exprValue.Low, from)
+		ins.inspectExpr(exprValue.High, from)
+		ins.inspectExpr(exprValue.Max, from)
+
 	case *ast.BasicLit: // 33 40.0 0x1f
+
 	case *ast.BinaryExpr: // X+Y X-Y X*Y X/Y X%Y
-		ins.inspectExpr(exprValue.X)
-		ins.inspectExpr(exprValue.Y)
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+		exprResult = ins.inspectExpr(exprValue.Y, from)
+		result = result.Merge(exprResult)
+		debug.Debug(from+"BinaryExpr: %+v\n", result)
+
 	case *ast.CallExpr: // M(1, 2)
-		ins.inspectExpr(exprValue.Fun)
+		typ1 := ins.pkg.TypesInfo.Types[exprValue]
+		typ2 := ins.pkg.TypesInfo.Types[exprValue.Fun]
+		debug.Debug(from+"typ1: %#v, typ2 %#v\n", typ1.Type, typ2.Type)
+
+		toStr := ""
+		if to, ok := typ2.Type.(*types.Signature); ok {
+			toStr = toString(to)
+			debug.Debug(from+"typ o: %#v, %v\n", to, toStr)
+		}
+
+		var pkgPath string
+		result.funcMap[toString(exprValue.Fun)] = Func{
+			PkgPath:   pkgPath,
+			Name:      toString(exprValue.Fun),
+			Signature: toStr,
+		}
+
+		exprResult := ins.inspectExpr(exprValue.Fun, from)
+		result = result.Merge(exprResult)
 		for _, arg := range exprValue.Args {
-			ins.inspectExpr(arg)
+			debug.Debug("CallExpr: %+v, %+v\n", exprValue.Fun, arg)
+			exprResult := ins.inspectExpr(arg, from)
+			result = result.Merge(exprResult)
 		}
+		debug.Debug(from+"funcMap: %+v\n", result.funcMap)
+
 	case *ast.ChanType: // chan T, <-chan T, chan<- T
-		ins.inspectExpr(exprValue.Value)
+		exprResult := ins.inspectExpr(exprValue.Value, from)
+		result = result.Merge(exprResult)
+
 	case *ast.CompositeLit: // T{Name: Value}
-		ins.inspectExpr(exprValue.Type)
+		ins.inspectExpr(exprValue.Type, from)
 		for _, elt := range exprValue.Elts {
-			ins.inspectExpr(elt)
+			exprResult := ins.inspectExpr(elt, from)
+			result = result.Merge(exprResult)
 		}
+
 	case *ast.Ellipsis: // ...int, [...]Arr
-		ins.inspectExpr(exprValue.Elt)
+		ins.inspectExpr(exprValue.Elt, from)
+
 	case *ast.FuncLit:
-		ins.inspectExpr(exprValue.Type)
-		ins.inspectStmt(exprValue.Body)
+		ins.inspectExpr(exprValue.Type, from)
+		ins.inspectStmt(exprValue.Body, from)
+
 	case *ast.FuncType:
-		ins.inspectFields(exprValue.Params)
-		ins.inspectFields(exprValue.Results)
+		ins.inspectFields(exprValue.Params, from)
+		ins.inspectFields(exprValue.Results, from)
+
 	case *ast.Ident:
+		obj, ok := ins.pkg.TypesInfo.Uses[exprValue]
+		if ok {
+			if obj.Pkg() != nil {
+				pkgPath := obj.Pkg().Path()
+				fmt.Printf(from+"typ1: %#v\n", pkgPath)
+				result.pkgPath = pkgPath
+			}
+		}
+
 		if exprValue != nil {
 			debug.Debug("Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
 		} else {
 			debug.Debug("Ident is nil: %+v\n", expr)
 		}
+
 	case *ast.IndexExpr: // s[1], arr[1]
-		ins.inspectExpr(exprValue.X)
-		ins.inspectExpr(exprValue.Index)
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+		exprResult = ins.inspectExpr(exprValue.Index, from)
+		result = result.Merge(exprResult)
+
 	case *ast.InterfaceType: // interface { A(); B() }
-		fieldResult := ins.inspectFields(exprValue.Methods)
+		fieldResult := ins.inspectFields(exprValue.Methods, from)
 		result.Fields = fieldResult.Fields
+
 	case *ast.KeyValueExpr: // key:value
-		ins.inspectExpr(exprValue.Key)
-		ins.inspectExpr(exprValue.Value)
+		ins.inspectExpr(exprValue.Key, from)
+		exprResult := ins.inspectExpr(exprValue.Value, from)
+		result = result.Merge(exprResult)
+
 	case *ast.MapType: // map[string]T
-		ins.inspectExpr(exprValue.Key)
-		ins.inspectExpr(exprValue.Value)
+		exprResult := ins.inspectExpr(exprValue.Key, from)
+		result = result.Merge(exprResult)
+		exprResult = ins.inspectExpr(exprValue.Value, from)
+		result = result.Merge(exprResult)
+
 	case *ast.ParenExpr: // (1==1)
-		ins.inspectExpr(exprValue.X)
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+
 	case *ast.UnaryExpr: // *a
-		ins.inspectExpr(exprValue.X)
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+
 	}
 
 	return
 }
 
-func (ins *Inspector) inspectStmt(stmt ast.Stmt) (result StmtResult) {
+func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult) {
 	if stmt == nil {
 		return
 	}
@@ -316,83 +416,137 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt) (result StmtResult) {
 	switch stmtValue := stmt.(type) {
 	case *ast.AssignStmt: // a, b := 1, 2
 		for _, lhs := range stmtValue.Lhs {
-			ins.inspectExpr(lhs)
+			ins.inspectExpr(lhs, from)
 		}
 		for _, rhs := range stmtValue.Rhs {
-			ins.inspectExpr(rhs)
+			exprResult := ins.inspectExpr(rhs, from)
+			result = result.MergeExprResult(exprResult)
 		}
+
 	case *ast.SelectStmt: // select { }
-		ins.inspectStmt(stmtValue.Body)
+		stmtResult := ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
+
 	case *ast.SendStmt: // c <- 1
-		ins.inspectExpr(stmtValue.Chan)
-		ins.inspectExpr(stmtValue.Value)
+		ins.inspectExpr(stmtValue.Chan, from)
+		exprResult := ins.inspectExpr(stmtValue.Value, from)
+		result = result.MergeExprResult(exprResult)
+
 	case *ast.SwitchStmt: // switch { }
-		ins.inspectStmt(stmtValue.Init)
-		ins.inspectExpr(stmtValue.Tag)
-		ins.inspectStmt(stmtValue.Body)
+		stmtResult := ins.inspectStmt(stmtValue.Init, from)
+		result = result.Merge(stmtResult)
+		exprResult := ins.inspectExpr(stmtValue.Tag, from)
+		result = result.MergeExprResult(exprResult)
+		stmtResult = ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
+
 	case *ast.BadStmt:
 		panic(fmt.Errorf("BadStmt: %+v", stmtValue))
+
 	case *ast.BlockStmt:
 		for _, single := range stmtValue.List {
-			ins.inspectStmt(single)
+			debug.Debug(from+"block stmt: %+v\n", single)
+			res := ins.inspectStmt(single, from)
+			result = result.Merge(res)
 		}
+		debug.Debug(from+"block funcMap: %+v\n", result.funcMap)
+
 	case *ast.BranchStmt:
-		ins.inspectExpr(stmtValue.Label)
+		exprResult := ins.inspectExpr(stmtValue.Label, from)
+		result = result.MergeExprResult(exprResult)
+
 	case *ast.CaseClause:
 		for _, one := range stmtValue.List {
-			ins.inspectExpr(one)
+			exprResult := ins.inspectExpr(one, from)
+			result = result.MergeExprResult(exprResult)
 		}
 		for _, one := range stmtValue.Body {
-			ins.inspectStmt(one)
+			stmtResult := ins.inspectStmt(one, from)
+			result = result.Merge(stmtResult)
 		}
+
 	case *ast.CommClause:
-		ins.inspectStmt(stmtValue.Comm)
+		stmtResult := ins.inspectStmt(stmtValue.Comm, from)
+		result = result.Merge(stmtResult)
 		for _, one := range stmtValue.Body {
-			ins.inspectStmt(one)
+			stmtResult := ins.inspectStmt(one, from)
+			result = result.Merge(stmtResult)
 		}
+
 	case *ast.DeclStmt:
-		ins.inspectDecl(stmtValue.Decl)
+		ins.inspectDecl(stmtValue.Decl, from)
+
 	case *ast.DeferStmt:
-		ins.inspectExpr(stmtValue.Call)
+		exprResult := ins.inspectExpr(stmtValue.Call, from)
+		result = result.MergeExprResult(exprResult)
+
 	case *ast.EmptyStmt:
+
 	case *ast.ExprStmt:
-		ins.inspectExpr(stmtValue.X)
+		debug.Debug(from+"expr stmt: %+v\n", stmtValue.X)
+		exprResult := ins.inspectExpr(stmtValue.X, from)
+		result = result.MergeExprResult(exprResult)
+		debug.Debug(from+"expr funcMap: %+v\n", result.funcMap)
+
 	case *ast.ForStmt: // for i:=0; i< l; i++ { }
-		ins.inspectStmt(stmtValue.Init)
-		ins.inspectExpr(stmtValue.Cond)
-		ins.inspectStmt(stmtValue.Post)
-		ins.inspectStmt(stmtValue.Body)
+		ins.inspectStmt(stmtValue.Init, from)
+		exprResult := ins.inspectExpr(stmtValue.Cond, from)
+		result = result.MergeExprResult(exprResult)
+		ins.inspectStmt(stmtValue.Post, from)
+		stmtResult := ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
+
 	case *ast.GoStmt:
-		ins.inspectExpr(stmtValue.Call)
+		exprResult := ins.inspectExpr(stmtValue.Call, from)
+		result = result.MergeExprResult(exprResult)
+
 	case *ast.IfStmt:
-		ins.inspectStmt(stmtValue.Init)
-		ins.inspectExpr(stmtValue.Cond)
-		ins.inspectStmt(stmtValue.Body)
-		ins.inspectStmt(stmtValue.Else)
+		stmtResult := ins.inspectStmt(stmtValue.Init, from)
+		result = result.Merge(stmtResult)
+		exprResult := ins.inspectExpr(stmtValue.Cond, from)
+		result = result.MergeExprResult(exprResult)
+		stmtResult = ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
+		stmtResult = ins.inspectStmt(stmtValue.Else, from)
+		result = result.Merge(stmtResult)
+
 	case *ast.IncDecStmt:
-		ins.inspectExpr(stmtValue.X)
+		exprResult := ins.inspectExpr(stmtValue.X, from)
+		result = result.MergeExprResult(exprResult)
+
 	case *ast.LabeledStmt:
-		ins.inspectExpr(stmtValue.Label)
-		ins.inspectStmt(stmtValue.Stmt)
+		exprResult := ins.inspectExpr(stmtValue.Label, from)
+		result = result.MergeExprResult(exprResult)
+		ins.inspectStmt(stmtValue.Stmt, from)
+
 	case *ast.RangeStmt: // for key, value := range slice { }
-		ins.inspectExpr(stmtValue.Key)
-		ins.inspectExpr(stmtValue.Value)
-		ins.inspectExpr(stmtValue.X)
-		ins.inspectStmt(stmtValue.Body)
+		ins.inspectExpr(stmtValue.Key, from)
+		ins.inspectExpr(stmtValue.Value, from)
+		exprResult := ins.inspectExpr(stmtValue.X, from)
+		result = result.MergeExprResult(exprResult)
+		stmtResult := ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
+
 	case *ast.ReturnStmt:
 		for _, one := range stmtValue.Results {
-			ins.inspectExpr(one)
+			exprResult := ins.inspectExpr(one, from)
+			result = result.MergeExprResult(exprResult)
+			debug.Debug(from+"return stmt: %#v, %+v\n", one, result.funcMap)
 		}
+
 	case *ast.TypeSwitchStmt: // switch x := m(); a := x.(type) { }
-		ins.inspectStmt(stmtValue.Init)
-		ins.inspectStmt(stmtValue.Assign)
-		ins.inspectStmt(stmtValue.Body)
+		stmtResult := ins.inspectStmt(stmtValue.Init, from)
+		result = result.Merge(stmtResult)
+		stmtResult = ins.inspectStmt(stmtValue.Assign, from)
+		result = result.Merge(stmtResult)
+		stmtResult = ins.inspectStmt(stmtValue.Body, from)
+		result = result.Merge(stmtResult)
 	}
 
 	return
 }
 
-func (ins *Inspector) inspectFields(fields *ast.FieldList) (result FieldResult) {
+func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result FieldResult) {
 	if fields == nil {
 		return
 	}
@@ -411,7 +565,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList) (result FieldResult) 
 		}
 		result.RecvName = toString(fieldTyp)
 
-		ins.inspectExpr(field.Type)
+		ins.inspectExpr(field.Type, from)
 
 		name := ""
 		if len(field.Names) != 0 {

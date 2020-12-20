@@ -42,6 +42,12 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&output, "output", "o", "", "specify output file")
 	var interf string
 	rootCmd.PersistentFlags().StringVarP(&interf, "interface", "", "", "specify interface")
+	var funcName string
+	rootCmd.PersistentFlags().StringVarP(&funcName, "func", "", "", "specify func or method name")
+	var ignore string
+	rootCmd.PersistentFlags().StringVarP(&ignore, "ignore", "", "", "specify ignore package")
+	var depth int
+	rootCmd.PersistentFlags().IntVarP(&depth, "depth", "", 0, "specify depth")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -54,7 +60,7 @@ func main() {
 
 func addSubCommand(rootCmd *cobra.Command) {
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "interface",
+		Use:   string(parser.OpInterface),
 		Short: "gen struct interface",
 		Long: `gen struct interface, like: 
 			type M struct {
@@ -88,7 +94,9 @@ func addSubCommand(rootCmd *cobra.Command) {
 			fmt.Printf("dirs: %+v\n", paths)
 
 			// 解析
-			p := parser.New(parser.Option{})
+			p := parser.New(parser.Option{
+				Op: parser.OpInterface,
+			})
 			pkgs, err := p.ParseByGoPackages(paths...)
 			if err != nil {
 				log.Fatal(err)
@@ -102,7 +110,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 	})
 
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "replace",
+		Use:   string(parser.OpReplace),
 		Short: "replace import path",
 		Long:  "replace import path, like: from 'import \"zzz.com/xxx/yyy\"' to 'import \"lll.com/mmm/nnn\"'",
 		Run: func(cmd *cobra.Command, args []string) {
@@ -125,6 +133,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 
 			// 初始化
 			p := parser.New(parser.Option{
+				Op:                parser.OpReplace,
 				ReplaceImportPath: true,
 				FromPath:          from,
 				ToPath:            to,
@@ -139,7 +148,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 	})
 
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "mock",
+		Use:   string(parser.OpMock),
 		Short: "gen interface mock struct",
 		Long: `gen interface mock struct, like: type I interface { String() string }, 
 			gen mock: 
@@ -178,6 +187,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 
 			// 解析
 			p := parser.New(parser.Option{
+				Op:                parser.OpMock,
 				UseSourceImporter: true,
 			})
 			pkgs, err := p.ParseByGoPackages(paths...)
@@ -193,7 +203,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 	})
 
 	rootCmd.AddCommand(&cobra.Command{
-		Use:   "impl",
+		Use:   string(parser.OpImpl),
 		Short: "find implement by given interface in specify path",
 		Long: `find implement by given interface in specify path, like: 
 			'tbc impl --interface=io.Writer'
@@ -222,7 +232,9 @@ func addSubCommand(rootCmd *cobra.Command) {
 			fmt.Printf("dirs: %+v\n", paths)
 
 			// 解析
-			p := parser.New(parser.Option{})
+			p := parser.New(parser.Option{
+				Op: parser.OpImpl,
+			})
 
 			// 获取接口类型
 			var interType *types.Interface
@@ -257,6 +269,111 @@ func addSubCommand(rootCmd *cobra.Command) {
 					fmt.Printf("	No.%d struct info: %+v\n", i, one.PkgPath+"."+one.Name)
 				}
 			}
+		},
+	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpCallgraph),
+		Short: "get the callgraph of a function or method",
+		Long: `
+	path: specify package path
+	func：specify function or method, if method, use 'StructName.MethodName', like：A.GetByName
+	ignore: ignore package, std means standart packages, others use themself's package path
+	depth: call depth, use it if you want to skip deep call info
+
+like:
+	tbc callgraph --path=xxx.xxx.xxx/a/b --func=[main|normal_func|struct_method] --ignore=std;xxx.xxx.xxx/e/f --depth=2
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+
+			// 标志
+			flags := cmd.Flags()
+			path, _ := flags.GetString("path")
+			funcName, _ := flags.GetString("func")
+			funcParts := strings.Split(funcName, ".")
+			ignore, _ := flags.GetString("ignore")
+			ignores := strings.Split(ignore, ";")
+			depth, _ := flags.GetInt("depth")
+			fmt.Printf("| callgraph | %+v, %+v, %+v, %v\n", path, funcParts, ignores, depth)
+
+			// 从指定的函数/方法的定义处开始，途中忽略部分包调用，直到指定深度为止
+
+			// 解析
+			p := parser.New(parser.Option{
+				Op:       parser.OpCallgraph,
+				NeedCall: true,
+			})
+
+			// 获取接口类型
+			pkgs, err := p.ParseByGoPackages(path)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// 唯一键：struct name + method name
+			// func name
+			funcMap := make(map[string]parser.Func)
+			for _, pkg := range pkgs.Pkgs {
+				for _, oneFunc := range pkg.Funcs {
+					var key = oneFunc.Name
+					if oneFunc.Recv != "" {
+						key = oneFunc.Recv + "." + oneFunc.Name
+					}
+					funcMap[key] = oneFunc
+				}
+			}
+
+			var exist bool
+			var targetFunc parser.Func
+			for _, pkg := range pkgs.Pkgs {
+				for _, oneFunc := range pkg.Funcs {
+					debug.Debug("oneFunc: %+v\n", oneFunc)
+
+					if len(funcParts) == 2 {
+						if oneFunc.Recv == "" {
+							continue
+						}
+						debug.Debug("%+v, %s, %s\n", funcParts, oneFunc.Recv, oneFunc.Name)
+						if funcParts[0] != oneFunc.Recv ||
+							funcParts[1] != oneFunc.Name {
+							continue
+						}
+						exist = true
+						targetFunc = oneFunc
+						break
+					} else {
+						if oneFunc.Name != funcName {
+							continue
+						}
+						exist = true
+						targetFunc = oneFunc
+						break
+					}
+				}
+			}
+			if !exist {
+				log.Fatalf("can't find the func: %s\n", funcName)
+			}
+
+			ignoreStd := false
+			newIgnores := make([]string, 0, len(ignores))
+			for _, ignore := range ignores {
+				if ignore == "std" {
+					ignoreStd = true
+					continue
+				}
+				newIgnores = append(newIgnores, ignore)
+			}
+			if ignoreStd {
+				stdPkgs := p.GetStandardPackages()
+				newIgnores = append(newIgnores, stdPkgs...)
+			}
+
+			oneFuncPtr := &targetFunc
+			oneFuncPtr.Set(funcMap, depth)
+			debug.Debug("=== got: %+v\n", targetFunc)
+			targetFunc.PrintCallGraph(newIgnores, depth)
 		},
 	})
 }

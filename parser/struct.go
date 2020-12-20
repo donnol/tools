@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/donnol/tools/format"
@@ -104,6 +105,7 @@ func (pkg Package) SaveMock(file string) error {
 type Package struct {
 	*packages.Package
 
+	Funcs      []Func
 	Structs    []Struct
 	Interfaces []Interface
 }
@@ -328,10 +330,94 @@ func interfacePrefix(name, is string) string {
 	return "type " + name + " " + is
 }
 
-type Method struct {
-	Origin    *types.Func
+type Method = Func
+
+type Func struct {
+	Origin *types.Func
+
+	PkgPath   string // 包路径
+	Recv      string // 方法的receiver
 	Name      string
 	Signature string
+
+	Calls []Func // 调用的函数/方法
+}
+
+func (f *Func) Set(fm map[string]Func, depth int) {
+	l := 1
+	setLowerCalls(f.Calls, fm, l, depth)
+}
+
+func setLowerCalls(calls []Func, fm map[string]Func, l, depth int) {
+	if l > depth {
+		return
+	}
+	for i, call := range calls {
+		var key = call.Name
+		if call.Recv != "" {
+			key = call.Recv + "." + call.Name
+		}
+		if len(call.Calls) == 0 {
+			calls[i].Calls = fm[key].Calls
+			nl := l + 1
+			setLowerCalls(calls[i].Calls, fm, nl, depth)
+		}
+	}
+}
+
+// PrintCallGraph 打印调用图，用ignore忽略包，用depth指定深度
+func (f Func) PrintCallGraph(ignore []string, depth int) {
+	fmt.Printf("root: %s\n", f.Name)
+	l := 1
+
+	ip := &importpath.ImportPath{}
+	ip.GetByCurrentDir()
+
+	printCallGraph(f.Calls, ignore, l, depth)
+}
+
+func printCallGraph(calls []Func, ignores []string, l, depth int) {
+	for _, one := range calls {
+		if l > depth {
+			break
+		}
+
+		// 判断是否需要跳过
+		pkgPath := one.PkgPath
+		needIgnore := false
+		for _, ignore := range ignores {
+			if pkgPath != "" && ignore == pkgPath {
+				needIgnore = true
+				break
+			}
+		}
+		if needIgnore {
+			continue
+		}
+
+		fmt.Printf("%s -> %s(%v)\n", getIdent(l), one.Name, one.Origin)
+
+		if len(one.Calls) > 0 {
+			nl := l + 1
+			printCallGraph(one.Calls, ignores, nl, depth)
+		}
+	}
+}
+
+const (
+	ident = "	"
+)
+
+func getIdent(l int) string {
+	s := ""
+	for i := 0; i < l; i++ {
+		if i == l-1 {
+			s += "   " + strconv.Itoa(l)
+		} else {
+			s += ident
+		}
+	}
+	return s
 }
 
 // Field 字段
@@ -368,6 +454,7 @@ type FileResult struct {
 	structMap    map[string]Struct    // 名称 -> 结构体
 	methodMap    map[string][]Method  // 名称 -> 方法列表
 	interfaceMap map[string]Interface // 名称 -> 接口
+	funcMap      map[string]Func      // 名称 -> 方法
 }
 
 func MakeFileResult() FileResult {
@@ -375,6 +462,7 @@ func MakeFileResult() FileResult {
 		structMap:    make(map[string]Struct),
 		methodMap:    make(map[string][]Method),
 		interfaceMap: make(map[string]Interface),
+		funcMap:      make(map[string]Func),
 	}
 }
 
@@ -382,6 +470,7 @@ type DeclResult struct {
 	structMap    map[string]Struct
 	methodMap    map[string][]Method
 	interfaceMap map[string]Interface // 名称 -> 接口
+	funcMap      map[string]Func      // 名称 -> 方法
 }
 
 func MakeDeclResult() DeclResult {
@@ -389,36 +478,86 @@ func MakeDeclResult() DeclResult {
 		structMap:    make(map[string]Struct),
 		methodMap:    make(map[string][]Method),
 		interfaceMap: make(map[string]Interface),
+		funcMap:      make(map[string]Func),
 	}
 }
 
 type SpecResult struct {
 	structMap    map[string]Struct    // 名称 -> 结构体
 	interfaceMap map[string]Interface // 名称 -> 接口
+	funcMap      map[string]Func      // 名称 -> 方法
 }
 
 func MakeSpecResult() SpecResult {
 	return SpecResult{
 		structMap:    make(map[string]Struct),
 		interfaceMap: make(map[string]Interface),
+		funcMap:      make(map[string]Func),
 	}
 }
 
 type ExprResult struct {
-	Fields []Field
+	Fields  []Field
+	pkgPath string
+	funcMap map[string]Func // 名称 -> 方法
 }
 
 func MakeExprResult() ExprResult {
 	return ExprResult{
-		Fields: make([]Field, 0),
+		Fields:  make([]Field, 0),
+		funcMap: make(map[string]Func),
 	}
 }
 
+func (er ExprResult) Merge(oer ExprResult) (ner ExprResult) {
+	ner = er
+
+	if oer.pkgPath != "" {
+		ner.pkgPath = oer.pkgPath
+	}
+	ner.Fields = append(ner.Fields, oer.Fields...)
+	for k, v := range oer.funcMap {
+		ner.funcMap[k] = v
+	}
+
+	return
+}
+
 type StmtResult struct {
+	pkgPath string
+	funcMap map[string]Func // 名称 -> 方法
 }
 
 func MakeStmtResult() StmtResult {
-	return StmtResult{}
+	return StmtResult{
+		funcMap: make(map[string]Func),
+	}
+}
+
+func (er StmtResult) Merge(oer StmtResult) (ner StmtResult) {
+	ner = er
+
+	if oer.pkgPath != "" {
+		ner.pkgPath = oer.pkgPath
+	}
+	for k, v := range oer.funcMap {
+		ner.funcMap[k] = v
+	}
+
+	return
+}
+
+func (er StmtResult) MergeExprResult(oer ExprResult) (ner StmtResult) {
+	ner = er
+
+	if oer.pkgPath != "" {
+		ner.pkgPath = oer.pkgPath
+	}
+	for k, v := range oer.funcMap {
+		ner.funcMap[k] = v
+	}
+
+	return
 }
 
 type FieldResult struct {

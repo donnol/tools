@@ -41,6 +41,8 @@ type (
 		toPath            string
 		output            io.Writer
 
+		op Op // 操作，如生成接口，生成实现等
+
 		PkgInfo
 	}
 )
@@ -48,6 +50,7 @@ type (
 // New 新建
 func New(opt Option) *Parser {
 	return &Parser{
+		op:                opt.Op,
 		filter:            opt.Filter,
 		useSourceImporter: opt.UseSourceImporter,
 		replaceImportPath: opt.ReplaceImportPath,
@@ -175,6 +178,20 @@ func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err err
 	}
 
 	return
+}
+
+func (p *Parser) GetStandardPackages() []string {
+	pkgs, err := packages.Load(nil, "std")
+	if err != nil {
+		panic(err)
+	}
+
+	standardPackages := make([]string, 0, len(pkgs))
+	for _, p := range pkgs {
+		standardPackages = append(standardPackages, p.PkgPath)
+	}
+
+	return standardPackages
 }
 
 func (p *Parser) parseDir(fset *token.FileSet, fullDir string) (pkgs map[string]*ast.Package, err error) {
