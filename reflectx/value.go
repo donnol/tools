@@ -468,3 +468,8 @@ func ToInterface(in []reflect.Value) (out []interface{}) {
 	}
 	return
 }
+
+// TODO:手太冻了，迟点写吧
+func SetStructFieldValue(arg reflect.Value, fieldName string, value interface{}) {
+
+}
