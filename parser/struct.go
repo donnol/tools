@@ -367,11 +367,15 @@ func setLowerCalls(calls []Func, fm map[string]Func, l, depth int) {
 
 // PrintCallGraph 打印调用图，用ignore忽略包，用depth指定深度
 func (f Func) PrintCallGraph(ignore []string, depth int) {
-	fmt.Printf("root: %s\n", f.Name)
-	l := 1
-
 	ip := &importpath.ImportPath{}
-	ip.GetByCurrentDir()
+	curPath, err := ip.GetByCurrentDir()
+	if err != nil {
+		panic(err) // 怎么知道这些内置函数是内置函数呢？
+	}
+	fmt.Printf("root module path: %s\n", curPath)
+
+	fmt.Printf("root: %s(%s)\n", f.Name, f.PkgPath)
+	l := 1
 
 	printCallGraph(f.Calls, ignore, l, depth)
 }
@@ -395,7 +399,7 @@ func printCallGraph(calls []Func, ignores []string, l, depth int) {
 			continue
 		}
 
-		fmt.Printf("%s -> %s(%v)\n", getIdent(l), one.Name, one.Origin)
+		fmt.Printf("%s -> %s(%s)\n", getIdent(l), one.Name, one.PkgPath)
 
 		if len(one.Calls) > 0 {
 			nl := l + 1
@@ -512,7 +516,7 @@ func MakeExprResult() ExprResult {
 func (er ExprResult) Merge(oer ExprResult) (ner ExprResult) {
 	ner = er
 
-	if oer.pkgPath != "" {
+	if ner.pkgPath == "" && oer.pkgPath != "" {
 		ner.pkgPath = oer.pkgPath
 	}
 	ner.Fields = append(ner.Fields, oer.Fields...)
@@ -537,7 +541,7 @@ func MakeStmtResult() StmtResult {
 func (er StmtResult) Merge(oer StmtResult) (ner StmtResult) {
 	ner = er
 
-	if oer.pkgPath != "" {
+	if ner.pkgPath == "" && oer.pkgPath != "" {
 		ner.pkgPath = oer.pkgPath
 	}
 	for k, v := range oer.funcMap {
@@ -550,7 +554,7 @@ func (er StmtResult) Merge(oer StmtResult) (ner StmtResult) {
 func (er StmtResult) MergeExprResult(oer ExprResult) (ner StmtResult) {
 	ner = er
 
-	if oer.pkgPath != "" {
+	if ner.pkgPath == "" && oer.pkgPath != "" {
 		ner.pkgPath = oer.pkgPath
 	}
 	for k, v := range oer.funcMap {

@@ -281,17 +281,19 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 	case *ast.SelectorExpr: // X.M
 		debug.Debug("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
 
+		exprResult := ins.inspectExpr(exprValue.X, from)
+		result = result.Merge(exprResult)
+
 		pkgID, ok := exprValue.X.(*ast.Ident)
 		if ok {
 			if so, ok := ins.pkg.TypesInfo.Uses[pkgID].(*types.PkgName); ok {
 				pkgPath := so.Imported().Path()
-				fmt.Printf(from+"SelectorExpr typ: %#v\n", pkgPath)
+				debug.Debug(from+"SelectorExpr pkgPath: %#v\n", pkgPath)
 				result.pkgPath = pkgPath
 			}
 		}
 
-		exprResult := ins.inspectExpr(exprValue.X, from)
-		result = result.Merge(exprResult)
+		debug.Debug(from+"SelectorExpr value: %#v, result: %#v\n", exprValue, result)
 
 	case *ast.SliceExpr: // []T, slice[1:3:5]
 		ins.inspectExpr(exprValue.X, from)
@@ -309,31 +311,24 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		debug.Debug(from+"BinaryExpr: %+v\n", result)
 
 	case *ast.CallExpr: // M(1, 2)
-		typ1 := ins.pkg.TypesInfo.Types[exprValue]
-		typ2 := ins.pkg.TypesInfo.Types[exprValue.Fun]
-		debug.Debug(from+"typ1: %#v, typ2 %#v\n", typ1.Type, typ2.Type)
-
-		toStr := ""
-		if to, ok := typ2.Type.(*types.Signature); ok {
-			toStr = toString(to)
-			debug.Debug(from+"typ o: %#v, %v\n", to, toStr)
-		}
-
-		var pkgPath string
-		result.funcMap[toString(exprValue.Fun)] = Func{
-			PkgPath:   pkgPath,
-			Name:      toString(exprValue.Fun),
-			Signature: toStr,
-		}
-
+		debug.Debug(from+"funcMap 1: %#v, %+v\n", exprValue.Fun, result)
 		exprResult := ins.inspectExpr(exprValue.Fun, from)
+		debug.Debug(from+"funcMap mid: %#v, %+v\n", exprValue.Fun, exprResult)
+
+		result.funcMap[toString(exprValue.Fun)] = Func{
+			PkgPath: exprResult.pkgPath,
+			Name:    toString(exprValue.Fun),
+		}
+
 		result = result.Merge(exprResult)
+		debug.Debug(from+"funcMap 2: %#v, %+v\n", exprValue.Fun, result)
+
 		for _, arg := range exprValue.Args {
 			debug.Debug("CallExpr: %+v, %+v\n", exprValue.Fun, arg)
 			exprResult := ins.inspectExpr(arg, from)
 			result = result.Merge(exprResult)
 		}
-		debug.Debug(from+"funcMap: %+v\n", result.funcMap)
+		debug.Debug(from+"funcMap: %+v\n", result)
 
 	case *ast.ChanType: // chan T, <-chan T, chan<- T
 		exprResult := ins.inspectExpr(exprValue.Value, from)
@@ -358,20 +353,29 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		ins.inspectFields(exprValue.Results, from)
 
 	case *ast.Ident:
+
+		if exprValue != nil {
+			debug.Debug(from+"Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
+		} else {
+			debug.Debug(from+"Ident is nil: %+v\n", expr)
+		}
+
 		obj, ok := ins.pkg.TypesInfo.Uses[exprValue]
 		if ok {
 			if obj.Pkg() != nil {
-				pkgPath := obj.Pkg().Path()
-				fmt.Printf(from+"typ1: %#v\n", pkgPath)
-				result.pkgPath = pkgPath
+				_ = obj.Pkg().Path() // 变量的包路径
+
+				// 变量类型的包路径
+				var varTypePkgPath string
+				if ptr, ok := obj.Type().(*types.Pointer); ok {
+					varTypePkgPath = ptr.Elem().(*types.Named).Obj().Pkg().Path()
+					debug.Debug(from+"Ident obj: %#v, ptr: %#v, pkgPath: %#v\n", obj.Type(), ptr, varTypePkgPath)
+				}
+				result.pkgPath = varTypePkgPath
 			}
 		}
 
-		if exprValue != nil {
-			debug.Debug("Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
-		} else {
-			debug.Debug("Ident is nil: %+v\n", expr)
-		}
+		debug.Debug(from+"Ident value: %#v, result: %#v\n", exprValue, result)
 
 	case *ast.IndexExpr: // s[1], arr[1]
 		exprResult := ins.inspectExpr(exprValue.X, from)

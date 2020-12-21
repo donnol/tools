@@ -18,5 +18,9 @@ tbc_install:
 	go install
 
 tbc_callgraph_test:tbc_install
-	tbc callgraph --path=github.com/donnol/tools/parser --func=UcFirst --ignore=std --depth=3 && \
-	tbc callgraph --path=github.com/donnol/tools/parser --func=Func.PrintCallGraph --ignore=std --depth=3
+	# 包括func的比对组，ignore的比对组，depth的比对组
+	tbc callgraph --path=github.com/donnol/tools/parser --func=UcFirst --depth=3 && \
+	tbc callgraph --path=github.com/donnol/tools/parser --func=Func.PrintCallGraph --depth=2 && \
+	tbc callgraph --path=github.com/donnol/tools/parser --func=Func.PrintCallGraph --depth=3 && \
+	tbc callgraph --path=github.com/donnol/tools/parser --func=Func.PrintCallGraph --ignore=std --depth=3 && \
+	tbc callgraph --path=github.com/donnol/tools/parser --func=Func.PrintCallGraph --ignore='std;github.com/donnol/tools/importpath' --depth=3

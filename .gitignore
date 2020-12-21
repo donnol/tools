@@ -17,3 +17,6 @@
 
 # vim swap file
 *.swp
+
+# vscode
+.vscode
