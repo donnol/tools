@@ -77,3 +77,53 @@ func TestSetRandom(t *testing.T) {
 		t.Logf("cas: %#v, cas.DP: %+v\n", cas, cas.DP)
 	}
 }
+
+func TestSetStructFieldValue(t *testing.T) {
+	type inner struct {
+		ID int
+		id int
+	}
+	type m struct {
+		Name string
+		name string
+
+		inner
+	}
+	for _, cas := range []struct {
+		name        string
+		arg         interface{}
+		fieldName   string
+		targetValue interface{}
+	}{
+		{
+			name:        "exported",
+			arg:         &m{Name: "jd", name: "jd", inner: inner{ID: 1, id: 1}},
+			fieldName:   "Name",
+			targetValue: "donnol",
+		},
+		{
+			name:        "unexported",
+			arg:         &m{Name: "jd", name: "jd", inner: inner{ID: 1, id: 1}},
+			fieldName:   "name",
+			targetValue: "donnol",
+		},
+		{
+			name:        "inner exported",
+			arg:         &m{Name: "jd", name: "jd", inner: inner{ID: 1, id: 1}},
+			fieldName:   "ID",
+			targetValue: 31,
+		},
+		{
+			name:        "inner unexported",
+			arg:         &m{Name: "jd", name: "jd", inner: inner{ID: 1, id: 1}},
+			fieldName:   "id",
+			targetValue: 31,
+		},
+	} {
+		t.Run(cas.name, func(t *testing.T) {
+			t.Logf("before: %+v\n", cas.arg)
+			SetStructFieldValue(reflect.ValueOf(cas.arg), cas.fieldName, cas.targetValue)
+			t.Logf("after: %+v\n", cas.arg)
+		})
+	}
+}

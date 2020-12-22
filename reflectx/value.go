@@ -129,12 +129,7 @@ func setAnyValue(refType, specType reflect.Type, refValue, specValue reflect.Val
 
 		// 根据字段type判断是否可以赋值
 		if field.Type == specType { // 类型相同，直接赋值
-			if field.PkgPath != "" {
-				rf := reflect.NewAt(value.Type(), unsafe.Pointer(value.UnsafeAddr())).Elem()
-				rf.Set(specValue)
-			} else {
-				value.Set(specValue)
-			}
+			setStructFieldValue(value, specValue, field.PkgPath != "")
 		} else { // 匿名内嵌或者包含在普通字段里，继续对该字段类型遍历
 			setAnyValue(field.Type, specType, value, specValue)
 		}
@@ -150,9 +145,26 @@ func CopyStructField(refType reflect.Type, refValue reflect.Value) (reflect.Type
 	// 复制原有值到Value
 	newValueElem := newValue.Elem()
 	for i := 0; i < refType.NumField(); i++ {
-		oldV := refValue.Field(i)
+		fieldType := refType.Field(i)
+		isUnexportedField := fieldType.PkgPath != ""
+
 		newV := newValueElem.Field(i)
-		newV.Set(oldV)
+
+		// panic: reflect: reflect.Value.Set using value obtained using unexported field
+		// 从非导出字段获取的reflect.Value不能被用来给另外的value赋值
+		// oldV := refValue.Field(i)
+		//
+		// setStructFieldValue(newV, oldV, fieldType.PkgPath != "")
+
+		// 使用unsafe读取
+		oldV := refValue.Field(i)
+		if isUnexportedField {
+			oldPtr := unsafe.Pointer(oldV.UnsafeAddr())
+			oldV = reflect.NewAt(oldV.Type(), oldPtr).Elem()
+		}
+
+		// 给字段赋值
+		setStructFieldValue(newV, oldV, isUnexportedField)
 	}
 
 	return newType, newValue
@@ -187,10 +199,6 @@ var (
 	timeType        = reflect.TypeOf((*time.Time)(nil)).Elem()
 	sqlNullTimeType = reflect.TypeOf((*sql.NullTime)(nil)).Elem()
 )
-
-func isTimeType(typ reflect.Type) bool {
-	return typ == timeType || typ == sqlNullTimeType
-}
 
 func getTimeTypeValue(typ reflect.Type) reflect.Value {
 	var value reflect.Value
@@ -469,7 +477,57 @@ func ToInterface(in []reflect.Value) (out []interface{}) {
 	return
 }
 
-// TODO:手太冻了，迟点写吧
-func SetStructFieldValue(arg reflect.Value, fieldName string, value interface{}) {
+// SetStructFieldValue 设置结构体字段的值，arg必须是结构体指针，value值类型必须与结构体对应fieldName类型一致
+// 没有没有找到指定字段，则返回的StructField为空
+func SetStructFieldValue(arg reflect.Value, fieldName string, value interface{}) (fieldType reflect.StructField) {
+	var refValue = arg
+	var refType = arg.Type()
 
+	if !isStructPointer(refType) {
+		panic(fmt.Errorf("v is not a struct pointer"))
+	}
+
+	refValue = refValue.Elem()
+	refType = refValue.Type()
+
+	targetValue := reflect.ValueOf(value)
+	for i := 0; i < refType.NumField(); i++ {
+		fieldValue := refValue.Field(i)
+		tmpFieldType := refType.Field(i)
+
+		// 内嵌
+		if tmpFieldType.Anonymous {
+			// 新建同类型value，并将原值复制到新变量rf
+			_, rf := CopyStructField(fieldValue.Type(), fieldValue)
+
+			// 递归找字段，并赋值
+			ft := SetStructFieldValue(rf, fieldName, value)
+
+			// 字段存在，给字段赋值
+			if ft.Name != "" {
+				setStructFieldValue(fieldValue, rf.Elem(), true)
+			}
+
+			continue
+		}
+
+		if tmpFieldType.Name != fieldName {
+			continue
+		}
+
+		fieldType = tmpFieldType
+		setStructFieldValue(fieldValue, targetValue, tmpFieldType.PkgPath != "")
+	}
+
+	return
+}
+
+func setStructFieldValue(fieldValue reflect.Value, targetValue reflect.Value, isUnexportedField bool) {
+	if isUnexportedField {
+		// 非导出字段，使用unsafe赋值
+		rf := reflect.NewAt(fieldValue.Type(), unsafe.Pointer(fieldValue.UnsafeAddr())).Elem()
+		rf.Set(targetValue)
+	} else {
+		fieldValue.Set(targetValue)
+	}
 }

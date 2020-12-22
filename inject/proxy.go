@@ -57,6 +57,17 @@ func (around AroundFunc) Around(pctx ProxyContext, method reflect.Value, args []
 	return around(pctx, method, args)
 }
 
+type ArounderMap map[ProxyContext]AroundFunc
+
+func (m ArounderMap) Merge(nm ArounderMap) (mr ArounderMap) {
+	mr = m
+	for k, v := range nm {
+		mr[k] = v
+	}
+
+	return
+}
+
 type proxyImpl struct {
 }
 
