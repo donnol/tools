@@ -15,6 +15,7 @@ Usage:
   tbc [command]
 
 Available Commands:
+  callgraph   get the callgraph of a function or method
   help        Help about any command
   impl        find implement by given interface in specify path
   interface   gen struct interface
@@ -22,8 +23,11 @@ Available Commands:
   replace     replace import path
 
 Flags:
+      --depth int          specify depth
       --from string        specify from path with replace
+      --func string        specify func or method name
   -h, --help               help for tbc
+      --ignore string      specify ignore package
       --interface string   specify interface
   -o, --output string      specify output file
   -p, --path string        specify import path
@@ -31,6 +35,7 @@ Flags:
       --to string          specify to path with replace
 
 Use "tbc [command] --help" for more information about a command.
+
 ```
 
 ### 生成结构体接口
@@ -115,6 +120,33 @@ find implement by given interface in specify path, like:
 ```
 
 ### 生成函数/方法调用图
+
+```sh
+        path: specify package path
+        func：specify function or method, if method, use 'StructName.MethodName', like：A.GetByName
+        ignore: ignore package, std means standart packages, others use themself package path
+        depth: call depth, use it if you want to skip deep call info
+
+like:
+        tbc callgraph --path=xxx.xxx.xxx/a/b --func=[main|normal_func|struct_method] --ignore=std;xxx.xxx.xxx/e/f --depth=2
+
+Usage:
+  tbc callgraph [flags]
+
+Flags:
+  -h, --help   help for callgraph
+
+Global Flags:
+      --depth int          specify depth
+      --from string        specify from path with replace
+      --func string        specify func or method name
+      --ignore string      specify ignore package
+      --interface string   specify interface
+  -o, --output string      specify output file
+  -p, --path string        specify import path
+  -r, --recursive          recursively process dir from current
+      --to string          specify to path with replace
+```
 
 如有以下代码：
 
