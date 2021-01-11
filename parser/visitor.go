@@ -9,6 +9,7 @@ import (
 	"github.com/donnol/tools/internal/utils/debug"
 )
 
+// visitor 将要弃用
 type visitor struct {
 	// 如: github.com/pkg/errors
 	pkgPath string // 包路径

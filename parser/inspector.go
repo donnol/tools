@@ -368,8 +368,12 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 				// 变量类型的包路径
 				var varTypePkgPath string
 				if ptr, ok := obj.Type().(*types.Pointer); ok {
-					varTypePkgPath = ptr.Elem().(*types.Named).Obj().Pkg().Path()
-					debug.Debug(from+"Ident obj: %#v, ptr: %#v, pkgPath: %#v\n", obj.Type(), ptr, varTypePkgPath)
+					// FIXME:改用parseTypesType统一处理types.Type信息
+					switch ptrElem := ptr.Elem().(type) {
+					case *types.Named:
+						varTypePkgPath = ptrElem.Obj().Pkg().Path()
+						debug.Debug(from+"Ident obj: %#v, ptr: %#v, pkgPath: %#v\n", obj.Type(), ptr, varTypePkgPath)
+					}
 				}
 				result.pkgPath = varTypePkgPath
 			}

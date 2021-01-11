@@ -67,7 +67,7 @@ func parseTypesType(t types.Type, opt parseTypesTypeOption) (r struct {
 				Signature: types.TypeString(met.Type(), pkgNameQualifier(qualifierParam{pkgPath: opt.pkgPath})),
 			})
 		}
-		debug.Debug("=== named: %+v, is alias: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), methods)
+		debug.Debug("=== named: %+v, is alias: %v, pkgPath: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), tv.Obj().Pkg().Path(), methods)
 		if tv.Obj().IsAlias() {
 			debug.Debug("===============================: %+v\n", tv)
 		}
