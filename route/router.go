@@ -211,6 +211,11 @@ func wrapLimiter(handler gin.HandlerFunc, routeAtrr routeAttr, wo wrapOption) gi
 }
 
 func wrapMetrics(handler gin.HandlerFunc, wo wrapOption) gin.HandlerFunc {
+	writeAPI := wo.RegisterOption.InfluxAPIWriter
+	if writeAPI == nil {
+		return handler
+	}
+
 	m := metrics.NewMeter()
 	name := wo.method + " " + wo.path
 	if err := metrics.Register(name, m); err != nil {
@@ -233,7 +238,6 @@ func wrapMetrics(handler gin.HandlerFunc, wo wrapOption) gin.HandlerFunc {
 				AddField("mean", ms.RateMean()).
 				SetTime(time.Now())
 
-			writeAPI := wo.RegisterOption.InfluxAPIWriter
 			writeAPI.WritePoint(point)
 		}
 	}()
