@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"reflect"
 
 	utilerrors "github.com/donnol/tools/errors"
 )
@@ -88,6 +89,67 @@ func (r *Result) PresentData(v interface{}) error {
 	}
 
 	return nil
+}
+
+var (
+	version = 0
+)
+
+func SetResultVersion(ver int) {
+	version = ver
+}
+
+type Result1 struct {
+	Header ResultCode  `json:"header"`
+	Data   interface{} `json:"data"` // 可以是对象或数组
+}
+
+type ResultCode struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Count   int    `json:"count"`
+}
+
+// From https://stackoverflow.com/questions/18287242/locking-an-object-during-json-marshal-in-go
+// 通过定义一个以Result为基础的新类型，然后在MarshalJSON方法里做一个类型转换，从而避免调json.Marshal方法时无限循环
+type resultHelper Result
+
+func (r Result) MarshalJSON() ([]byte, error) {
+	var rd interface{}
+	switch version {
+	case 1:
+		rd = r.ToResult1()
+	default:
+		rd = resultHelper(r)
+	}
+	return json.Marshal(rd)
+}
+
+func (r *Result) ToResult1() Result1 {
+	var r1 Result1
+	r1.Header.Code = r.Code
+	r1.Header.Message = "OK"
+	if r.Msg != "" {
+		r1.Header.Message = r.Msg
+	}
+	r1.Data = r.Data
+
+	r1.Header.Count = 1
+	rv := reflect.ValueOf(r.Data)
+	rvt := rv.Type()
+	if rvt.Kind() != reflect.Slice && rvt.Kind() != reflect.Struct {
+		panic(fmt.Errorf("not support result data type: %v", rvt))
+	}
+	switch rvt.Kind() {
+	case reflect.Slice:
+		r1.Header.Count = rv.Len()
+	case reflect.Struct:
+		if rv.IsZero() {
+			r1.Header.Count = 0
+		}
+	}
+
+	return r1
 }
 
 // AddResult 添加记录后的结果
