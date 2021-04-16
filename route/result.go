@@ -135,6 +135,12 @@ func (r *Result) ToResult1() Result1 {
 	r1.Data = r.Data
 
 	r1.Header.Count = 1
+
+	if r.Data == nil {
+		r1.Header.Count = 0
+		return r1
+	}
+
 	rv := reflect.ValueOf(r.Data)
 	rvt := rv.Type()
 	if rvt.Kind() != reflect.Slice && rvt.Kind() != reflect.Struct {

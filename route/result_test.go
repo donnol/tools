@@ -91,6 +91,26 @@ func TestResult1(t *testing.T) {
 			},
 			want: `{"header":{"code":100,"message":"failed","count":0},"data":[]}`,
 		},
+		{
+			data: Result{
+				Error: errors.Error{
+					Code: 100,
+					Msg:  "failed",
+				},
+				Data: []m(nil),
+			},
+			want: `{"header":{"code":100,"message":"failed","count":0},"data":null}`,
+		},
+		{
+			data: Result{
+				Error: errors.Error{
+					Code: 100,
+					Msg:  "failed",
+				},
+				Data: nil,
+			},
+			want: `{"header":{"code":100,"message":"failed","count":0},"data":null}`,
+		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			r, err := json.Marshal(cas.data)
