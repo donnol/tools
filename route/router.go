@@ -17,7 +17,6 @@ import (
 	"github.com/donnol/tools/jwt"
 	"github.com/donnol/tools/log"
 
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/gofrs/uuid"
 	"github.com/influxdata/influxdb-client-go/v2/api"
@@ -58,8 +57,6 @@ type Option struct {
 // NewRouter 新建路由
 func NewRouter(opt Option) *Router {
 	router := gin.Default()
-
-	router.Use(gzip.Gzip(gzip.DefaultCompression))
 
 	gin.DefaultWriter = io.MultiWriter(os.Stdout)
 
