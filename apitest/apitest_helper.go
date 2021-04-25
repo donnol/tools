@@ -666,7 +666,7 @@ func fieldsToLine(level int, fields []reflectx.Field) string {
 			}
 			fieldTypeName += " list"
 		default:
-			fieldTypeName = fieldType.String()
+			fieldTypeName = fieldType.Kind().String()
 		}
 
 		// 字段注释
