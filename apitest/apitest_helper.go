@@ -715,7 +715,9 @@ func dataToSummary(name string, data []byte, isJSON bool) string {
 <summary>` + name + `</summary>` + "\n\n```json\n"
 	if isJSON {
 		var buf = new(bytes.Buffer)
-		JSONIndent(buf, data)
+		if data != nil {
+			JSONIndent(buf, data)
+		}
 		summary += buf.String()
 	} else {
 		summary += string(data)

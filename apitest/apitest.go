@@ -130,7 +130,12 @@ func (at *AT) SetParam(param interface{}) *AT {
 
 // Run 运行
 func (at *AT) Run() *AT {
-	return at.run()
+	return at.run(true)
+}
+
+// Run 运行
+func (at *AT) FakeRun() *AT {
+	return at.run(false)
 }
 
 // MonkeyRun 猴子运行
@@ -151,7 +156,7 @@ func (at *AT) MonkeyRun() *AT {
 	}
 	at.param = param
 
-	return at.run()
+	return at.run(true)
 }
 
 // PressureRun 压力运行，n: 运行次数，c: 并发数
@@ -166,7 +171,7 @@ func (at *AT) PressureRun(n, c int) *AT {
 	for i := 0; i < n; i++ {
 		if err := w.Push(worker.MakeJob(func() error {
 			// 运行
-			at.run()
+			at.run(true)
 
 			// 统计数量
 			atomic.AddInt64(&total, 1)
@@ -243,16 +248,18 @@ func (at *AT) Result(r interface{}) *AT {
 	}
 
 	// 复制resp.Body
-	data, _, err := copyResponseBody(at.resp)
-	if err != nil {
-		at.setErr(err)
-		return at
-	}
+	if at.resp != nil {
+		data, _, err := copyResponseBody(at.resp)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
 
-	// 解析data到r
-	if err := json.Unmarshal(data, r); err != nil {
-		at.setErr(err)
-		return at
+		// 解析data到r
+		if err := json.Unmarshal(data, r); err != nil {
+			at.setErr(err)
+			return at
+		}
 	}
 	at.result = r
 
@@ -351,7 +358,7 @@ func (at *AT) makeURL() *AT {
 	return at
 }
 
-func (at *AT) run() *AT {
+func (at *AT) run(realDo bool) *AT {
 	// 请求链接
 	at = at.makeURL()
 	u := at.url
@@ -445,25 +452,27 @@ func (at *AT) run() *AT {
 		Timeout:   time.Second * 10, // 超时
 		Transport: transport,
 	}
-	beforeDo := time.Now()
-	resp, err := client.Do(req)
-	if err != nil {
-		at.setErr(err)
-		return at
-	}
-	afterDo := time.Now()
-	used := afterDo.UnixNano() - beforeDo.UnixNano()
-	if used >= 1000000000 { // 不小于1s
-		if at.isPressureBatch { // 统计数量
-			at.slowNum++
-		} else {
-			fmt.Printf("WARNING: '%s' is slow, used %d ms\n", u.String(), used/1000000)
+	if realDo {
+		beforeDo := time.Now()
+		resp, err := client.Do(req)
+		if err != nil {
+			at.setErr(err)
+			return at
 		}
-	}
+		afterDo := time.Now()
+		used := afterDo.UnixNano() - beforeDo.UnixNano()
+		if used >= 1000000000 { // 不小于1s
+			if at.isPressureBatch { // 统计数量
+				at.slowNum++
+			} else {
+				fmt.Printf("WARNING: '%s' is slow, used %d ms\n", u.String(), used/1000000)
+			}
+		}
 
-	// https://stackoverflow.com/questions/17948827/reusing-http-connections-in-golang
-	// 只要不关闭response，client就不会重用连接，而是新建连接
-	at.resp = resp
+		// https://stackoverflow.com/questions/17948827/reusing-http-connections-in-golang
+		// 只要不关闭response，client就不会重用连接，而是新建连接
+		at.resp = resp
+	}
 
 	// 收集错误码
 	at = at.collectATE()
@@ -474,26 +483,28 @@ func (at *AT) run() *AT {
 // 收集错误码
 func (at *AT) collectATE() *AT {
 	// 复制resp.Body
-	data, _, err := copyResponseBody(at.resp)
-	if err != nil {
-		at.setErr(err)
-		return at
-	}
-	tmpATE := ate{}
-	if err := json.Unmarshal(data, &tmpATE); err != nil {
-		at.setErr(err)
-		return at
-	}
-	if tmpATE.Code != 0 {
-		var exist bool
-		for _, e := range at.ates {
-			if tmpATE.Code == e.Code {
-				exist = true
-				break
-			}
+	if at.resp != nil {
+		data, _, err := copyResponseBody(at.resp)
+		if err != nil {
+			at.setErr(err)
+			return at
 		}
-		if !exist {
-			at.ates = append(at.ates, tmpATE)
+		tmpATE := ate{}
+		if err := json.Unmarshal(data, &tmpATE); err != nil {
+			at.setErr(err)
+			return at
+		}
+		if tmpATE.Code != 0 {
+			var exist bool
+			for _, e := range at.ates {
+				if tmpATE.Code == e.Code {
+					exist = true
+					break
+				}
+			}
+			if !exist {
+				at.ates = append(at.ates, tmpATE)
+			}
 		}
 	}
 
@@ -551,10 +562,19 @@ func (at *AT) makeDoc() *AT {
 	}
 
 	// 复制resp.Body
-	data, _, err := copyResponseBody(at.resp)
-	if err != nil {
-		at.setErr(err)
-		return at
+	var data []byte
+	if at.resp != nil {
+		data, _, err = copyResponseBody(at.resp)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
+	} else {
+		data, err = json.Marshal(at.result)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
 	}
 	doc += dataToSummary(returnName, data, true)
 
