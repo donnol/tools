@@ -42,14 +42,16 @@ type AT struct {
 	url    url.URL
 
 	// 请求相关
-	path    string
-	method  string
-	comment string
-	header  http.Header
-	cookies []*http.Cookie
-	param   interface{}
-	result  interface{}
-	ates    []ate
+	authHeaderKey   string
+	authHeaderValue string
+	path            string
+	method          string
+	comment         string
+	header          http.Header
+	cookies         []*http.Cookie
+	param           interface{}
+	result          interface{}
+	ates            []ate
 
 	// 请求和响应
 	req     *http.Request
@@ -108,6 +110,12 @@ func (at *AT) SetPort(port string) *AT {
 // SetHeader 设置header
 func (at *AT) SetHeader(header http.Header) *AT {
 	at.header = header
+	return at
+}
+
+func (at *AT) MarkAuthHeader(authHeaderKey, authHeaderValue string) *AT {
+	at.authHeaderKey = authHeaderKey
+	at.authHeaderValue = authHeaderValue
 	return at
 }
 
@@ -526,6 +534,42 @@ func (at *AT) makeDoc() *AT {
 
 	// 方法
 	doc += "`" + key + "`\n\n"
+
+	// req header
+	h := "Request header:\n"
+	for k, v := range at.req.Header {
+		if k != "Content-Type" && k != at.authHeaderKey {
+			continue
+		}
+		v1 := ""
+		if len(v) > 0 {
+			v1 = v[0]
+		}
+		if k == at.authHeaderKey && at.authHeaderValue != "" {
+			v1 = at.authHeaderValue
+		}
+		h += fmt.Sprintf("- '%s': %s\n", k, v1)
+	}
+	doc += h + "\n"
+
+	// resp header
+	resph := "Response header:\n"
+	if at.resp != nil {
+		for k, v := range at.resp.Header {
+			if k != "Content-Type" {
+				continue
+			}
+			v1 := ""
+			if len(v) > 0 {
+				v1 = v[0]
+			}
+			resph += fmt.Sprintf("- '%s': %s\n", k, v1)
+		}
+		resph += "\n"
+	} else {
+		resph += "- Content-Type: application/json; charset=utf-8\n\n"
+	}
+	doc += resph
 
 	// 参数
 	block, err := structToBlock(paramName, at.param)
