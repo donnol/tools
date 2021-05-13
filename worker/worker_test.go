@@ -54,6 +54,33 @@ func TestWorker(t *testing.T) {
 	}
 }
 
+func TestWorkerBuffer(t *testing.T) {
+	w := New(10)
+	w.Start()
+
+	for i := 1; i <= 1000; i++ {
+		tmp := i
+		if err := w.Push(Job{
+			do: func() error {
+				_ = tmp
+				time.Sleep(500 * time.Millisecond)
+
+				return nil
+			},
+		}); err != nil {
+			t.Fatal(err)
+		}
+
+		bl := w.jobChan.BufLen()
+		if bl != 0 {
+			t.Logf("buffer len: %d\n", bl)
+		}
+	}
+	t.Log("finish")
+
+	w.Stop()
+}
+
 func TestWorkerWithTimeout(t *testing.T) {
 	w := New(0)
 	w.Start()

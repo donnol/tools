@@ -8,6 +8,7 @@ import (
 	"time"
 
 	utillog "github.com/donnol/tools/log"
+	"github.com/smallnest/chanx"
 )
 
 const (
@@ -74,10 +75,10 @@ func (job Job) run() error {
 // Worker 工人
 type Worker struct {
 	// 所有管道都要有make, read, write, close操作
-	limitChan chan struct{} // 并发控制管道
-	stopChan  chan struct{} // 停止管道
-	jobChan   chan Job      // 工作管道
-	errChan   chan error    // 错误管道
+	limitChan chan struct{}       // 并发控制管道
+	stopChan  chan struct{}       // 停止管道
+	jobChan   chanx.UnboundedChan // 工作管道
+	errChan   chan error          // 错误管道
 
 	wg   *sync.WaitGroup
 	stop bool // 是否调用了Stop方法
@@ -91,7 +92,7 @@ func New(n int) *Worker {
 	return &Worker{
 		limitChan: make(chan struct{}, n),
 		stopChan:  make(chan struct{}),
-		jobChan:   make(chan Job),
+		jobChan:   chanx.NewUnboundedChan(n),
 		errChan:   make(chan error, errCount),
 		wg:        new(sync.WaitGroup),
 	}
@@ -108,12 +109,12 @@ func (w *Worker) Start() {
 func (w *Worker) start() {
 	for {
 		select {
-		case job, ok := <-w.jobChan: // 有工作
+		case job, ok := <-w.jobChan.Out: // 有工作
 			if !ok {
 				continue
 			}
 
-			w.do(job)
+			w.do(job.(Job))
 
 		case <-w.stopChan:
 			w.close()
@@ -125,7 +126,6 @@ func (w *Worker) start() {
 func (w *Worker) do(job Job) {
 	// 占据一个坑
 	w.limitChan <- struct{}{}
-	w.wg.Add(1)
 
 	// 开始工作
 	go func(job Job) {
@@ -206,7 +206,7 @@ func (w *Worker) close() {
 
 	close(w.stopChan)
 	close(w.errChan)
-	close(w.jobChan)
+	close(w.jobChan.In)
 	close(w.limitChan)
 }
 
@@ -224,7 +224,8 @@ func (w *Worker) Push(job Job) error {
 		return ErrNilJobDo
 	}
 
-	w.jobChan <- job
+	w.jobChan.In <- job
+	w.wg.Add(1)
 
 	return nil
 }
