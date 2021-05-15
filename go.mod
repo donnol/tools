@@ -12,7 +12,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/smallnest/chanx v0.0.0-20210513030252-04d48cd693c6
+	github.com/smallnest/chanx v0.0.0-20210513123655-46bd697efd41
 	github.com/spf13/cobra v1.0.0
 	golang.org/x/mod v0.3.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
