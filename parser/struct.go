@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"go/ast"
 	"go/types"
 	"io/ioutil"
 	"os"
@@ -256,7 +257,7 @@ func mockPrefix(name, is string) string {
 // Struct 结构体
 type Struct struct {
 	// 如：github.com/pkg/errors
-	PkgPath string // 包路径
+	PkgPath string `json:"pkgPath" toml:"pkg_path"` // 包路径
 
 	// 如: errors
 	PkgName string // 包名
@@ -431,6 +432,9 @@ type Field struct {
 
 	TypesType types.Type // 原始类型
 	Type      string     // 类型，包含包导入路径
+
+	Tag         string        `json:"tag"` // 结构体字段的tag
+	TagBasicLit *ast.BasicLit // ast的tag类型
 
 	Doc     string // 文档
 	Comment string // 注释

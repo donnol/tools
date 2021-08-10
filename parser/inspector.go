@@ -585,13 +585,19 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 			name = toString(field.Type)
 		}
 
+		tag := ""
+		if field.Tag != nil {
+			tag = field.Tag.Value
+		}
 		result.Fields = append(result.Fields, Field{
-			Id:        name,
-			Name:      name,
-			TypesType: ins.pkg.TypesInfo.TypeOf(field.Type),
-			Type:      toString(field.Type),
-			Doc:       field.Doc.Text(),
-			Comment:   field.Comment.Text(),
+			Id:          name,
+			Name:        name,
+			TypesType:   ins.pkg.TypesInfo.TypeOf(field.Type),
+			Type:        toString(field.Type),
+			Tag:         tag,
+			TagBasicLit: field.Tag,
+			Doc:         field.Doc.Text(),
+			Comment:     field.Comment.Text(),
 		})
 	}
 
