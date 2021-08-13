@@ -225,7 +225,8 @@ func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult
 				PkgName:   ins.pkg.Name,
 				Methods:   methods,
 			}
-			debug.Debug("mock: %s\n", inter.MakeMock())
+			mock, imports := inter.MakeMock()
+			debug.Debug("mock: %s, imports: %v\n", mock, imports)
 			result.interfaceMap[specValue.Name.Name] = inter
 
 		default:
@@ -619,4 +620,19 @@ func toString(v interface{}) string {
 	default:
 		return fmt.Sprintf("%v", v)
 	}
+}
+
+func getTypesPkgPath(t types.Type) string {
+	debug.Debug("pvar type: %s\n", t)
+
+	pkgPath := ""
+	switch v := t.(type) {
+	case *types.Named:
+		if v.Obj().Pkg() != nil {
+			pkgPath = v.Obj().Pkg().Path()
+			debug.Debug("path: %s\n", pkgPath)
+		}
+	}
+
+	return pkgPath
 }

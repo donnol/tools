@@ -75,14 +75,40 @@ func (pkg Package) SaveInterface(file string) error {
 func (pkg Package) SaveMock(file string) error {
 	var gocontent = "package " + pkg.Name + "\n"
 
+	// 找出所有外部包引用，生成import
+	// 因为是生成mock结构体，所以有包引用的都是参数和返回值
+	imports := make(map[string]struct{}, 4)
+
 	var content string
 	for _, single := range pkg.Interfaces {
-		content += single.MakeMock() + "\n\n"
+		mock, imps := single.MakeMock()
+		for imp := range imps {
+			imports[imp] = struct{}{}
+		}
+		content += mock + "\n\n"
 	}
 	if content == "" {
 		return nil
 	}
+
+	// 导入
+	var impcontent string
+	for imp := range imports {
+		if imp == "" {
+			continue
+		}
+		impcontent += `"` + imp + `"` + "\n"
+	}
+	if impcontent != "" {
+		impcontent = "import (\n" + impcontent + ")\n"
+		debug.Debug("import: %s\n", impcontent)
+	}
+
+	gocontent += impcontent
+
+	// mock
 	gocontent += content
+	debug.Debug("gocontent: %s\n", gocontent)
 
 	// TODO:检查是否重复
 
@@ -120,7 +146,7 @@ type Interface struct {
 	Methods []Method // 方法列表
 }
 
-func (s Interface) MakeMock() string {
+func (s Interface) MakeMock() (string, map[string]struct{}) {
 	mockType := s.makeMockName()
 	mockRecv := s.makeMockRecv()
 
@@ -129,8 +155,13 @@ func (s Interface) MakeMock() string {
 	var is string
 	var pc string
 	var ms string
+	var imports = make(map[string]struct{}, 4)
 	for _, m := range s.Methods {
-		fieldName, fieldType, methodSig, returnStmt, call := s.processFunc(m)
+		fieldName, fieldType, methodSig, returnStmt, call, imps := s.processFunc(m)
+
+		for imp := range imps {
+			imports[imp] = struct{}{}
+		}
 
 		is += fmt.Sprintf("\n%s %s\n", fieldName, fieldType)
 
@@ -157,7 +188,7 @@ func (s Interface) MakeMock() string {
 
 	debug.Debug("is: %s\n", is)
 
-	return is
+	return is, imports
 }
 
 const (
@@ -168,8 +199,9 @@ const (
 
 // func(ctx context.Context, m M) (err error) -> (ctx, m)
 // func(context.Context,M) (error) -> (p0, p1)
-func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string) {
+func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string, imports map[string]struct{}) {
 
+	imports = make(map[string]struct{}, 4) // 导入的包
 	fieldName = m.Name + "Func"
 	fieldType = m.Signature
 
@@ -188,6 +220,10 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		if name == "" {
 			name = fmt.Sprintf("p%d", i)
 		}
+
+		// 参数类型的包路径信息
+		pkgPath := getTypesPkgPath(pvar.Type())
+		imports[pkgPath] = struct{}{}
 
 		// 解析进来之后，不定参数类型变成了slice：[]interface{}
 		typStr := types.TypeString(pvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
@@ -220,6 +256,10 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	for i := 0; i < res.Len(); i++ {
 		rvar := res.At(i)
 		name := rvar.Name()
+
+		// 返回类型的包路径信息
+		pkgPath := getTypesPkgPath(rvar.Type())
+		imports[pkgPath] = struct{}{}
 
 		resString += name + " " + types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath})) + sep
 	}
