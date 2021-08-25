@@ -357,10 +357,18 @@ func (at *AT) makeURL() *AT {
 		port = at.port
 	}
 
+	path := at.path
+	query := ""
+	rawurl, err := url.Parse(path)
+	if err == nil {
+		path = rawurl.Path
+		query = rawurl.Query().Encode()
+	}
 	at.url = url.URL{
-		Scheme: scheme,
-		Host:   host + port,
-		Path:   at.path,
+		Scheme:   scheme,
+		Host:     host + port,
+		Path:     path,
+		RawQuery: query,
 	}
 
 	return at
@@ -527,7 +535,12 @@ func (at *AT) makeDoc() *AT {
 	var doc string
 
 	// 保存请求和响应
-	key := apiKey(at.path, at.method)
+	path := at.path
+	rawurl, err := url.Parse(path)
+	if err == nil {
+		path = rawurl.Path
+	}
+	key := apiKey(path, at.method)
 
 	// 标题
 	doc += "## " + at.comment + "\n\n"
