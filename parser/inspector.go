@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"sort"
 
 	"github.com/donnol/tools/internal/utils/debug"
 	"golang.org/x/tools/go/packages"
@@ -64,18 +65,44 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 		}
 	}
 
+	structNames := make([]string, 0, len(structMap))
+	for structName := range structMap {
+		structNames = append(structNames, structName)
+	}
+	sort.Slice(structNames, func(i, j int) bool {
+		return structNames[i] < structNames[j]
+	})
 	structs := make([]Struct, 0, len(structMap))
-	for structName, single := range structMap {
+	for _, structName := range structNames {
+		single := structMap[structName]
 		methods := methodsMap[structName]
 		single.Methods = methods
 		structs = append(structs, single)
 	}
+
+	interNames := make([]string, 0, len(interfaceMap))
+	for interName := range interfaceMap {
+		interNames = append(interNames, interName)
+	}
+	sort.Slice(interNames, func(i, j int) bool {
+		return interNames[i] < interNames[j]
+	})
 	inters := make([]Interface, 0, len(interfaceMap))
-	for _, single := range interfaceMap {
+	for _, interName := range interNames {
+		single := interfaceMap[interName]
 		inters = append(inters, single)
 	}
+
+	funcNames := make([]string, 0, len(funcMap))
+	for funcName := range funcMap {
+		funcNames = append(funcNames, funcName)
+	}
+	sort.Slice(funcNames, func(i, j int) bool {
+		return funcNames[i] < funcNames[j]
+	})
 	funcs := make([]Func, 0, len(funcMap))
-	for _, single := range funcMap {
+	for _, funcName := range funcNames {
+		single := funcMap[funcName]
 		funcs = append(funcs, single)
 	}
 
