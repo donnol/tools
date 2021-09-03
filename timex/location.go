@@ -1,13 +1,8 @@
-// Package timex must import before all other packages, so `import _ "github.com/donnol/tools/timex"`` first, and put it a single block. And then,  put other imports to another block.
+// Package timex provide location and some time helper function
 package timex
 
 import "time"
 
 var (
-	Location = time.FixedZone("CST", 8*3600)
+	Location = time.FixedZone("CST", 8*3600) // 东八，Asia/Shanghai
 )
-
-// init
-func init() {
-	time.Local = Location
-}
