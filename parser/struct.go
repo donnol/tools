@@ -467,8 +467,9 @@ func getIdent(l int) string {
 
 // Field 字段
 type Field struct {
-	Id   string // 唯一标志
-	Name string // 名称
+	Id        string // 唯一标志
+	Name      string // 名称
+	Anonymous bool   // 是否匿名
 
 	TypesType types.Type // 原始类型
 	Type      string     // 类型，包含包导入路径

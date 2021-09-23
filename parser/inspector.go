@@ -604,6 +604,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 		ins.inspectExpr(field.Type, from)
 
 		name := ""
+		anonymous := false
 		if len(field.Names) != 0 {
 			for _, s := range field.Names {
 				name += s.Name
@@ -611,6 +612,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 		} else {
 			// 匿名结构体
 			name = toString(field.Type)
+			anonymous = true
 		}
 
 		tag := ""
@@ -620,6 +622,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 		result.Fields = append(result.Fields, Field{
 			Id:          name,
 			Name:        name,
+			Anonymous:   anonymous,
 			TypesType:   ins.pkg.TypesInfo.TypeOf(field.Type),
 			Type:        toString(field.Type),
 			Tag:         tag,
