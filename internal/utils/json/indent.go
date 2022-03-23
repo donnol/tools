@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func IndentToStdout(r interface{}) error {
+func IndentToStdout(r any) error {
 	data, err := json.Marshal(r)
 	if err != nil {
 		return err

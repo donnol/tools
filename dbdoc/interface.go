@@ -5,7 +5,7 @@ import "io"
 type ITable interface {
 	MakeGraph() *Table
 	New() *Table
-	Resolve(v interface{}) *Table
+	Resolve(v any) *Table
 	SetComment(comment string) *Table
 	SetDescription(description string) *Table
 	SetMapper(f Mapper) *Table
@@ -16,7 +16,7 @@ type ITable interface {
 type ITableMock interface {
 	MakeGraph() *Table
 	New() *Table
-	Resolve(v interface{}) *Table
+	Resolve(v any) *Table
 	SetComment(comment string) *Table
 	SetDescription(description string) *Table
 	SetMapper(f Mapper) *Table

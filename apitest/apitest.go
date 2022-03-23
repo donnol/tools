@@ -49,8 +49,8 @@ type AT struct {
 	comment         string
 	header          http.Header
 	cookies         []*http.Cookie
-	param           interface{}
-	result          interface{}
+	param           any
+	result          any
 	ates            []ate
 
 	// 请求和响应
@@ -126,7 +126,7 @@ func (at *AT) SetCookies(cookies []*http.Cookie) *AT {
 }
 
 // SetParam 设置参数
-func (at *AT) SetParam(param interface{}) *AT {
+func (at *AT) SetParam(param any) *AT {
 	if param == nil {
 		at.setErr(fmt.Errorf("nil param"))
 		return at
@@ -249,7 +249,7 @@ func (at *AT) EqualCode(wantCode int) *AT {
 }
 
 // Result 获取结果
-func (at *AT) Result(r interface{}) *AT {
+func (at *AT) Result(r any) *AT {
 	if r == nil {
 		at.setErr(fmt.Errorf("nil r"))
 		return at
@@ -277,7 +277,7 @@ func (at *AT) Result(r interface{}) *AT {
 }
 
 // Equal 校验
-func (at *AT) Equal(args ...interface{}) *AT {
+func (at *AT) Equal(args ...any) *AT {
 	l := len(args)
 	d := l % 2
 	if d != 0 {
@@ -295,7 +295,7 @@ func (at *AT) Equal(args ...interface{}) *AT {
 }
 
 // EqualThen 相等之后
-func (at *AT) EqualThen(f func(*AT) error, args ...interface{}) *AT {
+func (at *AT) EqualThen(f func(*AT) error, args ...any) *AT {
 	// 先比较args
 	at = at.Equal(args...)
 	if at.err != nil {
@@ -647,7 +647,7 @@ func (at *AT) setErr(err error) *AT {
 	return at
 }
 
-func (at *AT) jsonIndent(w io.Writer, r interface{}) *AT {
+func (at *AT) jsonIndent(w io.Writer, r any) *AT {
 	if at.debug {
 		JSONIndent(w, r)
 	}

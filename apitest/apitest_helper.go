@@ -27,7 +27,7 @@ func init() {
 }
 
 // JSONIndent json格式化后输出
-func JSONIndent(w io.Writer, v interface{}) {
+func JSONIndent(w io.Writer, v any) {
 	var b []byte
 	if vb, ok := v.([]byte); ok {
 		b = vb
@@ -80,8 +80,8 @@ func OpenFile(file, title string) (*os.File, error) {
 	return f, nil
 }
 
-func structRandomValue(v interface{}) (interface{}, error) {
-	var r interface{}
+func structRandomValue(v any) (any, error) {
+	var r any
 
 	vtype, _, err := structTypeValue(v)
 	if err != nil {
@@ -93,7 +93,7 @@ func structRandomValue(v interface{}) (interface{}, error) {
 	return r, nil
 }
 
-func makeStructWithValue(vtype reflect.Type) interface{} {
+func makeStructWithValue(vtype reflect.Type) any {
 	r := compositeStructValue(vtype).Interface()
 	return r
 }
@@ -210,8 +210,8 @@ func isSimpleKind(kind reflect.Kind) bool {
 	return false
 }
 
-func randomValueByTag(tag string) interface{} {
-	var v interface{}
+func randomValueByTag(tag string) any {
+	var v any
 
 	splitList := strings.Split(tag, "=")
 	if len(splitList) < 2 {
@@ -234,7 +234,7 @@ func randomValueByTag(tag string) interface{} {
 			log.Printf("Please Input Double Args: %v", vs)
 			return v
 		}
-		var rl []interface{}
+		var rl []any
 		for i := 0; i < l; i += 2 {
 			switch t {
 			case token.INT:
@@ -265,7 +265,7 @@ func randomValueByTag(tag string) interface{} {
 		case "many":
 			al := rand.Intn(l + 1)
 			var m = make(map[int]bool)
-			var vl = make([]interface{}, 0)
+			var vl = make([]any, 0)
 			for j := 0; j < al; j++ {
 				index := rand.Intn(l)
 				if _, ok := m[index]; ok {
@@ -331,7 +331,7 @@ func makeFunc() {
 		return []reflect.Value{in[1], in[0]}
 	}
 
-	makeSwap := func(fptr interface{}) { // 这里将生产一个符合swap的函数
+	makeSwap := func(fptr any) { // 这里将生产一个符合swap的函数
 		fn := reflect.ValueOf(fptr).Elem()
 
 		v := reflect.MakeFunc(fn.Type(), swap)
@@ -344,7 +344,7 @@ func makeFunc() {
 	fmt.Println(intSwap(0, 1)) // 运行
 }
 
-func resolveCallExpr(funcCall string) (name string, v []interface{}, t token.Token) {
+func resolveCallExpr(funcCall string) (name string, v []any, t token.Token) {
 
 	expr, err := parser.ParseExpr(funcCall)
 	if err != nil {
@@ -366,7 +366,7 @@ func resolveCallExpr(funcCall string) (name string, v []interface{}, t token.Tok
 		case *ast.BasicLit:
 			lit := arg.(*ast.BasicLit)
 			t = lit.Kind
-			var lv interface{}
+			var lv any
 			switch t {
 			case token.INT:
 				lv, _ = strconv.Atoi(lit.Value)
@@ -386,11 +386,11 @@ func resolveCallExpr(funcCall string) (name string, v []interface{}, t token.Tok
 	return
 }
 
-func randomValue(kind reflect.Kind, l int) interface{} {
+func randomValue(kind reflect.Kind, l int) any {
 	if l <= 0 {
 		l = 1
 	}
-	var v interface{}
+	var v any
 
 	switch kind {
 	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8, reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint8:
@@ -484,8 +484,8 @@ var (
 	_ = collectStructField
 )
 
-func structToMap(v interface{}) (map[string]interface{}, error) {
-	var m = make(map[string]interface{})
+func structToMap(v any) (map[string]any, error) {
+	var m = make(map[string]any)
 
 	vtype, vvalue, err := structTypeValue(v)
 	if err != nil {
@@ -496,7 +496,7 @@ func structToMap(v interface{}) (map[string]interface{}, error) {
 	return m, nil
 }
 
-func structTypeValue(v interface{}) (vtype reflect.Type, vvalue reflect.Value, err error) {
+func structTypeValue(v any) (vtype reflect.Type, vvalue reflect.Value, err error) {
 	if v == nil {
 		err = fmt.Errorf("Input is nil")
 		return
@@ -515,7 +515,7 @@ func structTypeValue(v interface{}) (vtype reflect.Type, vvalue reflect.Value, e
 	return
 }
 
-func toMap(vtype reflect.Type, vvalue reflect.Value, m map[string]interface{}) {
+func toMap(vtype reflect.Type, vvalue reflect.Value, m map[string]any) {
 	// 将field转为map，json tag的值作为键，字段值为值
 	for i := 0; i < vtype.NumField(); i++ {
 		field := vtype.Field(i)
@@ -615,7 +615,7 @@ func structToList(name string, data ...ate) (string, error) {
 	return list, nil
 }
 
-func structToBlock(name string, data interface{}) (string, error) {
+func structToBlock(name string, data any) (string, error) {
 	var block string
 
 	dataStruct, err := reflectx.ResolveStruct(data)

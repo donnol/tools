@@ -10,7 +10,7 @@ type M struct {
 func TestIsStructPointer(t *testing.T) {
 	var i int
 	for _, cas := range []struct {
-		In   interface{}
+		In   any
 		Want bool
 	}{
 		{&M{}, true},

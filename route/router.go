@@ -85,7 +85,7 @@ type RegisterOption struct {
 
 // Register 注册结构体
 // 结构体名字作为路径的第一部分，路径后面部分由可导出方法名映射来
-func (r *Router) Register(v interface{}, opt RegisterOption) {
+func (r *Router) Register(v any, opt RegisterOption) {
 	// 计时开始
 	start := time.Now()
 

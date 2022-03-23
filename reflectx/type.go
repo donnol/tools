@@ -3,7 +3,7 @@ package reflectx
 import "reflect"
 
 // IsStructPointer 是否结构体指针
-func IsStructPointer(v interface{}) bool {
+func IsStructPointer(v any) bool {
 	refType := reflect.TypeOf(v)
 
 	return isStructPointer(refType)

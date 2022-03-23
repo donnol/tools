@@ -11,7 +11,7 @@ import (
 
 // Proxy 在层间依赖调用时插入钩子调用，类似AOP
 type Proxy interface {
-	Around(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	Around(provider any, mock any, arounder Arounder) any
 }
 
 func NewProxy() Proxy {
@@ -28,15 +28,15 @@ func (pctx ProxyContext) String() string {
 	return fmt.Sprintf(pctx.bracket("PkgPath: %s InterfaceName: %s MethodName: %s"), pctx.PkgPath, pctx.InterfaceName, pctx.MethodName)
 }
 
-func (pctx ProxyContext) Logf(format string, args ...interface{}) {
+func (pctx ProxyContext) Logf(format string, args ...any) {
 	pctx.logf(pctx.String()+": "+format, args...)
 }
 
-func (pctx ProxyContext) LogShortf(format string, args ...interface{}) {
+func (pctx ProxyContext) LogShortf(format string, args ...any) {
 	pctx.logf(pctx.bracket(pctx.MethodName)+": "+format, args...)
 }
 
-func (pctx ProxyContext) logf(format string, args ...interface{}) {
+func (pctx ProxyContext) logf(format string, args ...any) {
 	err := log.Output(3, fmt.Sprintf(format, args...))
 	if err != nil {
 		fmt.Printf("Output failed: %+v\n", err)
@@ -75,11 +75,11 @@ var (
 	MockFieldNameSuffixes = [...]string{"Func", "Handler"} // mock结构体字段名称后缀
 )
 
-func (impl *proxyImpl) Around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+func (impl *proxyImpl) Around(provider any, mock any, arounder Arounder) any {
 	return impl.around(provider, mock, arounder)
 }
 
-func (impl *proxyImpl) around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+func (impl *proxyImpl) around(provider any, mock any, arounder Arounder) any {
 	if mock == nil {
 		return provider
 	}

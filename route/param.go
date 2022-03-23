@@ -33,7 +33,7 @@ type Param struct {
 }
 
 // Parse 解析
-func (p *Param) Parse(ctx context.Context, v interface{}) error {
+func (p *Param) Parse(ctx context.Context, v any) error {
 	var err error
 
 	// 解析
@@ -62,7 +62,7 @@ func (p *Param) Parse(ctx context.Context, v interface{}) error {
 }
 
 // ParseMultipartForm 解析内容
-func (p *Param) ParseMultipartForm(maxFileSize int64, v interface{}) (map[string][]byte, error) {
+func (p *Param) ParseMultipartForm(maxFileSize int64, v any) (map[string][]byte, error) {
 	if p.multipartReader == nil {
 		return nil, fmt.Errorf("Bad multipart reader")
 	}

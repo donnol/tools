@@ -635,7 +635,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 	return
 }
 
-func toString(v interface{}) string {
+func toString(v any) string {
 	qualifier := pkgNameQualifier(qualifierParam{})
 
 	switch vv := v.(type) {

@@ -3,18 +3,18 @@ package inject
 import "reflect"
 
 type IIocMock interface {
-	Inject(v interface{}) (err error)
-	RegisterProvider(v interface{}) (err error)
+	Inject(v any) (err error)
+	RegisterProvider(v any) (err error)
 }
 
 type IProxyContext interface {
-	LogShortf(format string, args ...interface{})
-	Logf(format string, args ...interface{})
+	LogShortf(format string, args ...any)
+	Logf(format string, args ...any)
 	String() string
 }
 
 type IProxyContextMock interface {
-	Logf(format string, args ...interface{})
+	Logf(format string, args ...any)
 	String() string
 }
 
@@ -28,7 +28,7 @@ type IAroundMock interface {
 }
 
 type IProxyMock interface {
-	Around(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	Around(provider any, mock any, arounder Arounder) any
 }
 
 type IAroundFunc interface {
@@ -36,10 +36,10 @@ type IAroundFunc interface {
 }
 
 type IproxyImpl interface {
-	Around(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	Around(provider any, mock any, arounder Arounder) any
 }
 
 type IIoc interface {
-	Inject(v interface{}) (err error)
-	RegisterProvider(v interface{}) (err error)
+	Inject(v any) (err error)
+	RegisterProvider(v any) (err error)
 }

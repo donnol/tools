@@ -11,7 +11,7 @@ import (
 func TestInfo(t *testing.T) {
 	log.SetFlags(log.Lshortfile | log.LstdFlags)
 	for _, cas := range []struct {
-		value interface{}
+		value any
 	}{
 		{errors.New("Test Message")},
 	} {
@@ -28,7 +28,7 @@ func TestLogger(t *testing.T) {
 	logger := New(os.Stdout, "[Haha]", log.LstdFlags|log.Lshortfile)
 
 	for _, cas := range []struct {
-		value interface{}
+		value any
 	}{
 		{errors.New("Test Message")},
 	} {
@@ -59,7 +59,7 @@ func TestNotifyLogger(t *testing.T) {
 	logger.SetNotify(n)
 
 	for _, cas := range []struct {
-		value interface{}
+		value any
 	}{
 		{errors.New("Notify Message")},
 	} {

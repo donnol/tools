@@ -91,9 +91,9 @@ func TestSetStructFieldValue(t *testing.T) {
 	}
 	for _, cas := range []struct {
 		name        string
-		arg         interface{}
+		arg         any
 		fieldName   string
-		targetValue interface{}
+		targetValue any
 	}{
 		{
 			name:        "exported",

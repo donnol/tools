@@ -14,7 +14,7 @@ func TestMemImpl(t *testing.T) {
 
 	for _, cas := range []struct {
 		key   string
-		value interface{}
+		value any
 	}{
 		{"key1", "value1"},
 	} {
@@ -65,7 +65,7 @@ func BenchmarkMemImpl(b *testing.B) {
 
 	cas := struct {
 		key   string
-		value interface{}
+		value any
 	}{"key1", "value1"}
 	n := time.Duration(5)
 	expire := time.Second * n

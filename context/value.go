@@ -29,13 +29,13 @@ const (
 )
 
 // GetValue 从标准库ctx读取key对应value
-func GetValue(ctx context.Context, key interface{}) interface{} {
+func GetValue(ctx context.Context, key any) any {
 	return ctx.Value(key)
 }
 
 // GetAllValue 获取ctx里的所有value
-func GetAllValue(ctx context.Context) ([]interface{}, error) {
-	r := make([]interface{}, 0, 4)
+func GetAllValue(ctx context.Context) ([]any, error) {
+	r := make([]any, 0, 4)
 
 	r1, err := GetTimestampValue(ctx)
 	if err != nil {

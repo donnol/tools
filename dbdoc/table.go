@@ -71,7 +71,7 @@ func (t *Table) New() *Table {
 }
 
 // Resolve 解析
-func (t *Table) Resolve(v interface{}) *Table {
+func (t *Table) Resolve(v any) *Table {
 	const relationTagName = "rel"
 	const relationTagSep = "."
 

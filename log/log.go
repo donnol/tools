@@ -22,12 +22,12 @@ type Notifier interface {
 // Logger 日志接口
 type Logger interface {
 	SetNotify(notify Notifier)
-	Fatalf(format string, v ...interface{})
-	Errorf(format string, v ...interface{})
-	Warnf(format string, v ...interface{})
-	Infof(format string, v ...interface{})
-	Debugf(format string, v ...interface{})
-	Tracef(format string, v ...interface{})
+	Fatalf(format string, v ...any)
+	Errorf(format string, v ...any)
+	Warnf(format string, v ...any)
+	Infof(format string, v ...any)
+	Debugf(format string, v ...any)
+	Tracef(format string, v ...any)
 }
 
 // logger 日志
@@ -57,42 +57,42 @@ func (l *logger) SetNotify(notify Notifier) {
 }
 
 // Fatalf 致命
-func (l *logger) Fatalf(format string, v ...interface{}) {
+func (l *logger) Fatalf(format string, v ...any) {
 	level := FatalLevel
 	l.printf(level, format, v...)
 }
 
 // Errorf 错误
-func (l *logger) Errorf(format string, v ...interface{}) {
+func (l *logger) Errorf(format string, v ...any) {
 	level := ErrorLevel
 	l.printf(level, format, v...)
 }
 
 // Warnf 警告
-func (l *logger) Warnf(format string, v ...interface{}) {
+func (l *logger) Warnf(format string, v ...any) {
 	level := WarnLevel
 	l.printf(level, format, v...)
 }
 
 // Infof 信息
-func (l *logger) Infof(format string, v ...interface{}) {
+func (l *logger) Infof(format string, v ...any) {
 	level := InfoLevel
 	l.printf(level, format, v...)
 }
 
 // Debugf 调试
-func (l *logger) Debugf(format string, v ...interface{}) {
+func (l *logger) Debugf(format string, v ...any) {
 	level := DebugLevel
 	l.printf(level, format, v...)
 }
 
 // Tracef 追踪
-func (l *logger) Tracef(format string, v ...interface{}) {
+func (l *logger) Tracef(format string, v ...any) {
 	level := TraceLevel
 	l.printf(level, format, v...)
 }
 
-func (l *logger) printf(level Level, format string, v ...interface{}) {
+func (l *logger) printf(level Level, format string, v ...any) {
 	format = getFormat(level, format)
 	msg := fmt.Sprintf(format, v...)
 
@@ -120,37 +120,37 @@ func (l *logger) notice(level Level, msg string) {
 }
 
 // Fatalf 致命
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	level := FatalLevel
 	printf(level, format, v...)
 }
 
 // Errorf 错误
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	level := ErrorLevel
 	printf(level, format, v...)
 }
 
 // Warnf 警告
-func Warnf(format string, v ...interface{}) {
+func Warnf(format string, v ...any) {
 	level := WarnLevel
 	printf(level, format, v...)
 }
 
 // Infof 信息
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	level := InfoLevel
 	printf(level, format, v...)
 }
 
 // Debugf 调试
-func Debugf(format string, v ...interface{}) {
+func Debugf(format string, v ...any) {
 	level := DebugLevel
 	printf(level, format, v...)
 }
 
 // Tracef 追踪
-func Tracef(format string, v ...interface{}) {
+func Tracef(format string, v ...any) {
 	level := TraceLevel
 	printf(level, format, v...)
 }
@@ -159,7 +159,7 @@ func getFormat(level Level, format string) string {
 	return fmt.Sprintf("[%s] %s", level, format)
 }
 
-func printf(level Level, format string, v ...interface{}) {
+func printf(level Level, format string, v ...any) {
 	format = getFormat(level, format)
 	msg := fmt.Sprintf(format, v...)
 

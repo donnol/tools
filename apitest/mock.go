@@ -8,11 +8,11 @@ import (
 type ATMockMock struct {
 	DebugFunc func() *AT
 
-	EqualFunc func(args ...interface{}) *AT
+	EqualFunc func(args ...any) *AT
 
 	EqualCodeFunc func(wantCode int) *AT
 
-	EqualThenFunc func(f func(*AT) error, args ...interface{}) *AT
+	EqualThenFunc func(f func(*AT) error, args ...any) *AT
 
 	ErrFunc func() error
 
@@ -24,7 +24,7 @@ type ATMockMock struct {
 
 	PressureRunBatchFunc func(param []PressureParam) *AT
 
-	ResultFunc func(r interface{}) *AT
+	ResultFunc func(r any) *AT
 
 	RunFunc func() *AT
 
@@ -32,7 +32,7 @@ type ATMockMock struct {
 
 	SetHeaderFunc func(header http.Header) *AT
 
-	SetParamFunc func(param interface{}) *AT
+	SetParamFunc func(param any) *AT
 
 	SetPortFunc func(port string) *AT
 
@@ -45,7 +45,7 @@ func (mockRecv *ATMockMock) Debug() *AT {
 	return mockRecv.DebugFunc()
 }
 
-func (mockRecv *ATMockMock) Equal(args ...interface{}) *AT {
+func (mockRecv *ATMockMock) Equal(args ...any) *AT {
 	return mockRecv.EqualFunc(args...)
 }
 
@@ -53,7 +53,7 @@ func (mockRecv *ATMockMock) EqualCode(wantCode int) *AT {
 	return mockRecv.EqualCodeFunc(wantCode)
 }
 
-func (mockRecv *ATMockMock) EqualThen(f func(*AT) error, args ...interface{}) *AT {
+func (mockRecv *ATMockMock) EqualThen(f func(*AT) error, args ...any) *AT {
 	return mockRecv.EqualThenFunc(f, args...)
 }
 
@@ -77,7 +77,7 @@ func (mockRecv *ATMockMock) PressureRunBatch(param []PressureParam) *AT {
 	return mockRecv.PressureRunBatchFunc(param)
 }
 
-func (mockRecv *ATMockMock) Result(r interface{}) *AT {
+func (mockRecv *ATMockMock) Result(r any) *AT {
 	return mockRecv.ResultFunc(r)
 }
 
@@ -93,7 +93,7 @@ func (mockRecv *ATMockMock) SetHeader(header http.Header) *AT {
 	return mockRecv.SetHeaderFunc(header)
 }
 
-func (mockRecv *ATMockMock) SetParam(param interface{}) *AT {
+func (mockRecv *ATMockMock) SetParam(param any) *AT {
 	return mockRecv.SetParamFunc(param)
 }
 
@@ -108,11 +108,11 @@ func (mockRecv *ATMockMock) WriteFile(w io.Writer) *AT {
 type ATMock struct {
 	DebugFunc func() *AT
 
-	EqualFunc func(args ...interface{}) *AT
+	EqualFunc func(args ...any) *AT
 
 	EqualCodeFunc func(wantCode int) *AT
 
-	EqualThenFunc func(f func(*AT) error, args ...interface{}) *AT
+	EqualThenFunc func(f func(*AT) error, args ...any) *AT
 
 	ErrFunc func() error
 
@@ -124,7 +124,7 @@ type ATMock struct {
 
 	PressureRunBatchFunc func(param []PressureParam) *AT
 
-	ResultFunc func(r interface{}) *AT
+	ResultFunc func(r any) *AT
 
 	RunFunc func() *AT
 
@@ -132,7 +132,7 @@ type ATMock struct {
 
 	SetHeaderFunc func(header http.Header) *AT
 
-	SetParamFunc func(param interface{}) *AT
+	SetParamFunc func(param any) *AT
 
 	SetPortFunc func(port string) *AT
 
@@ -145,7 +145,7 @@ func (mockRecv *ATMock) Debug() *AT {
 	return mockRecv.DebugFunc()
 }
 
-func (mockRecv *ATMock) Equal(args ...interface{}) *AT {
+func (mockRecv *ATMock) Equal(args ...any) *AT {
 	return mockRecv.EqualFunc(args...)
 }
 
@@ -153,7 +153,7 @@ func (mockRecv *ATMock) EqualCode(wantCode int) *AT {
 	return mockRecv.EqualCodeFunc(wantCode)
 }
 
-func (mockRecv *ATMock) EqualThen(f func(*AT) error, args ...interface{}) *AT {
+func (mockRecv *ATMock) EqualThen(f func(*AT) error, args ...any) *AT {
 	return mockRecv.EqualThenFunc(f, args...)
 }
 
@@ -177,7 +177,7 @@ func (mockRecv *ATMock) PressureRunBatch(param []PressureParam) *AT {
 	return mockRecv.PressureRunBatchFunc(param)
 }
 
-func (mockRecv *ATMock) Result(r interface{}) *AT {
+func (mockRecv *ATMock) Result(r any) *AT {
 	return mockRecv.ResultFunc(r)
 }
 
@@ -193,7 +193,7 @@ func (mockRecv *ATMock) SetHeader(header http.Header) *AT {
 	return mockRecv.SetHeaderFunc(header)
 }
 
-func (mockRecv *ATMock) SetParam(param interface{}) *AT {
+func (mockRecv *ATMock) SetParam(param any) *AT {
 	return mockRecv.SetParamFunc(param)
 }
 

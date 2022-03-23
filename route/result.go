@@ -15,7 +15,7 @@ import (
 type Result struct {
 	utilerrors.Error
 
-	Data interface{} `json:"data"` // 正常返回时的数据
+	Data any `json:"data"` // 正常返回时的数据
 
 	// 给登陆接口使用
 	CookieAfterLogin int `json:"-"` // 登陆时需要设置登陆态的用户信息
@@ -79,7 +79,7 @@ func MakeContentFromBytes(filename string, content []byte) (Content, error) {
 }
 
 // PresentData 用具体结构体展现数据
-func (r *Result) PresentData(v interface{}) error {
+func (r *Result) PresentData(v any) error {
 	b, err := json.Marshal(r.Data)
 	if err != nil {
 		return err
@@ -100,8 +100,8 @@ func SetResultVersion(ver int) {
 }
 
 type Result1 struct {
-	Header ResultCode  `json:"header"`
-	Data   interface{} `json:"data"` // 可以是对象或数组
+	Header ResultCode `json:"header"`
+	Data   any        `json:"data"` // 可以是对象或数组
 }
 
 type ResultCode struct {
@@ -115,7 +115,7 @@ type ResultCode struct {
 type resultHelper Result
 
 func (r Result) MarshalJSON() ([]byte, error) {
-	var rd interface{}
+	var rd any
 	switch version {
 	case 1:
 		rd = r.ToResult1()

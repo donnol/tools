@@ -38,7 +38,7 @@ func MakeStruct() Struct {
 }
 
 // ResolveStruct 解析结构体
-func ResolveStruct(value interface{}) (Struct, error) {
+func ResolveStruct(value any) (Struct, error) {
 	s := MakeStruct()
 
 	var refType reflect.Type

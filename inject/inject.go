@@ -30,7 +30,7 @@ func NewIoc(
 }
 
 // RegisterProvider 注册provider
-func (ioc *Ioc) RegisterProvider(v interface{}) (err error) {
+func (ioc *Ioc) RegisterProvider(v any) (err error) {
 	refValue := reflect.ValueOf(v)
 	refType := refValue.Type()
 	if refType.Kind() != reflect.Func {
@@ -67,7 +67,7 @@ func (ioc *Ioc) RegisterProvider(v interface{}) (err error) {
 // 遍历v的字段，找到字段类型，再根据字段类型找到provider，调用provider获得实例，再把实例值赋给该字段
 // provider需要在接口定义处注册，注册到一个统一管理的地方
 // 如果provider需要参数，则根据参数类型继续找寻相应的provider，直至初始化完成
-func (ioc *Ioc) Inject(v interface{}) (err error) {
+func (ioc *Ioc) Inject(v any) (err error) {
 	refValue := reflect.ValueOf(v)
 	refType := refValue.Type()
 	if refType.Kind() != reflect.Ptr {

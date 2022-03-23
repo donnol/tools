@@ -22,7 +22,7 @@ type memImpl struct {
 }
 
 type memValue struct {
-	value       interface{}
+	value       any
 	haveExpired bool // 是否设置了过期时间
 	expiredAt   time.Time
 }
@@ -42,7 +42,7 @@ func newMemImpl() *memImpl {
 var _ Cache = &memImpl{}
 
 // Get 获取
-func (i *memImpl) Get(key string) interface{} {
+func (i *memImpl) Get(key string) any {
 	i.mutex.RLock()
 	defer i.mutex.RUnlock()
 
@@ -56,7 +56,7 @@ func (i *memImpl) Get(key string) interface{} {
 }
 
 // Lookup 寻找
-func (i *memImpl) Lookup(key string) (interface{}, bool) {
+func (i *memImpl) Lookup(key string) (any, bool) {
 	i.mutex.RLock()
 	defer i.mutex.RUnlock()
 
@@ -70,7 +70,7 @@ func (i *memImpl) Lookup(key string) (interface{}, bool) {
 }
 
 // Set 设置
-func (i *memImpl) Set(key string, value interface{}) bool {
+func (i *memImpl) Set(key string, value any) bool {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 
@@ -82,7 +82,7 @@ func (i *memImpl) Set(key string, value interface{}) bool {
 }
 
 // SetNX 带超时，并且校验是否存在已有key，没有才设置
-func (i *memImpl) SetNX(key string, value interface{}, expire time.Duration) bool {
+func (i *memImpl) SetNX(key string, value any, expire time.Duration) bool {
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
 

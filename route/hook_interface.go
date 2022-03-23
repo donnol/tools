@@ -4,7 +4,7 @@ import "context"
 
 // Newer 新建
 type Newer interface {
-	New() interface{}
+	New() any
 }
 
 // Checker 检查接口
@@ -14,5 +14,5 @@ type Checker interface {
 
 // Filter 过滤器
 type Filter interface {
-	Filter() interface{}
+	Filter() any
 }

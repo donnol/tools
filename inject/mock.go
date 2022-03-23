@@ -3,14 +3,14 @@ package inject
 import "reflect"
 
 type ProxyContextMockMock struct {
-	LogfFunc func(format string, args ...interface{})
+	LogfFunc func(format string, args ...any)
 
 	StringFunc func() string
 }
 
 var _ IProxyContextMock = &ProxyContextMockMock{}
 
-func (mockRecv *ProxyContextMockMock) Logf(format string, args ...interface{}) {
+func (mockRecv *ProxyContextMockMock) Logf(format string, args ...any) {
 	mockRecv.LogfFunc(format, args...)
 }
 
@@ -45,20 +45,20 @@ func (mockRecv *AroundMockMock) Before(pctx ProxyContext) {
 }
 
 type ProxyContextMock struct {
-	LogShortfFunc func(format string, args ...interface{})
+	LogShortfFunc func(format string, args ...any)
 
-	LogfFunc func(format string, args ...interface{})
+	LogfFunc func(format string, args ...any)
 
 	StringFunc func() string
 }
 
 var _ IProxyContext = &ProxyContextMock{}
 
-func (mockRecv *ProxyContextMock) LogShortf(format string, args ...interface{}) {
+func (mockRecv *ProxyContextMock) LogShortf(format string, args ...any) {
 	mockRecv.LogShortfFunc(format, args...)
 }
 
-func (mockRecv *ProxyContextMock) Logf(format string, args ...interface{}) {
+func (mockRecv *ProxyContextMock) Logf(format string, args ...any) {
 	mockRecv.LogfFunc(format, args...)
 }
 
@@ -67,22 +67,22 @@ func (mockRecv *ProxyContextMock) String() string {
 }
 
 type ProxyMockMock struct {
-	AroundFunc func(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	AroundFunc func(provider any, mock any, arounder Arounder) any
 }
 
 var _ IProxyMock = &ProxyMockMock{}
 
-func (mockRecv *ProxyMockMock) Around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+func (mockRecv *ProxyMockMock) Around(provider any, mock any, arounder Arounder) any {
 	return mockRecv.AroundFunc(provider, mock, arounder)
 }
 
 type proxyImplMock struct {
-	AroundFunc func(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	AroundFunc func(provider any, mock any, arounder Arounder) any
 }
 
 var _ IproxyImpl = &proxyImplMock{}
 
-func (mockRecv *proxyImplMock) Around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+func (mockRecv *proxyImplMock) Around(provider any, mock any, arounder Arounder) any {
 	return mockRecv.AroundFunc(provider, mock, arounder)
 }
 
@@ -97,44 +97,44 @@ func (mockRecv *AroundFuncMock) Around(pctx ProxyContext, method reflect.Value, 
 }
 
 type IocMock struct {
-	InjectFunc func(v interface{}) (err error)
+	InjectFunc func(v any) (err error)
 
-	RegisterProviderFunc func(v interface{}) (err error)
+	RegisterProviderFunc func(v any) (err error)
 }
 
 var _ IIoc = &IocMock{}
 
-func (mockRecv *IocMock) Inject(v interface{}) (err error) {
+func (mockRecv *IocMock) Inject(v any) (err error) {
 	return mockRecv.InjectFunc(v)
 }
 
-func (mockRecv *IocMock) RegisterProvider(v interface{}) (err error) {
+func (mockRecv *IocMock) RegisterProvider(v any) (err error) {
 	return mockRecv.RegisterProviderFunc(v)
 }
 
 type IocMockMock struct {
-	InjectFunc func(v interface{}) (err error)
+	InjectFunc func(v any) (err error)
 
-	RegisterProviderFunc func(v interface{}) (err error)
+	RegisterProviderFunc func(v any) (err error)
 }
 
 var _ IIocMock = &IocMockMock{}
 
-func (mockRecv *IocMockMock) Inject(v interface{}) (err error) {
+func (mockRecv *IocMockMock) Inject(v any) (err error) {
 	return mockRecv.InjectFunc(v)
 }
 
-func (mockRecv *IocMockMock) RegisterProvider(v interface{}) (err error) {
+func (mockRecv *IocMockMock) RegisterProvider(v any) (err error) {
 	return mockRecv.RegisterProviderFunc(v)
 }
 
 type ProxyMock struct {
-	AroundFunc func(provider interface{}, mock interface{}, arounder Arounder) interface{}
+	AroundFunc func(provider any, mock any, arounder Arounder) any
 }
 
 var _ Proxy = &ProxyMock{}
 
-func (mockRecv *ProxyMock) Around(provider interface{}, mock interface{}, arounder Arounder) interface{} {
+func (mockRecv *ProxyMock) Around(provider any, mock any, arounder Arounder) any {
 	return mockRecv.AroundFunc(provider, mock, arounder)
 }
 

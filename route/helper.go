@@ -10,7 +10,7 @@ import (
 )
 
 // resolveCallExpr 解析函数调用字符串
-func resolveCallExpr(funcCall string) (name string, v []interface{}, t token.Token, err error) {
+func resolveCallExpr(funcCall string) (name string, v []any, t token.Token, err error) {
 
 	expr, err := parser.ParseExpr(funcCall)
 	if err != nil {
@@ -32,7 +32,7 @@ func resolveCallExpr(funcCall string) (name string, v []interface{}, t token.Tok
 		case *ast.BasicLit:
 			lit := arg
 			t = lit.Kind
-			var lv interface{}
+			var lv any
 			switch t {
 			case token.INT:
 				lv, _ = strconv.Atoi(lit.Value)

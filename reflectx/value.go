@@ -19,7 +19,7 @@ var (
 )
 
 // InitParam 初始化-使用反射初始化param里的指定类型
-func InitParam(param interface{}, specType reflect.Type, specValue reflect.Value, copy bool) (interface{}, error) {
+func InitParam(param any, specType reflect.Type, specValue reflect.Value, copy bool) (any, error) {
 	// 反射获取type和value
 	refType := reflect.TypeOf(param)
 	refValue := reflect.ValueOf(param)
@@ -171,7 +171,7 @@ func CopyStructField(refType reflect.Type, refValue reflect.Value) (reflect.Type
 }
 
 // SetStructRandom 设置结构体随机值
-func SetStructRandom(v interface{}) {
+func SetStructRandom(v any) {
 	var refValue reflect.Value
 	var refType reflect.Type
 
@@ -466,8 +466,8 @@ func getTypeRandomValue(typ reflect.Type) reflect.Value {
 }
 
 // ToInterface 如果in数组里存在无法取Interface的Value，则会置为nil
-func ToInterface(in []reflect.Value) (out []interface{}) {
-	out = make([]interface{}, len(in))
+func ToInterface(in []reflect.Value) (out []any) {
+	out = make([]any, len(in))
 	for i, one := range in {
 		if !one.CanInterface() {
 			continue
@@ -479,7 +479,7 @@ func ToInterface(in []reflect.Value) (out []interface{}) {
 
 // SetStructFieldValue 设置结构体字段的值，arg必须是结构体指针，value值类型必须与结构体对应fieldName类型一致
 // 没有没有找到指定字段，则返回的StructField为空
-func SetStructFieldValue(arg reflect.Value, fieldName string, value interface{}) (fieldType reflect.StructField) {
+func SetStructFieldValue(arg reflect.Value, fieldName string, value any) (fieldType reflect.StructField) {
 	var refValue = arg
 	var refType = arg.Type()
 

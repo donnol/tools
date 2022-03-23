@@ -18,7 +18,7 @@ func TestResolve(t *testing.T) {
 }
 
 func TestCollectStructComment(t *testing.T) {
-	for _, cas := range []interface{}{
+	for _, cas := range []any{
 		&User{},
 	} {
 		s, err := ResolveStruct(cas)
@@ -40,7 +40,7 @@ func TestResolveStruct(t *testing.T) {
 	jsonPrint(os.Stdout, s)
 }
 
-func jsonPrint(w io.Writer, in interface{}) {
+func jsonPrint(w io.Writer, in any) {
 	var data []byte
 	if v, ok := in.([]byte); ok {
 		data = v

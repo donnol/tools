@@ -7,7 +7,7 @@ type TableMock struct {
 
 	NewFunc func() *Table
 
-	ResolveFunc func(v interface{}) *Table
+	ResolveFunc func(v any) *Table
 
 	SetCommentFunc func(comment string) *Table
 
@@ -30,7 +30,7 @@ func (mockRecv *TableMock) New() *Table {
 	return mockRecv.NewFunc()
 }
 
-func (mockRecv *TableMock) Resolve(v interface{}) *Table {
+func (mockRecv *TableMock) Resolve(v any) *Table {
 	return mockRecv.ResolveFunc(v)
 }
 
@@ -59,7 +59,7 @@ type TableMockMock struct {
 
 	NewFunc func() *Table
 
-	ResolveFunc func(v interface{}) *Table
+	ResolveFunc func(v any) *Table
 
 	SetCommentFunc func(comment string) *Table
 
@@ -82,7 +82,7 @@ func (mockRecv *TableMockMock) New() *Table {
 	return mockRecv.NewFunc()
 }
 
-func (mockRecv *TableMockMock) Resolve(v interface{}) *Table {
+func (mockRecv *TableMockMock) Resolve(v any) *Table {
 	return mockRecv.ResolveFunc(v)
 }
 
