@@ -8,7 +8,7 @@ import (
 
 // Ioc 控制反转，Inversion of Control
 type Ioc struct {
-	enableUnexportedFieldSetValue bool // 开启对非导出字段设置值
+	enableUnexportedFieldSetValue bool // 开启对非导出字段的赋值
 
 	providerMap map[reflect.Type]typeInfo
 	cache       map[reflect.Type]reflect.Value
@@ -29,7 +29,7 @@ func NewIoc(
 	}
 }
 
-// RegisterProvider 注册provider
+// RegisterProvider 注册provider函数，形如`func New(fielda TypeA, fieldb TypeB) (T)`
 func (ioc *Ioc) RegisterProvider(v any) (err error) {
 	refValue := reflect.ValueOf(v)
 	refType := refValue.Type()
@@ -62,7 +62,7 @@ func (ioc *Ioc) RegisterProvider(v any) (err error) {
 	return
 }
 
-// Inject 注入依赖
+// Inject 注入依赖，传入结构体，根据结构体的字段类型找到对应的provider，执行后将获得的值赋予字段
 //
 // 遍历v的字段，找到字段类型，再根据字段类型找到provider，调用provider获得实例，再把实例值赋给该字段
 // provider需要在接口定义处注册，注册到一个统一管理的地方
@@ -84,13 +84,14 @@ func (ioc *Ioc) Inject(v any) (err error) {
 		field := eleValue.Field(i)
 		fieldType := field.Type()
 
+		// 根据类型查找值
 		var value reflect.Value
 		value, err = ioc.find(fieldType)
 		if err != nil {
 			return
 		}
 
-		// 赋值到字段，哪怕是非导出字段
+		// 给字段赋值
 		if ioc.enableUnexportedFieldSetValue {
 			rf := reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).Elem()
 			rf.Set(value)

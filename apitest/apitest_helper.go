@@ -201,6 +201,51 @@ func structOf(sf []reflect.StructField) reflect.Value {
 	return v
 }
 
+type SimpleKind interface {
+	~int | ~int16 | ~int32 | ~int64 | ~int8 |
+		~uint | ~uint16 | ~uint32 | ~uint64 | ~uint8 |
+		~string |
+		~bool |
+		~float32 | ~float64
+}
+
+// handleSimpleKind use interface SimpleKind to make sure t is always SimpleKind.
+func handleSimpleKind[T SimpleKind](t T) {
+
+	// interface{}可以断言回具体类型，那泛型约束可以断言回具体类型吗？
+	// invalid operation: cannot use type assertion on type parameter value t (variable of type T constrained by SimpleKind)
+	// _, ok := t.(int)
+	// if ok {
+
+	// }
+
+	// type switch?
+	switch tt := interface{}(t).(type) { // 需要先转为interface{}，有没有可能不需要呢？-- switch tt := t.(type)
+	case int:
+		fmt.Printf("[int] value: %d", tt)
+	}
+}
+
+func isSimpleKind2[T any](t T) bool {
+	// invalid operation: cannot use type assertion on type parameter value t (variable of type T constrained by any)
+	// _, ok := t.(SimpleKind)
+	// if ok {
+	// 	return true
+	// }
+
+	return false
+}
+
+func isSimpleKind3(t any) bool {
+	// interface contains type constraints
+	// _, ok := t.(SimpleKind)
+	// if ok {
+	// 	return false
+	// }
+
+	return false
+}
+
 func isSimpleKind(kind reflect.Kind) bool {
 	switch kind {
 	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8, reflect.Uint, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uint8, reflect.String, reflect.Bool, reflect.Float32, reflect.Float64:

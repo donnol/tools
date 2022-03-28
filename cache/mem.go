@@ -115,12 +115,23 @@ func (i *memImpl) beginDelTask() {
 	for {
 		select {
 		case <-tickChan:
-			now := time.Now()
-			for key, value := range i.m {
-				if value.haveExpired && !now.Before(value.expiredAt) {
-					delete(i.m, key)
-					log.Printf("delete %s from cache\n", key)
+			{
+				i.mutex.Lock()
+
+				now := time.Now()
+				for key, value := range i.m { // 如果数量很大，就会锁住很长时间
+					// 根据过期时间来删除
+					if value.haveExpired && !now.Before(value.expiredAt) {
+						delete(i.m, key)
+						log.Printf("delete %s from cache\n", key)
+					}
+
+					// 如果想根据最近未使用条件呢？
+					// 最近使用的元素移动到顶，那么最近未使用的元素自然就掉落到底了；
+					// 经过一段时间后，把最底部的元素删除
 				}
+
+				i.mutex.Unlock()
 			}
 		}
 	}
