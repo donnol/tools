@@ -204,6 +204,10 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 	return structCommentMap, fieldCommentMap, nil
 }
 
+var (
+	_ = resolveWithGoDoc
+)
+
 // 返回结构体注释，字段名注释映射和错误
 func resolveWithGoDoc(structName string) (map[string]string, map[string]string, error) {
 	var structCommentMap = make(map[string]string)

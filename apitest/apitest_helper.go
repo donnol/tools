@@ -209,6 +209,13 @@ type SimpleKind interface {
 		~float32 | ~float64
 }
 
+var (
+	_ = handleSimpleKind[int]
+	_ = isSimpleKind2[int]
+	_ = isSimpleKind2[int]
+	_ = isSimpleKind3
+)
+
 // handleSimpleKind use interface SimpleKind to make sure t is always SimpleKind.
 func handleSimpleKind[T SimpleKind](t T) {
 

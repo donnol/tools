@@ -1,6 +1,9 @@
 package queue
 
-import "testing"
+import (
+	"log"
+	"testing"
+)
 
 func TestMemQueue(t *testing.T) {
 	que := NewQueue[*MemMessage[string]]()
@@ -10,12 +13,13 @@ func TestMemQueue(t *testing.T) {
 
 	finish := make(chan struct{})
 	go func() {
-		que.Consume(topic, func(msg Message) error {
+		if err := que.Consume(topic, func(msg Message) error {
 			t.Logf("msg: %+v", msg)
 			finish <- struct{}{}
 			return nil
-		})
-
+		}); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	receipt, err := que.Produce(topic, &MemMessage[string]{

@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-func openFile(file string) (*os.File, error) {
+func OpenFile(file string) (*os.File, error) {
 	f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 	if err != nil {
 		return f, err
