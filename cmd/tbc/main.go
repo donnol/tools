@@ -376,6 +376,19 @@ like:
 			targetFunc.PrintCallGraph(newIgnores, depth)
 		},
 	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpGenProject),
+		Short: "gen layout of a new project",
+		Long:  ``,
+		Run: func(cmd *cobra.Command, args []string) {
+			var err error
+
+			// 指定一个目录，生成项目结构
+
+			_ = err
+		},
+	})
 }
 
 func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error) {

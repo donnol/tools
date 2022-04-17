@@ -23,9 +23,10 @@ type Option struct {
 type Op string
 
 const (
-	OpReplace   Op = "replace"
-	OpMock      Op = "mock"
-	OpImpl      Op = "impl"
-	OpInterface Op = "interface"
-	OpCallgraph Op = "callgraph"
+	OpReplace    Op = "replace"
+	OpMock       Op = "mock"
+	OpImpl       Op = "impl"
+	OpInterface  Op = "interface"
+	OpCallgraph  Op = "callgraph"
+	OpGenProject Op = "genproject"
 )
