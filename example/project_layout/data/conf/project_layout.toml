@@ -1,0 +1,6 @@
+# 项目配置
+name = "project_layout"
+env = "DEV"
+
+[server]
+port = 8890

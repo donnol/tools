@@ -1,0 +1,135 @@
+# 不同容器所需的配置文件均在./data/conf目录里
+# 不同容器所需的数据卷均映射到同一个目录里的不同子目录，如：/project_layout/redis/data:/data, 
+services:
+  nginx:
+    image: nginx:1.21.1
+    restart: always
+    container_name: nginx
+    environment:
+      - TZ=Asia/Shanghai
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      # 加入网络
+      - my-network
+    volumes:
+      - ../../data/conf/nginx.conf:/etc/nginx/conf.d/nginx.conf
+      # - /docker/nginx/log:/var/log/nginx
+      # - /docker/nginx/www:/etc/nginx/html
+      # - /etc/letsencrypt:/etc/letsencrypt
+    depends_on:
+      - server
+
+  server:
+    restart: always
+    image: project_layout
+    environment:
+      - TZ=Asia/Shanghai
+    container_name: server
+    command: project_layout --config=/data/conf/project_layout.toml server --port=8808
+    ports:
+      - 8808:8808
+    networks:
+      # 加入网络
+      - my-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # volumes:
+    #   - ./compose-config.toml:/config.toml
+    depends_on:
+      - mysql
+      - redis
+
+  timer:
+    restart: always
+    image: project_layout
+    environment:
+      - TZ=Asia/Shanghai
+    container_name: timer
+    command: project_layout --config=/data/conf/project_layout.toml timer
+    networks:
+      # 加入网络
+      - my-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    # volumes:
+    #   - ./compose-config.toml:/config.toml
+    depends_on:
+      - mysql
+      - redis
+
+  mysql:
+    restart: always
+    image: mysql:8.0.26
+    container_name: mysql
+    # ports:
+    #   - 33068:3306
+    expose:
+      - "3306"
+    networks:
+      # 加入网络
+      - my-network
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --explicit_defaults_for_timestamp=true --lower_case_table_names=1 --default-time-zone=+8:00
+    environment:
+      MYSQL_ROOT_PASSWORD: "project_layout_root"
+      MYSQL_USER: project_layout_man # 创建用户
+      MYSQL_PASSWORD: project_layout_power # 设置用户的密码
+      MYSQL_DATABASE: project_layout # 数据库
+    volumes:
+      - ../../data/mysql/db:/var/lib/mysql
+      - ../../data/conf/my.cnf:/etc/my.cnf
+      - ../../data/sql/:/docker-entrypoint-initdb.d # 这个只在首次初始化容器时执行，也就是还没有在../../data/mysql/db目录生成内容的时候；如果该目录已有内容则不会执行
+
+  redis:
+    restart: always
+    image: redis:6.2.5
+    container_name: redis
+    environment:
+      - TZ=Asia/Shanghai
+    command: redis-server /usr/local/etc/redis/redis.conf
+    # ports:
+    #   - "63798:6379"
+    expose:
+      - "6379"
+    networks:
+      # 加入网络
+      - my-network
+    volumes:
+      - ../../data/redis/data:/data
+      - ../../data/conf/redis.conf:/usr/local/etc/redis/redis.conf
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    # ports:
+    #   - "2181:2181"
+    expose:
+      - "2181"
+    networks:
+      # 加入网络
+      - my-network
+    restart: unless-stopped
+
+  kafka:
+    image: wurstmeister/kafka
+    # ports:
+    #   - "9092"
+    expose:
+      - "9092"
+    networks:
+      # 加入网络
+      - my-network
+    environment:
+      DOCKER_API_VERSION: 1.22
+      KAFKA_ADVERTISED_HOST_NAME: 192.168.232.128
+      # HOSTNAME_COMMAND: "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $$2}' | awk -F '/' '{print $$1}' | grep 192 | grep -v 252"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+networks:
+  # 网络
+  my-network:
+    # 网络名称
+    driver: bridge

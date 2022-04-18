@@ -385,6 +385,7 @@ like:
 			var err error
 
 			// 指定一个目录，生成项目结构
+			// 指定项目的go module name，没有则使用目录名
 
 			_ = err
 		},
