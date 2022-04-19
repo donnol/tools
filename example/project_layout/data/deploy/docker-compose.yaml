@@ -11,7 +11,6 @@ services:
       - "80:80"
       - "443:443"
     networks:
-      # 加入网络
       - my-network
     volumes:
       - ../../data/conf/nginx.conf:/etc/nginx/conf.d/nginx.conf
@@ -31,7 +30,6 @@ services:
     ports:
       - 8808:8808
     networks:
-      # 加入网络
       - my-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -49,7 +47,6 @@ services:
     container_name: timer
     command: project_layout --config=/data/conf/project_layout.toml timer
     networks:
-      # 加入网络
       - my-network
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -68,7 +65,6 @@ services:
     expose:
       - "3306"
     networks:
-      # 加入网络
       - my-network
     command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci --explicit_defaults_for_timestamp=true --lower_case_table_names=1 --default-time-zone=+8:00
     environment:
@@ -93,7 +89,6 @@ services:
     expose:
       - "6379"
     networks:
-      # 加入网络
       - my-network
     volumes:
       - ../../data/redis/data:/data
@@ -106,7 +101,6 @@ services:
     expose:
       - "2181"
     networks:
-      # 加入网络
       - my-network
     restart: unless-stopped
 
@@ -117,12 +111,15 @@ services:
     expose:
       - "9092"
     networks:
-      # 加入网络
       - my-network
     environment:
       DOCKER_API_VERSION: 1.22
       KAFKA_ADVERTISED_HOST_NAME: 192.168.232.128
       # HOSTNAME_COMMAND: "ip a | grep inet | grep -v inet6 | awk -F 'inet ' '{print $$2}' | awk -F '/' '{print $$1}' | grep 192 | grep -v 252"
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://192.168.232.128:9094
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
