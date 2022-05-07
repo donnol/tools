@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/reflectx"
 )
 
@@ -121,4 +122,13 @@ func TestCollectStructField(t *testing.T) {
 	typ := reflect.TypeOf(testStruct)
 	sf := collectStructField(typ)
 	t.Logf("sf: %+v\n", sf)
+}
+
+func TestFakeStruct(t *testing.T) {
+	var user reflectx.User
+	if err := gofakeit.Struct(&user); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Logf("user with random value: %+v\n", user)
 }

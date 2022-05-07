@@ -115,7 +115,7 @@ func compositeStructValue(vtype reflect.Type) reflect.Value {
 	for i := 0; i < vtype.NumField(); i++ {
 		field := vtype.Field(i)
 
-		if field.PkgPath != "" { // 忽略非导出字段
+		if !field.IsExported() { // 忽略非导出字段
 			continue
 		}
 

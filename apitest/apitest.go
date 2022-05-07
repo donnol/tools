@@ -24,6 +24,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/worker"
 )
 
@@ -154,15 +155,13 @@ func (at *AT) MonkeyRun() *AT {
 	}
 
 	// 根据参数结构体随机生成测试值
-	param, err := structRandomValue(at.param)
-	if err != nil {
-		at.setErr(err)
+	if err := gofakeit.Struct(at.param); err != nil {
+		at.setErr(fmt.Errorf("generate param value failed: %w", err))
 		return at
 	}
 	if at.debug { // 打印随机值
-		JSONIndent(os.Stdout, param)
+		JSONIndent(os.Stdout, at.param)
 	}
-	at.param = param
 
 	return at.run(true)
 }

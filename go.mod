@@ -3,6 +3,7 @@ module github.com/donnol/tools
 go 1.18
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.16.0
 	github.com/fishedee/tools v0.5.0
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gofrs/uuid v4.0.0+incompatible
