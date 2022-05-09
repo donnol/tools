@@ -34,7 +34,7 @@ func (ioc *Ioc) RegisterProvider(v any) (err error) {
 	refValue := reflect.ValueOf(v)
 	refType := refValue.Type()
 	if refType.Kind() != reflect.Func {
-		return fmt.Errorf("Please input func")
+		return fmt.Errorf("please input func")
 	}
 
 	// 分析函数的参数和返回值

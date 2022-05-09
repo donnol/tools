@@ -3,6 +3,7 @@ package inject
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -200,4 +201,39 @@ func TestProxy(t *testing.T) {
 		t.Fatalf("Bad result, %v != %v\n", gname, name)
 	}
 	ins.userSrv.GetContext(ctx, id)
+}
+
+type PH[T Caller] struct {
+	Uniq string
+
+	method T
+}
+
+var (
+	phm = make(map[string]any)
+)
+
+func (ph PH[T]) Call(args []any) []any {
+	caller, ok := phm[ph.Uniq]
+	if !ok {
+		log.Printf("run with method")
+		return ph.method(args)
+	}
+	log.Printf("run with caller")
+	return caller.(T)(args)
+}
+
+func one(args []any) []any { log.Printf("one"); return args }
+
+func TestPctx(t *testing.T) {
+
+	var ph = PH[Caller]{
+		Uniq:   "one",
+		method: one,
+	}
+
+	// phm[ph.Uniq] = one
+
+	res := ph.Call([]any{1, 2, 3})
+	t.Logf("res: %+v\n", res)
 }
