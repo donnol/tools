@@ -18,33 +18,11 @@ func NewProxy() Proxy {
 	return &proxyImpl{}
 }
 
+// 每个包、每个接口、每个方法唯一对应一个方法
 type ProxyContext struct {
 	PkgPath       string
 	InterfaceName string
 	MethodName    string
-}
-
-type (
-	Caller func(args []any) []any
-)
-
-var (
-	pctxMethodMap = make(map[string]Caller)
-)
-
-// TODO: 怎么样可以让caller是一个具体的参数和返回值的函数呢？从而避免使用reflect
-func RegisterCaller(pctx ProxyContext, caller Caller) {
-	pctxMethodMap[pctx.String()] = caller
-}
-
-func (pctx ProxyContext) Call(args []any) []any {
-	// 根据pctx找到func并执行
-	caller, ok := pctxMethodMap[pctx.String()]
-	if !ok {
-		return nil
-	}
-
-	return caller(args)
 }
 
 func (pctx ProxyContext) String() string {

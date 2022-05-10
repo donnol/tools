@@ -203,37 +203,205 @@ func TestProxy(t *testing.T) {
 	ins.userSrv.GetContext(ctx, id)
 }
 
-type PH[T Caller] struct {
-	Uniq string
-
-	method T
+// === Around ===
+type Ctx struct {
+	Uniq string // 包名+接口名+方法名
 }
+
+type CtxFunc func(ctx Ctx, method any, args []any) (res []any)
 
 var (
-	phm = make(map[string]any)
+	customCtxMap = make(map[string]CtxFunc)
 )
 
-func (ph PH[T]) Call(args []any) []any {
-	caller, ok := phm[ph.Uniq]
-	if !ok {
-		log.Printf("run with method")
-		return ph.method(args)
+// 我只要用ProxyHelper来调用A，就可以在调用A前后添加逻辑
+// 可以看到，这里的关键是f的类型是不确定的，如果把f的类型改为any，就必须断言得到具体的类型，这个需要用代码生成在编译前完成
+// 记录所有方法的函数类型签名
+// 记录参数个数以及参数类型，并做断言
+// 记录返回值个数，并append到结果里，res是[]any类型，那怎么得到具体的返回值呢
+//
+// 这个函数在另外的函数看来是透明的
+func ProxyHelper(ctx Ctx, method any, args []any) (res []any) {
+	// 执行前可以做很多东西
+
+	begin := time.Now()
+
+	// TODO: 生成这部分代码
+	// 如果仅仅用签名来区分，遇到签名一样的不同方法时怎么区分呢？
+	// 所以，必须加入ctx的Uniq部分来区分
+	switch ctx.Uniq {
+	case "github.com/donnol/tools/inject|store|add":
+		cf, ok := customCtxMap[ctx.Uniq]
+		if ok {
+			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+			res = cf(ctx, method, args)
+		} else {
+			// 默认调用
+			f := method.(func(string, int) (int, error))
+			a1 := args[0].(string)
+			a2 := args[1].(int)
+			r1, r2 := f(a1, a2)
+			res = append(res, r1, r2)
+		}
+
+	case "github.com/donnol/tools/inject|src|add":
+		cf, ok := customCtxMap[ctx.Uniq]
+		if ok {
+			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+			res = cf(ctx, method, args)
+		} else {
+			f := method.(func(string) (int, error))
+			a1 := args[0].(string)
+			r1, r2 := f(a1)
+			res = append(res, r1, r2)
+		}
+
+		// more case ...
 	}
-	log.Printf("run with caller")
-	return caller.(T)(args)
+
+	// 执行后可以做很多东西
+
+	used := time.Since(begin)
+	log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq, used)
+
+	return
 }
 
-func one(args []any) []any { log.Printf("one"); return args }
+type store interface {
+	add(string, int) (int, error)
+	add2(string, int) (int, error)
+	get(id int) string
+}
 
-func TestPctx(t *testing.T) {
+func NewStore(useMock bool) store {
+	base := &storeImpl{}
+	if useMock {
+		return getStoreProxy(base)
+	}
+	return base
+}
 
-	var ph = PH[Caller]{
-		Uniq:   "one",
-		method: one,
+type storeImpl struct{}
+
+func (impl *storeImpl) add(name string, id int) (int, error) {
+	log.Printf("arg, name: %v, id: %v\n", name, id)
+	return 1, nil
+}
+func (impl *storeImpl) get(id int) string {
+	return "jd"
+}
+func (impl *storeImpl) add2(string, int) (int, error) {
+	return 2, nil
+}
+
+// TODO: 生成mock相关代码
+func getStoreProxy(base *storeImpl) *storeMock {
+	return &storeMock{
+		addFunc: func(arg1 string, arg2 int) (int, error) {
+			res := ProxyHelper(Ctx{
+				Uniq: "github.com/donnol/tools/inject|store|add",
+			}, base.add, []any{arg1, arg2})
+			if res[1] == nil {
+				return res[0].(int), nil
+			}
+			return res[0].(int), res[1].(error)
+		},
+		add2Func: base.add2,
+	}
+}
+
+type storeMock struct {
+	addFunc  func(string, int) (int, error)
+	add2Func func(string, int) (int, error)
+	getFunc  func(id int) string
+}
+
+func (mock *storeMock) add(name string, id int) (int, error) {
+	return mock.addFunc(name, id)
+}
+func (mock *storeMock) add2(name string, id int) (int, error) {
+	return mock.add2Func(name, id)
+}
+
+func (mock *storeMock) get(id int) string {
+	return mock.getFunc(id)
+}
+
+type src interface {
+	add(string) (int, error)
+	add2(string) (int, error)
+}
+
+func NewSrc(useMock bool, store store) src {
+	base := &srcImpl{
+		store: store,
+	}
+	if useMock {
+		return getSrcProxy(base)
+	}
+	return base
+}
+
+type srcImpl struct {
+	store store
+}
+
+func (impl *srcImpl) add(name string) (int, error) {
+	return impl.store.add(name, 1)
+}
+func (impl *srcImpl) add2(name string) (int, error) {
+	return impl.store.add2(name, 2)
+}
+
+func getSrcProxy(base *srcImpl) *srcMock {
+	return &srcMock{
+		addFunc: func(arg1 string) (int, error) {
+			res := ProxyHelper(Ctx{
+				Uniq: "github.com/donnol/tools/inject|src|add",
+			}, base.add, []any{arg1})
+			if res[1] == nil {
+				return res[0].(int), nil
+			}
+			return res[0].(int), res[1].(error)
+		},
+		add2Func: base.add2,
+	}
+}
+
+type srcMock struct {
+	addFunc  func(name string) (int, error)
+	add2Func func(string) (int, error)
+}
+
+func (mock *srcMock) add(name string) (int, error) {
+	return mock.addFunc(name)
+}
+func (mock *srcMock) add2(name string) (int, error) {
+	return mock.add2Func(name)
+}
+
+func TestApi(t *testing.T) {
+	customCtxMap["github.com/donnol/tools/inject|src|add"] = func(ctx Ctx, method any, args []any) (res []any) {
+		log.Printf("custom call")
+		f := method.(func(string) (int, error))
+		a1 := args[0].(string)
+		r1, r2 := f(a1)
+		res = append(res, r1, r2)
+		return res
 	}
 
-	// phm[ph.Uniq] = one
+	store := NewStore(true) // 用mock包装storeImpl
+	src := NewSrc(true, store)
 
-	res := ph.Call([]any{1, 2, 3})
-	t.Logf("res: %+v\n", res)
+	r, err := src.add("jd")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("r: %v\n", r)
+
+	r, err = src.add2("jd")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("r: %v\n", r)
 }

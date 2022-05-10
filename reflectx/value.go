@@ -477,6 +477,15 @@ func ToInterface(in []reflect.Value) (out []any) {
 	return
 }
 
+func FromAny(in []any) []reflect.Value {
+	out := make([]reflect.Value, len(in))
+	for i, one := range in {
+		v := reflect.ValueOf(one)
+		out[i] = v
+	}
+	return out
+}
+
 // SetStructFieldValue 设置结构体字段的值，arg必须是结构体指针，value值类型必须与结构体对应fieldName类型一致
 // 没有没有找到指定字段，则返回的StructField为空
 func SetStructFieldValue(arg reflect.Value, fieldName string, value any) (fieldType reflect.StructField) {
