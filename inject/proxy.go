@@ -25,8 +25,14 @@ type ProxyContext struct {
 	MethodName    string
 }
 
+type CtxFunc func(ctx ProxyContext, method any, args []any) (res []any)
+
 func (pctx ProxyContext) String() string {
 	return fmt.Sprintf(pctx.bracket("PkgPath: %s InterfaceName: %s MethodName: %s"), pctx.PkgPath, pctx.InterfaceName, pctx.MethodName)
+}
+
+func (pctx ProxyContext) Uniq() string {
+	return pctx.PkgPath + "|" + pctx.InterfaceName + "|" + pctx.MethodName
 }
 
 func (pctx ProxyContext) Logf(format string, args ...any) {

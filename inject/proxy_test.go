@@ -204,12 +204,6 @@ func TestProxy(t *testing.T) {
 }
 
 // === Around ===
-type Ctx struct {
-	Uniq string // 包名+接口名+方法名
-}
-
-type CtxFunc func(ctx Ctx, method any, args []any) (res []any)
-
 var (
 	customCtxMap = make(map[string]CtxFunc)
 )
@@ -221,7 +215,7 @@ var (
 // 记录返回值个数，并append到结果里，res是[]any类型，那怎么得到具体的返回值呢
 //
 // 这个函数在另外的函数看来是透明的
-func ProxyHelper(ctx Ctx, method any, args []any) (res []any) {
+func ProxyHelper(ctx ProxyContext, method any, args []any) (res []any) {
 	// 执行前可以做很多东西
 
 	begin := time.Now()
@@ -229,9 +223,9 @@ func ProxyHelper(ctx Ctx, method any, args []any) (res []any) {
 	// TODO: 生成这部分代码
 	// 如果仅仅用签名来区分，遇到签名一样的不同方法时怎么区分呢？
 	// 所以，必须加入ctx的Uniq部分来区分
-	switch ctx.Uniq {
+	switch ctx.Uniq() {
 	case "github.com/donnol/tools/inject|store|add":
-		cf, ok := customCtxMap[ctx.Uniq]
+		cf, ok := customCtxMap[ctx.Uniq()]
 		if ok {
 			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
 			res = cf(ctx, method, args)
@@ -245,7 +239,7 @@ func ProxyHelper(ctx Ctx, method any, args []any) (res []any) {
 		}
 
 	case "github.com/donnol/tools/inject|src|add":
-		cf, ok := customCtxMap[ctx.Uniq]
+		cf, ok := customCtxMap[ctx.Uniq()]
 		if ok {
 			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
 			res = cf(ctx, method, args)
@@ -256,13 +250,44 @@ func ProxyHelper(ctx Ctx, method any, args []any) (res []any) {
 			res = append(res, r1, r2)
 		}
 
+	case "github.com/donnol/tools/inject|store|equal":
+		cf, ok := customCtxMap[ctx.Uniq()]
+		if ok {
+			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+			res = cf(ctx, method, args)
+		} else {
+			f := method.(func(int, ...any))
+			// 参数数量是不确定的，怎么知道要做几次断言呢？
+			// 因为不定参数一定是最后一个，所以可以用减法，先把前面确定的断言出来，剩下的用args[n:]...传进去就好了
+			a1 := args[0].(int)
+			f(a1, args[1:]...)
+		}
+
+	case "github.com/donnol/tools/inject|store|equalInt":
+		cf, ok := customCtxMap[ctx.Uniq()]
+		if ok {
+			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+			res = cf(ctx, method, args)
+		} else {
+			f := method.(func(int, ...int))
+			// 参数数量是不确定的，怎么知道要做几次断言呢？
+			// 因为不定参数一定是最后一个，所以可以用减法，先把前面确定的断言出来，剩下的用args[n:]...传进去就好了
+			a1 := args[0].(int)
+			// 如果不定参数不是any类型，需要断言
+			left := make([]int, 0, len(args)-1)
+			for i := 1; i < len(args); i++ {
+				left = append(left, args[i].(int))
+			}
+			f(a1, left...)
+		}
+
 		// more case ...
 	}
 
 	// 执行后可以做很多东西
 
 	used := time.Since(begin)
-	log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq, used)
+	log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), used)
 
 	return
 }
@@ -271,6 +296,8 @@ type store interface {
 	add(string, int) (int, error)
 	add2(string, int) (int, error)
 	get(id int) string
+	equal(first int, args ...any)
+	equalInt(first int, args ...int)
 }
 
 func NewStore(useMock bool) store {
@@ -293,13 +320,21 @@ func (impl *storeImpl) get(id int) string {
 func (impl *storeImpl) add2(string, int) (int, error) {
 	return 2, nil
 }
+func (impl *storeImpl) equal(first int, args ...any) {
+	log.Printf("[equal] args: %v, %+v\n", first, args)
+}
+func (impl *storeImpl) equalInt(first int, args ...int) {
+	log.Printf("[equalInt] args: %v, %+v\n", first, args)
+}
 
 // TODO: 生成mock相关代码
-func getStoreProxy(base *storeImpl) *storeMock {
+func getStoreProxy(base store) *storeMock {
 	return &storeMock{
 		addFunc: func(arg1 string, arg2 int) (int, error) {
-			res := ProxyHelper(Ctx{
-				Uniq: "github.com/donnol/tools/inject|store|add",
+			res := ProxyHelper(ProxyContext{
+				PkgPath:       "github.com/donnol/tools/inject",
+				InterfaceName: "store",
+				MethodName:    "add",
 			}, base.add, []any{arg1, arg2})
 			if res[1] == nil {
 				return res[0].(int), nil
@@ -307,13 +342,35 @@ func getStoreProxy(base *storeImpl) *storeMock {
 			return res[0].(int), res[1].(error)
 		},
 		add2Func: base.add2,
+		equalFunc: func(first int, args ...any) {
+			allArg := []any{first}
+			allArg = append(allArg, args...)
+			ProxyHelper(ProxyContext{
+				PkgPath:       "github.com/donnol/tools/inject",
+				InterfaceName: "store",
+				MethodName:    "equal",
+			}, base.equal, allArg)
+		},
+		equalIntFunc: func(first int, args ...int) {
+			allArg := []any{first}
+			for _, arg := range args {
+				allArg = append(allArg, arg)
+			}
+			ProxyHelper(ProxyContext{
+				PkgPath:       "github.com/donnol/tools/inject",
+				InterfaceName: "store",
+				MethodName:    "equalInt",
+			}, base.equalInt, allArg)
+		},
 	}
 }
 
 type storeMock struct {
-	addFunc  func(string, int) (int, error)
-	add2Func func(string, int) (int, error)
-	getFunc  func(id int) string
+	addFunc      func(string, int) (int, error)
+	add2Func     func(string, int) (int, error)
+	getFunc      func(id int) string
+	equalFunc    func(first int, args ...any)
+	equalIntFunc func(first int, args ...int)
 }
 
 func (mock *storeMock) add(name string, id int) (int, error) {
@@ -325,6 +382,12 @@ func (mock *storeMock) add2(name string, id int) (int, error) {
 
 func (mock *storeMock) get(id int) string {
 	return mock.getFunc(id)
+}
+func (mock *storeMock) equal(first int, args ...any) {
+	mock.equalFunc(first, args...)
+}
+func (mock *storeMock) equalInt(first int, args ...int) {
+	mock.equalIntFunc(first, args...)
 }
 
 type src interface {
@@ -347,17 +410,21 @@ type srcImpl struct {
 }
 
 func (impl *srcImpl) add(name string) (int, error) {
+	impl.store.equal(1, 2, 3, 4, "hah") // 不管加多少参数，都没问题
+	impl.store.equalInt(1, 2, 3, 4)     // 不管加多少参数，都没问题
 	return impl.store.add(name, 1)
 }
 func (impl *srcImpl) add2(name string) (int, error) {
 	return impl.store.add2(name, 2)
 }
 
-func getSrcProxy(base *srcImpl) *srcMock {
+func getSrcProxy(base src) *srcMock {
 	return &srcMock{
 		addFunc: func(arg1 string) (int, error) {
-			res := ProxyHelper(Ctx{
-				Uniq: "github.com/donnol/tools/inject|src|add",
+			res := ProxyHelper(ProxyContext{
+				PkgPath:       "github.com/donnol/tools/inject",
+				InterfaceName: "src",
+				MethodName:    "add",
 			}, base.add, []any{arg1})
 			if res[1] == nil {
 				return res[0].(int), nil
@@ -381,7 +448,7 @@ func (mock *srcMock) add2(name string) (int, error) {
 }
 
 func TestApi(t *testing.T) {
-	customCtxMap["github.com/donnol/tools/inject|src|add"] = func(ctx Ctx, method any, args []any) (res []any) {
+	customCtxMap["github.com/donnol/tools/inject|src|add"] = func(ctx ProxyContext, method any, args []any) (res []any) {
 		log.Printf("custom call")
 		f := method.(func(string) (int, error))
 		a1 := args[0].(string)

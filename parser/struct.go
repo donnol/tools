@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/types"
 	"io/ioutil"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -79,8 +80,14 @@ func (pkg Package) SaveMock(file string) error {
 	// 因为是生成mock结构体，所以有包引用的都是参数和返回值
 	imports := make(map[string]struct{}, 4)
 
+	fmt.Printf("===test\n")
 	var content string
 	for _, single := range pkg.Interfaces {
+		fmt.Printf("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
+		if single.Interface.NumEmbeddeds() != 0 {
+			log.Printf("have type set: %+v\n", single.Interface)
+			continue
+		}
 		mock, imps := single.MakeMock()
 		for imp := range imps {
 			imports[imp] = struct{}{}
