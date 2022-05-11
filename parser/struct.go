@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/types"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/importpath"
@@ -80,10 +82,10 @@ func (pkg Package) SaveMock(file string) error {
 	// 因为是生成mock结构体，所以有包引用的都是参数和返回值
 	imports := make(map[string]struct{}, 4)
 
-	fmt.Printf("===test\n")
+	debug.Debug("===test\n")
 	var content string
 	for _, single := range pkg.Interfaces {
-		fmt.Printf("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
+		debug.Debug("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
 		if single.Interface.NumEmbeddeds() != 0 {
 			log.Printf("have type set: %+v\n", single.Interface)
 			continue
@@ -125,7 +127,7 @@ func (pkg Package) SaveMock(file string) error {
 	// 写入
 	formatContent, err := format.Format(file, gocontent, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("format failed: %w, content: \n%s", err, gocontent)
 	}
 	debug.Debug("content: %s, file: %s\n", formatContent, file)
 
@@ -153,18 +155,76 @@ type Interface struct {
 	Methods []Method // 方法列表
 }
 
+var (
+	proxyMethodTmpl = `
+	{{.methodName}}: {{.funcSignature}} {
+		begin := time.Now()
+
+		{{.funcResult}}
+
+		ctx := {{.mockType}}{{.funcName}}ProxyContext
+		cf, ok := customCtxMap[ctx.Uniq()]
+		if ok {
+			params := []any{}
+			{{.params}}
+			res := cf(ctx, base.{{.funcName}}, params)
+			{{.resultAssert}}
+		} else {
+			{{.funcResultList}} = base.{{.funcName}}({{.argNames}})
+		}
+
+		log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
+
+		return {{.funcResultList}}
+	},
+	`
+
+	proxyMethodParamsTmpl = `
+	{{range $index, $ele := .args}}
+		params = append(params, {{.Name}})
+	{{end}}
+	`
+	proxyMethodResultTmpl = `
+	 {{range $index, $ele := .reses}}
+	 	var r{{$index}} {{.Typ}}
+	 {{end}}
+	`
+
+	proxyMethodResultAssertTmpl = `
+	{{range $index, $ele := .reses}}
+			tmpr{{$index}}, exist := res[{{$index}}].({{.Typ}})
+			if exist {
+				r{{$index}} = tmpr{{$index}}
+			}
+	{{end}}
+	`
+)
+
+type arg struct {
+	Name     string
+	Typ      string
+	Variadic bool
+}
+
 func (s Interface) MakeMock() (string, map[string]struct{}) {
 	mockType := s.makeMockName()
 	mockRecv := s.makeMockRecv()
+	proxyFuncName := s.makeProxyFuncName()
+	fmt.Printf("proxyfuncname:%s\n", proxyFuncName)
 
+	proxyFunc := "func " + proxyFuncName + "(base " + s.Name + ") *" + mockType + "{" + `if base == nil {
+		panic(fmt.Errorf("base cannot be nil"))
+	}
+	return &` + mockType + `{`
 	cc := fmt.Sprintf(`%sCommonProxyContext`, LcFirst(mockType))
 
 	var is string
 	var pc string
 	var ms string
+	var proxyMethod = new(bytes.Buffer)
 	var imports = make(map[string]struct{}, 4)
 	for _, m := range s.Methods {
-		fieldName, fieldType, methodSig, returnStmt, call, imps := s.processFunc(m)
+		fieldName, fieldType, methodSig, returnStmt, call, args, reses, imps := s.processFunc(m)
 
 		for imp := range imps {
 			imports[imp] = struct{}{}
@@ -180,8 +240,63 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		`, mockType, m.Name, cc, m.Name)
 
 		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType, methodSig, returnStmt, mockRecv, call)
+
+		assertBuf := new(bytes.Buffer)
+		assertTmpl, err := template.New("proxyMethodResultAssert").Parse(proxyMethodResultAssertTmpl)
+		if err != nil {
+			panic(err)
+		}
+		assertTmpl.Execute(assertBuf, map[string]interface{}{
+			"reses": reses,
+		})
+		paramBuf := new(bytes.Buffer)
+		paramTmpl, err := template.New("proxyMethodParam").Parse(proxyMethodParamsTmpl)
+		if err != nil {
+			panic(err)
+		}
+		paramTmpl.Execute(paramBuf, map[string]interface{}{
+			"args": args,
+		})
+		argNames := ""
+		for i, arg := range args {
+			argNames += arg.Name
+			if i != len(args)-1 {
+				argNames += ", "
+			}
+		}
+		resBuf := new(bytes.Buffer)
+		resTmpl, err := template.New("proxyMethodResult").Parse(proxyMethodResultTmpl)
+		if err != nil {
+			panic(err)
+		}
+		resTmpl.Execute(resBuf, map[string]interface{}{
+			"reses": reses,
+		})
+		funcResultList := ""
+		for i := range reses {
+			funcResultList += "r" + strconv.Itoa(i)
+			if i != len(reses)-1 {
+				funcResultList += ", "
+			}
+		}
+		tmpl, err := template.New("proxyMethod").Parse(proxyMethodTmpl)
+		if err != nil {
+			panic(err)
+		}
+		tmpl.Execute(proxyMethod, map[string]interface{}{
+			"methodName":     fieldName,
+			"funcSignature":  strings.ReplaceAll(methodSig, m.Name, "func"),
+			"mockType":       mockType,
+			"funcName":       m.Name,
+			"funcResult":     resBuf.String(),
+			"funcResultList": funcResultList,
+			"argNames":       argNames,
+			"params":         paramBuf.String(),
+			"resultAssert":   assertBuf.String(),
+		})
 	}
 
+	proxyFunc += proxyMethod.String() + "}}"
 	is = mockPrefix(mockType, is)
 
 	is += `var (_ ` + s.Name + ` = &` + mockType + "{}\n\n"
@@ -190,7 +305,8 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		InterfaceName: "%s",
 	}
 	`, cc, s.PkgPath, s.Name)
-	is += pc + `)`
+	is += pc + "\n_ =" + proxyFuncName + "\ncustomCtxMap = make(map[string]inject.CtxFunc)\n" + `)`
+	is += "\n" + proxyFunc + "\n"
 	is += ms
 
 	debug.Debug("is: %s\n", is)
@@ -206,7 +322,7 @@ const (
 
 // func(ctx context.Context, m M) (err error) -> (ctx, m)
 // func(context.Context,M) (error) -> (p0, p1)
-func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string, imports map[string]struct{}) {
+func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string, args []arg, reses []arg, imports map[string]struct{}) {
 
 	imports = make(map[string]struct{}, 4) // 导入的包
 	fieldName = m.Name + "Func"
@@ -237,8 +353,10 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 
 		// 处理最后一个是不定参数的情况
 		var paramTypePrefix string
+		var variadic bool
 		if sigType.Variadic() && i == params.Len()-1 {
 			paramTypePrefix = "..."
+			variadic = true
 			debug.Debug("typ: %+v, str: %s, params: %v\n", pvar.Type(), typStr, params.String())
 		}
 
@@ -250,6 +368,8 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		methodSig += name + " " + paramTypePrefix + typStr + sep
 
 		call += name + paramTypePrefix + sep
+
+		args = append(args, arg{Name: name + paramTypePrefix, Typ: typStr, Variadic: variadic})
 	}
 	methodSig = strings.TrimRight(methodSig, sep)
 	methodSig = m.Name + leftParent + methodSig + rightParent
@@ -268,7 +388,13 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		pkgPath := getTypesPkgPath(rvar.Type())
 		imports[pkgPath] = struct{}{}
 
-		resString += name + " " + types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath})) + sep
+		typ := types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+		resString += name + " " + typ + sep
+
+		reses = append(reses, arg{
+			Name: name,
+			Typ:  typ,
+		})
 	}
 	resString = strings.TrimRight(resString, sep)
 	resString = leftParent + resString + rightParent
@@ -283,14 +409,23 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	return
 }
 
+func (s Interface) makeProxyFuncName() string {
+	return "get" + s.Name + "Proxy"
+}
+
 func (s Interface) makeMockName() string {
+	name := s.removeI()
+	return name + "Mock"
+}
+
+func (s Interface) removeI() string {
 	name := s.Name
 	// 如果首个字符是I，则去掉
 	index := strings.Index(name, "I")
 	if index == 0 {
 		name = name[1:]
 	}
-	return name + "Mock"
+	return name
 }
 
 func (s Interface) makeMockRecv() string {

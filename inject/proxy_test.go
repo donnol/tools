@@ -309,7 +309,6 @@ func getStoreProxy(base store) *storeMock {
 			}
 			cf, ok := customCtxMap[ctx.Uniq()]
 			if ok {
-				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
 				cf(ctx, base.equalInt, allArg)
 			} else {
 				base.equalInt(first, args...)
@@ -387,7 +386,6 @@ func getSrcProxy(base src) *srcMock {
 			}
 			cf, ok := customCtxMap[ctx.Uniq()]
 			if ok {
-				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
 				res := cf(ctx, base.add, []any{arg1})
 				r1 = res[0].(int)
 				if res[1] == nil {
