@@ -158,22 +158,22 @@ type Interface struct {
 var (
 	proxyMethodTmpl = `
 	{{.methodName}}: {{.funcSignature}} {
-		begin := time.Now()
+		_gen_begin := time.Now()
 
 		{{.funcResult}}
 
-		ctx := {{.mockType}}{{.funcName}}ProxyContext
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			params := []any{}
+		_gen_ctx := {{.mockType}}{{.funcName}}ProxyContext
+		_gen_cf, _gen_ok := _gen_customCtxMap[_gen_ctx.Uniq()]
+		if _gen_ok {
+			_gen_params := []any{}
 			{{.params}}
-			res := cf(ctx, base.{{.funcName}}, params)
+			_gen_res := _gen_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
 			{{.resultAssert}}
 		} else {
 			{{.funcResultList}} = base.{{.funcName}}({{.argNames}})
 		}
 
-		log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
+		log.Printf("[ctx: %s]used time: %v\n", _gen_ctx.Uniq(), time.Since(_gen_begin))
 
 		return {{.funcResultList}}
 	},
@@ -181,20 +181,20 @@ var (
 
 	proxyMethodParamsTmpl = `
 	{{range $index, $ele := .args}}
-		params = append(params, {{.Name}})
+		_gen_params = append(_gen_params, {{.Name}})
 	{{end}}
 	`
 	proxyMethodResultTmpl = `
 	 {{range $index, $ele := .reses}}
-	 	var r{{$index}} {{.Typ}}
+	 	var _gen_r{{$index}} {{.Typ}}
 	 {{end}}
 	`
 
 	proxyMethodResultAssertTmpl = `
 	{{range $index, $ele := .reses}}
-			tmpr{{$index}}, exist := res[{{$index}}].({{.Typ}})
-			if exist {
-				r{{$index}} = tmpr{{$index}}
+			_gen_tmpr{{$index}}, _gen_exist := _gen_res[{{$index}}].({{.Typ}})
+			if _gen_exist {
+				_gen_r{{$index}} = _gen_tmpr{{$index}}
 			}
 	{{end}}
 	`
@@ -212,6 +212,9 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	proxyFuncName := s.makeProxyFuncName()
 	fmt.Printf("proxyfuncname:%s\n", proxyFuncName)
 
+	registerProxyMethod := `func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
+		_gen_customCtxMap[pctx.Uniq()] = cf
+	}`
 	proxyFunc := "func " + proxyFuncName + "(base " + s.Name + ") *" + mockType + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
@@ -274,7 +277,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		})
 		funcResultList := ""
 		for i := range reses {
-			funcResultList += "r" + strconv.Itoa(i)
+			funcResultList += "_gen_r" + strconv.Itoa(i)
 			if i != len(reses)-1 {
 				funcResultList += ", "
 			}
@@ -305,8 +308,8 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		InterfaceName: "%s",
 	}
 	`, cc, s.PkgPath, s.Name)
-	is += pc + "\n_ =" + proxyFuncName + "\ncustomCtxMap = make(map[string]inject.CtxFunc)\n" + `)`
-	is += "\n" + proxyFunc + "\n"
+	is += pc + "\n_ =" + proxyFuncName + "\n_gen_customCtxMap = make(map[string]inject.CtxFunc)\n" + `)`
+	is += "\n" + registerProxyMethod + "\n\n" + proxyFunc + "\n"
 	is += ms
 
 	debug.Debug("is: %s\n", is)
