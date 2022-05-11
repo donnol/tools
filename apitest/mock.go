@@ -1,6 +1,7 @@
 package apitest
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -139,88 +140,67 @@ func RegisterCustomProxyMethod(ctx inject.ProxyContext, f inject.CtxFunc) {
 	customCtxMap[ctx.Uniq()] = f
 }
 
-func proxyHelper(ctx inject.ProxyContext, method any, args []any) (res []any) {
-	// 执行前可以做很多东西
-
-	begin := time.Now()
-
-	switch ctx.Uniq() {
-	case ATMockDebugProxyContext.Uniq():
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			// 默认调用
-			f := method.(func() *AT)
-			r1 := f()
-			res = append(res, r1)
-		}
-
-	case ATMockEqualProxyContext.Uniq():
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			// 默认调用
-			f := method.(func(args ...any) *AT)
-			r1 := f(args...)
-			res = append(res, r1)
-		}
-
-	case ATMockEqualCodeProxyContext.Uniq():
-	case ATMockEqualThenProxyContext.Uniq():
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			// 默认调用
-			f := method.(func(func(*AT) error, ...any) *AT)
-			a1 := args[0].(func(*AT) error)
-			r1 := f(a1, args[1:]...)
-			res = append(res, r1)
-		}
-
-	case ATMockErrProxyContext.Uniq():
-	case ATMockMonkeyRunProxyContext.Uniq():
-	case ATMockNewProxyContext.Uniq():
-	case ATMockPressureRunProxyContext.Uniq():
-	case ATMockPressureRunBatchProxyContext.Uniq():
-	case ATMockResultProxyContext.Uniq():
-	case ATMockRunProxyContext.Uniq():
-	case ATMockSetCookiesProxyContext.Uniq():
-	case ATMockSetHeaderProxyContext.Uniq():
-	case ATMockSetParamProxyContext.Uniq():
-	case ATMockSetPortProxyContext.Uniq():
-	case ATMockWriteFileProxyContext.Uniq():
-	}
-
-	// 执行后可以做很多东西
-
-	used := time.Since(begin)
-	log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), used)
-
-	return
-}
-
 func getIATProxy(base IAT) *ATMock {
+	if base == nil {
+		panic(fmt.Errorf("base cannot be nil"))
+	}
 	return &ATMock{
 		DebugFunc: func() *AT {
-			res := proxyHelper(ATMockDebugProxyContext, base.Debug, nil)
-			return res[0].(*AT)
+			var r *AT
+			begin := time.Now()
+
+			cf, ok := customCtxMap[ATMockDebugProxyContext.Uniq()]
+			if ok {
+				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+				res := cf(ATMockDebugProxyContext, base.Debug, nil)
+				r = res[0].(*AT)
+			} else {
+				// 默认调用
+				r = base.Debug()
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ATMockDebugProxyContext.Uniq(), time.Since(begin))
+
+			return r
 		},
 		EqualFunc: func(args ...any) *AT {
-			res := proxyHelper(ATMockEqualProxyContext, base.Equal, args)
-			return res[0].(*AT)
+			var r *AT
+			begin := time.Now()
+
+			cf, ok := customCtxMap[ATMockEqualProxyContext.Uniq()]
+			if ok {
+				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+				res := cf(ATMockEqualProxyContext, base.Equal, args)
+				r = res[0].(*AT)
+			} else {
+				// 默认调用
+				r = base.Equal(args...)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ATMockDebugProxyContext.Uniq(), time.Since(begin))
+
+			return r
 		},
 		EqualCodeFunc: base.EqualCode,
-		EqualThenFunc: func(f func(*AT) error, args ...any) *AT {
-			allArg := []any{f}
-			allArg = append(allArg, args...)
-			res := proxyHelper(ATMockEqualThenProxyContext, base.EqualThen, allArg)
-			return res[0].(*AT)
+		EqualThenFunc: func(fa func(*AT) error, args ...any) *AT {
+			var r *AT
+			begin := time.Now()
+
+			cf, ok := customCtxMap[ATMockEqualThenProxyContext.Uniq()]
+			if ok {
+				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+				allArg := []any{fa}
+				allArg = append(allArg, args...)
+				res := cf(ATMockEqualThenProxyContext, base.EqualThen, allArg)
+				r = res[0].(*AT)
+			} else {
+				// 默认调用
+				r = base.EqualThen(fa, args...)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ATMockDebugProxyContext.Uniq(), time.Since(begin))
+
+			return r
 		},
 		ErrFunc:              base.Err,
 		MonkeyRunFunc:        base.MonkeyRun,

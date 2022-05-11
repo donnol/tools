@@ -203,94 +203,10 @@ func TestProxy(t *testing.T) {
 	ins.userSrv.GetContext(ctx, id)
 }
 
-// === Around ===
+// === 基于接口的Around ===
 var (
 	customCtxMap = make(map[string]CtxFunc)
 )
-
-// 我只要用ProxyHelper来调用A，就可以在调用A前后添加逻辑
-// 可以看到，这里的关键是f的类型是不确定的，如果把f的类型改为any，就必须断言得到具体的类型，这个需要用代码生成在编译前完成
-// 记录所有方法的函数类型签名
-// 记录参数个数以及参数类型，并做断言
-// 记录返回值个数，并append到结果里，res是[]any类型，那怎么得到具体的返回值呢
-//
-// 这个函数在另外的函数看来是透明的
-func ProxyHelper(ctx ProxyContext, method any, args []any) (res []any) {
-	// 执行前可以做很多东西
-
-	begin := time.Now()
-
-	// TODO: 生成这部分代码
-	// 如果仅仅用签名来区分，遇到签名一样的不同方法时怎么区分呢？
-	// 所以，必须加入ctx的Uniq部分来区分
-	switch ctx.Uniq() {
-	case "github.com/donnol/tools/inject|store|add":
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			// 默认调用
-			f := method.(func(string, int) (int, error))
-			a1 := args[0].(string)
-			a2 := args[1].(int)
-			r1, r2 := f(a1, a2)
-			res = append(res, r1, r2)
-		}
-
-	case "github.com/donnol/tools/inject|src|add":
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			f := method.(func(string) (int, error))
-			a1 := args[0].(string)
-			r1, r2 := f(a1)
-			res = append(res, r1, r2)
-		}
-
-	case "github.com/donnol/tools/inject|store|equal":
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			f := method.(func(int, ...any))
-			// 参数数量是不确定的，怎么知道要做几次断言呢？
-			// 因为不定参数一定是最后一个，所以可以用减法，先把前面确定的断言出来，剩下的用args[n:]...传进去就好了
-			a1 := args[0].(int)
-			f(a1, args[1:]...)
-		}
-
-	case "github.com/donnol/tools/inject|store|equalInt":
-		cf, ok := customCtxMap[ctx.Uniq()]
-		if ok {
-			// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
-			res = cf(ctx, method, args)
-		} else {
-			f := method.(func(int, ...int))
-			// 参数数量是不确定的，怎么知道要做几次断言呢？
-			// 因为不定参数一定是最后一个，所以可以用减法，先把前面确定的断言出来，剩下的用args[n:]...传进去就好了
-			a1 := args[0].(int)
-			// 如果不定参数不是any类型，需要断言
-			left := make([]int, 0, len(args)-1)
-			for i := 1; i < len(args); i++ {
-				left = append(left, args[i].(int))
-			}
-			f(a1, left...)
-		}
-
-		// more case ...
-	}
-
-	// 执行后可以做很多东西
-
-	used := time.Since(begin)
-	log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), used)
-
-	return
-}
 
 type store interface {
 	add(string, int) (int, error)
@@ -300,9 +216,9 @@ type store interface {
 	equalInt(first int, args ...int)
 }
 
-func NewStore(useMock bool) store {
+func NewStore(withProxy bool) store {
 	base := &storeImpl{}
-	if useMock {
+	if withProxy {
 		return getStoreProxy(base)
 	}
 	return base
@@ -331,36 +247,75 @@ func (impl *storeImpl) equalInt(first int, args ...int) {
 func getStoreProxy(base store) *storeMock {
 	return &storeMock{
 		addFunc: func(arg1 string, arg2 int) (int, error) {
-			res := ProxyHelper(ProxyContext{
+			var r1 int
+			var r2 error
+			begin := time.Now()
+
+			ctx := ProxyContext{
 				PkgPath:       "github.com/donnol/tools/inject",
 				InterfaceName: "store",
 				MethodName:    "add",
-			}, base.add, []any{arg1, arg2})
-			if res[1] == nil {
-				return res[0].(int), nil
 			}
-			return res[0].(int), res[1].(error)
+			cf, ok := customCtxMap[ctx.Uniq()]
+			if ok {
+				res := cf(ctx, base.add, []any{arg1, arg2})
+				r1 = res[0].(int)
+				if res[1] == nil {
+					r2 = nil
+				} else {
+					r2 = res[1].(error)
+				}
+			} else {
+				// 默认调用
+				r1, r2 = base.add(arg1, arg2)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
+
+			return r1, r2
 		},
 		add2Func: base.add2,
 		equalFunc: func(first int, args ...any) {
-			allArg := []any{first}
-			allArg = append(allArg, args...)
-			ProxyHelper(ProxyContext{
+			begin := time.Now()
+
+			ctx := ProxyContext{
 				PkgPath:       "github.com/donnol/tools/inject",
 				InterfaceName: "store",
 				MethodName:    "equal",
-			}, base.equal, allArg)
+			}
+			cf, ok := customCtxMap[ctx.Uniq()]
+			if ok {
+				allArg := []any{first}
+				allArg = append(allArg, args...)
+				cf(ctx, base.equal, allArg)
+			} else {
+				base.equal(first, args...)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
 		},
 		equalIntFunc: func(first int, args ...int) {
+			begin := time.Now()
+
 			allArg := []any{first}
 			for _, arg := range args {
 				allArg = append(allArg, arg)
 			}
-			ProxyHelper(ProxyContext{
+
+			ctx := ProxyContext{
 				PkgPath:       "github.com/donnol/tools/inject",
 				InterfaceName: "store",
 				MethodName:    "equalInt",
-			}, base.equalInt, allArg)
+			}
+			cf, ok := customCtxMap[ctx.Uniq()]
+			if ok {
+				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+				cf(ctx, base.equalInt, allArg)
+			} else {
+				base.equalInt(first, args...)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
 		},
 	}
 }
@@ -395,11 +350,11 @@ type src interface {
 	add2(string) (int, error)
 }
 
-func NewSrc(useMock bool, store store) src {
+func NewSrc(withProxy bool, store store) src {
 	base := &srcImpl{
 		store: store,
 	}
-	if useMock {
+	if withProxy {
 		return getSrcProxy(base)
 	}
 	return base
@@ -421,15 +376,32 @@ func (impl *srcImpl) add2(name string) (int, error) {
 func getSrcProxy(base src) *srcMock {
 	return &srcMock{
 		addFunc: func(arg1 string) (int, error) {
-			res := ProxyHelper(ProxyContext{
+			var r1 int
+			var r2 error
+			begin := time.Now()
+
+			ctx := ProxyContext{
 				PkgPath:       "github.com/donnol/tools/inject",
 				InterfaceName: "src",
 				MethodName:    "add",
-			}, base.add, []any{arg1})
-			if res[1] == nil {
-				return res[0].(int), nil
 			}
-			return res[0].(int), res[1].(error)
+			cf, ok := customCtxMap[ctx.Uniq()]
+			if ok {
+				// 自定义around，需要自己决定怎么调用，一般需要包含下面的默认调用
+				res := cf(ctx, base.add, []any{arg1})
+				r1 = res[0].(int)
+				if res[1] == nil {
+					r2 = nil
+				} else {
+					r2 = res[1].(error)
+				}
+			} else {
+				r1, r2 = base.add(arg1)
+			}
+
+			log.Printf("[ctx: %s]used time: %v\n", ctx.Uniq(), time.Since(begin))
+
+			return r1, r2
 		},
 		add2Func: base.add2,
 	}
@@ -471,4 +443,46 @@ func TestApi(t *testing.T) {
 		panic(err)
 	}
 	log.Printf("r: %v\n", r)
+}
+
+// === TODO: 任意函数的Around ===
+
+// 用户编写的代码
+func A(ctx any, id int, args ...string) (string, error) {
+	log.Printf("arg, ctx: %v, id: %v, args: %+v\n", ctx, id, args)
+	return "A", nil
+}
+
+func C() {
+	// 编译之前，通过重写ast，改为调用B（B内再调用A）
+	// 1 遍历源码，找到函数调用（可配置规则，以过滤出想要改变的函数）- *ast.CallExpr
+	// 2 生成一个对应的附加了额外逻辑的函数B（B内调用A）- *ast.FuncDecl
+	// 3 将此处对A的调用替换为对B的调用 -
+	r1, err := A(1, 1, "a", "b")
+	if err != nil {
+		log.Printf("err is not nil: %v\n", err)
+		return
+	}
+	log.Printf("r1: %v\n", r1)
+}
+
+// 生成出来的代码
+// 有没有办法生成一个B，使得C调B，跟C调A一样，但是又可以在B里添加额外的逻辑呢？
+func B(ctx any, id int, args ...string) (string, error) {
+	// 为了要支持添加额外的逻辑，显然不能直接返回
+	// return A(ctx, id, args...)
+
+	// 添加逻辑
+	begin := time.Now()
+
+	// 根据签名，不难生成出以下返回值定义
+	var r1 string
+	var r2 error
+
+	r1, r2 = A(ctx, id, args...)
+
+	// 添加逻辑
+	log.Printf("used time: %v\n", time.Since(begin))
+
+	return r1, r2
 }

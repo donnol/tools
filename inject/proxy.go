@@ -21,10 +21,17 @@ func NewProxy() Proxy {
 // 每个包、每个接口、每个方法唯一对应一个方法
 type ProxyContext struct {
 	PkgPath       string
-	InterfaceName string
+	InterfaceName string // TODO: 接口或结构体的名字，不为空时表示方法，为空时表示函数
 	MethodName    string
 }
 
+// CtxFunc
+// 对于method: func(string, int) (int, error)
+// f := method.(func(string, int) (int, error))
+// a1 := args[0].(string)
+// a2 := args[1].(int)
+// r1, r2 := f(a1, a2)
+// res = append(res, r1, r2)
 type CtxFunc func(ctx ProxyContext, method any, args []any) (res []any)
 
 func (pctx ProxyContext) String() string {
