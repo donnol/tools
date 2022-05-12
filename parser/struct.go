@@ -35,6 +35,9 @@ func (pkgs Packages) LookupPkg(name string) (Package, bool) {
 }
 
 func (pkg Package) NewGoFileWithSuffix(suffix string) (file string) {
+	if pkg.Module == nil {
+		fmt.Printf("pkg.Module is nil\n")
+	}
 	part := strings.ReplaceAll(pkg.PkgPath, pkg.Module.Path, "")
 	debug.Debug("pkg: %+v, module: %+v, %s\n", pkg.PkgPath, pkg.Module, part)
 
@@ -99,6 +102,18 @@ func (pkg Package) SaveMock(file string) error {
 	if content == "" {
 		return nil
 	}
+
+	// 全局变量/函数
+	globalContent := `
+	var (
+		_gen_customCtxMap = make(map[string]inject.CtxFunc)
+	)
+
+	func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
+		_gen_customCtxMap[pctx.Uniq()] = cf
+	}
+	`
+	content = globalContent + content
 
 	// 导入
 	var impcontent string
@@ -212,9 +227,6 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	proxyFuncName := s.makeProxyFuncName()
 	fmt.Printf("proxyfuncname:%s\n", proxyFuncName)
 
-	registerProxyMethod := `func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
-		_gen_customCtxMap[pctx.Uniq()] = cf
-	}`
 	proxyFunc := "func " + proxyFuncName + "(base " + s.Name + ") *" + mockType + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
@@ -288,7 +300,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		}
 		tmpl.Execute(proxyMethod, map[string]interface{}{
 			"methodName":     fieldName,
-			"funcSignature":  strings.ReplaceAll(methodSig, m.Name, "func"),
+			"funcSignature":  strings.Replace(methodSig, m.Name, "func", 1),
 			"mockType":       mockType,
 			"funcName":       m.Name,
 			"funcResult":     resBuf.String(),
@@ -308,8 +320,8 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		InterfaceName: "%s",
 	}
 	`, cc, s.PkgPath, s.Name)
-	is += pc + "\n_ =" + proxyFuncName + "\n_gen_customCtxMap = make(map[string]inject.CtxFunc)\n" + `)`
-	is += "\n" + registerProxyMethod + "\n\n" + proxyFunc + "\n"
+	is += pc + "\n_ =" + proxyFuncName + `)`
+	is += "\n" + "\n\n" + proxyFunc + "\n"
 	is += ms
 
 	debug.Debug("is: %s\n", is)

@@ -10,6 +10,14 @@ import (
 	"github.com/donnol/tools/inject"
 )
 
+var (
+	_gen_customCtxMap = make(map[string]inject.CtxFunc)
+)
+
+func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
+	_gen_customCtxMap[pctx.Uniq()] = cf
+}
+
 type ATMock struct {
 	DebugFunc func() *AT
 
@@ -132,13 +140,8 @@ var (
 		return
 	}()
 
-	_                 = getIATProxy
-	_gen_customCtxMap = make(map[string]inject.CtxFunc)
+	_ = getIATProxy
 )
-
-func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
-	_gen_customCtxMap[pctx.Uniq()] = cf
-}
 
 func getIATProxy(base IAT) *ATMock {
 	if base == nil {
