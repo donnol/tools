@@ -7,8 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/donnol/tools/reflectx"
+	// "github.com/donnol/tools/reflectx"
 )
 
 // define model
@@ -135,17 +134,11 @@ func (hook *userHook) Around(pctx ProxyContext, method reflect.Value, args []ref
 	// 特别是在需要结合参数来处理时
 	switch pctx.MethodName {
 	case "Add":
-		fmt.Printf("| userHook | welcome to method Add\n")
-		fmt.Printf("| userHook | args: %+v\n", reflectx.ToInterface(args))
+		fmt.Printf("| userHook | welcome to method Add, args: %v\n", args)
 	case "Get":
-		fmt.Printf("| userHook | welcome to method Get\n")
-		fmt.Printf("| userHook | args: %+v\n", reflectx.ToInterface(args))
+		fmt.Printf("| userHook | welcome to method Get, args: %v\n", args)
 	case "GetContext":
-		fmt.Printf("| userHook | welcome to method GetContext\n")
-		iargs := reflectx.ToInterface(args)
-		fmt.Printf("| userHook | args: %+v\n", iargs)
-		ctx := iargs[0].(context.Context)
-		fmt.Printf("| userHook | args context: %+v, value: %v\n", ctx, ctx.Value(testKey))
+		fmt.Printf("| userHook | welcome to method GetContext, args: %v\n", args)
 	}
 
 	begin := time.Now()
