@@ -16,8 +16,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	_ "bytes"
-
 	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/pkg/errors"
@@ -43,6 +41,8 @@ type (
 
 		op Op // 操作，如生成接口，生成实现等
 
+		replaceCallExpr bool
+
 		PkgInfo
 	}
 )
@@ -57,6 +57,7 @@ func New(opt Option) *Parser {
 		fromPath:          opt.FromPath,
 		toPath:            opt.ToPath,
 		output:            opt.Output,
+		replaceCallExpr:   opt.ReplaceCallExpr,
 	}
 }
 
@@ -168,7 +169,8 @@ func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err err
 	result.Patterns = patterns
 	result.Pkgs = make([]Package, 0, len(pkgs))
 	inspector := NewInspector(InspectOption{
-		Parser: p,
+		Parser:          p,
+		ReplaceCallExpr: p.replaceCallExpr,
 	})
 	for _, pkg := range pkgs {
 		p.fset = pkg.Fset

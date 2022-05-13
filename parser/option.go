@@ -18,6 +18,8 @@ type Option struct {
 	Output            io.Writer
 
 	NeedCall bool // 需要记录调用了哪些函数/方法
+
+	ReplaceCallExpr bool // 替换调用表达式
 }
 
 type Op string

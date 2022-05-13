@@ -1,13 +1,17 @@
 package parser
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
+	"go/printer"
 	"go/token"
 	"go/types"
 	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/donnol/tools/internal/utils/debug"
+	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -15,15 +19,19 @@ type Inspector struct {
 	parser *Parser
 
 	pkg *packages.Package
+
+	replaceCallExpr bool
 }
 
 type InspectOption struct {
-	Parser *Parser
+	Parser          *Parser
+	ReplaceCallExpr bool
 }
 
 func NewInspector(opt InspectOption) *Inspector {
 	return &Inspector{
-		parser: opt.Parser,
+		parser:          opt.Parser,
+		replaceCallExpr: opt.ReplaceCallExpr,
 	}
 }
 
@@ -158,6 +166,7 @@ func (ins *Inspector) inspectDecl(decl ast.Decl, from string) (result DeclResult
 		panic(fmt.Errorf("BadDecl: %+v", declValue))
 
 	case *ast.FuncDecl:
+		spew.Dump(declValue)
 		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
 		funcType := &types.Func{}
@@ -306,10 +315,16 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 	case *ast.BadExpr:
 		panic(fmt.Errorf("BadExpr: %+v", exprValue))
 
+	case *ast.IndexListExpr:
+		ins.inspectExpr(exprValue.X, from)
+		for _, indice := range exprValue.Indices {
+			ins.inspectExpr(indice, from)
+		}
+
 	case *ast.SelectorExpr: // X.M
 		debug.Debug("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
 
-		exprResult := ins.inspectExpr(exprValue.X, from)
+		exprResult := ins.inspectExpr(exprValue.X, from) // 也会进到下面的*ast.CallExpr分支
 		result = result.Merge(exprResult)
 
 		pkgID, ok := exprValue.X.(*ast.Ident)
@@ -357,6 +372,85 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 			result = result.Merge(exprResult)
 		}
 		debug.Debug(from+"funcMap: %+v\n", result)
+
+		// https://blog.microfast.ch/refactoring-go-code-using-ast-replacement-e3cbacd7a331
+		// 通过ast替换来修改代码
+		// golang.org/x/tools/go/ast/astutil包的astutil.Apply方法
+		if ins.replaceCallExpr {
+			spew.Dump(exprValue)
+			buf := new(bytes.Buffer)
+			printer.Fprint(buf, ins.pkg.Fset, exprValue)
+			fmt.Printf("\n==buf: %s===\n", buf.String())
+
+			// 编译之前，通过重写ast，改为调用B（B内再调用A）
+			exprValue = astutil.Apply(exprValue, func(cr *astutil.Cursor) bool {
+				// 1 遍历源码，找到函数调用（可配置规则，以过滤出想要改变的函数）- *ast.CallExpr
+				var args []ast.Expr
+				ce, ok := cr.Node().(*ast.CallExpr)
+				if !ok {
+					return true
+				}
+				args = ce.Args
+				ident, isIdent := ce.Fun.(*ast.Ident)
+				if !isIdent {
+					return true
+				}
+				// others: *ast.SelectorExpr, *ast.IndexListExpr
+
+				fmt.Printf("into replace call expr astutil apply callexpr, args: %+v, name: %s\n", args, ident.Name)
+
+				funcName := ident.Name + "Proxy"
+				// 2 生成一个对应的附加了额外逻辑的函数B（B内调用A）- *ast.FuncDecl
+				// var funcAssign = &ast.AssignStmt{
+				// 	Lhs: []ast.Expr{
+				// 		ast.NewIdent(funcName),
+				// 	},
+				// 	TokPos: 0,
+				// 	Tok:    token.DEFINE,
+				// 	Rhs: []ast.Expr{
+				// 		&ast.FuncLit{
+				// 			Type: &ast.FuncType{
+				// 				Func: 0,
+				// 				TypeParams: &ast.FieldList{
+				// 					Opening: 0,
+				// 					List:    []*ast.Field{},
+				// 					Closing: 0,
+				// 				},
+				// 				Params: &ast.FieldList{
+				// 					Opening: 0,
+				// 					List:    []*ast.Field{},
+				// 					Closing: 0,
+				// 				},
+				// 				Results: &ast.FieldList{
+				// 					Opening: 0,
+				// 					List:    []*ast.Field{},
+				// 					Closing: 0,
+				// 				},
+				// 			},
+				// 			Body: &ast.BlockStmt{
+				// 				Lbrace: 0,
+				// 				List:   []ast.Stmt{},
+				// 				Rbrace: 0,
+				// 			},
+				// 		},
+				// 	},
+				// }
+				// // panic: InsertBefore node not contained in slice [recovered]
+				// cr.InsertBefore(funcAssign)
+
+				// 3 将此处对A的调用替换为对B的调用 -
+				// Replace values
+				cr.Replace(&ast.CallExpr{
+					Fun:  ast.NewIdent(funcName),
+					Args: args,
+				})
+				return false
+			}, nil).(*ast.CallExpr)
+
+			buf.Reset()
+			printer.Fprint(buf, ins.pkg.Fset, exprValue)
+			fmt.Printf("\n==buf: %s===\n", buf.String())
+		}
 
 	case *ast.ChanType: // chan T, <-chan T, chan<- T
 		exprResult := ins.inspectExpr(exprValue.Value, from)
