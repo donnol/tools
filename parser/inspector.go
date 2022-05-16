@@ -4,12 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
-	"go/printer"
 	"go/token"
 	"go/types"
+	"os"
 	"sort"
+	"strconv"
+	"text/template"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/internal/utils/debug"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
@@ -166,7 +169,7 @@ func (ins *Inspector) inspectDecl(decl ast.Decl, from string) (result DeclResult
 		panic(fmt.Errorf("BadDecl: %+v", declValue))
 
 	case *ast.FuncDecl:
-		spew.Dump(declValue)
+		// spew.Dump(declValue)
 		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
 		funcType := &types.Func{}
@@ -377,10 +380,7 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		// 通过ast替换来修改代码
 		// golang.org/x/tools/go/ast/astutil包的astutil.Apply方法
 		if ins.replaceCallExpr {
-			spew.Dump(exprValue)
-			buf := new(bytes.Buffer)
-			printer.Fprint(buf, ins.pkg.Fset, exprValue)
-			fmt.Printf("\n==buf: %s===\n", buf.String())
+			// spew.Dump(exprValue)
 
 			// 编译之前，通过重写ast，改为调用B（B内再调用A）
 			exprValue = astutil.Apply(exprValue, func(cr *astutil.Cursor) bool {
@@ -397,59 +397,105 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 				}
 				// others: *ast.SelectorExpr, *ast.IndexListExpr
 
-				fmt.Printf("into replace call expr astutil apply callexpr, args: %+v, name: %s\n", args, ident.Name)
+				debug.Debug("into replace call expr astutil apply callexpr, args: %+v, name: %s\n", args, ident.Name)
+				debug.Debug("c.Index: %d\n", cr.Index())
+				newFuncName := ident.Name + "Proxy"
 
-				funcName := ident.Name + "Proxy"
 				// 2 生成一个对应的附加了额外逻辑的函数B（B内调用A）- *ast.FuncDecl
-				// var funcAssign = &ast.AssignStmt{
-				// 	Lhs: []ast.Expr{
-				// 		ast.NewIdent(funcName),
-				// 	},
-				// 	TokPos: 0,
-				// 	Tok:    token.DEFINE,
-				// 	Rhs: []ast.Expr{
-				// 		&ast.FuncLit{
-				// 			Type: &ast.FuncType{
-				// 				Func: 0,
-				// 				TypeParams: &ast.FieldList{
-				// 					Opening: 0,
-				// 					List:    []*ast.Field{},
-				// 					Closing: 0,
-				// 				},
-				// 				Params: &ast.FieldList{
-				// 					Opening: 0,
-				// 					List:    []*ast.Field{},
-				// 					Closing: 0,
-				// 				},
-				// 				Results: &ast.FieldList{
-				// 					Opening: 0,
-				// 					List:    []*ast.Field{},
-				// 					Closing: 0,
-				// 				},
-				// 			},
-				// 			Body: &ast.BlockStmt{
-				// 				Lbrace: 0,
-				// 				List:   []ast.Stmt{},
-				// 				Rbrace: 0,
-				// 			},
-				// 		},
-				// 	},
-				// }
-				// // panic: InsertBefore node not contained in slice [recovered]
-				// cr.InsertBefore(funcAssign)
+				// 并将其保存到`gen_proxy.go`文件中
+				var argWithType, res, resDefine, resVars, argWithoutType string
+
+				tav, ok := ins.pkg.TypesInfo.Types[ce.Fun]
+				if !ok {
+					debug.Debug("cannot find types info of arg: %v\n", ce)
+				} else {
+					debug.Debug("find types info of arg: %v, %#v\n", ce, tav)
+					sig, ok := tav.Type.(*types.Signature)
+					if ok {
+						debug.Debug("sig: %#v\n", sig)
+
+						for i := 0; i < sig.Params().Len(); i++ {
+							p := sig.Params().At(i)
+							debug.Debug("sig, p: %#v\n", p)
+
+							argWithoutType += p.Name()
+							if i == sig.Params().Len()-1 && sig.Variadic() {
+								slice, ok := p.Type().(*types.Slice)
+								if ok {
+									argWithType += p.Name() + " ..." + slice.Elem().String()
+									argWithoutType += "..."
+								}
+							} else {
+								argWithType += p.Name() + " " + p.Type().String()
+							}
+							if i != sig.Params().Len()-1 {
+								argWithType += ", "
+								argWithoutType += ", "
+							}
+						}
+						for i := 0; i < sig.Results().Len(); i++ {
+							r := sig.Results().At(i)
+							debug.Debug("sig, r: %#v\n", r)
+
+							res += r.Name() + " " + r.Type().String()
+							resVarName := "r" + strconv.Itoa(i)
+							resDefine += "var " + resVarName + " " + r.Type().String() + "\n"
+							resVars += resVarName
+							if i != sig.Results().Len()-1 {
+								res += ", "
+								resVars += ", "
+							}
+						}
+					}
+				}
+
+				tmpl, err := template.New("proxyTmpl").Parse(proxyTmpl)
+				if err != nil {
+					panic(err)
+				}
+				tmplBuf := new(bytes.Buffer)
+				err = tmpl.Execute(tmplBuf, map[string]interface{}{
+					"args":           argWithType,
+					"res":            res,
+					"resDefine":      resDefine,
+					"resVars":        resVars,
+					"funcName":       ident.Name,
+					"argWithoutType": argWithoutType,
+					"newFuncName":    newFuncName,
+				})
+				if err != nil {
+					panic(err)
+				}
+				debug.Debug("tmplBuf: %s\n", tmplBuf.String())
+
+				formatContent, err := format.Format("gen_proxy.go", tmplBuf.String(), false)
+				if err != nil {
+					panic(err)
+				}
+				f, err := os.OpenFile("gen_proxy.go", os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+				if err != nil {
+					panic(err)
+				}
+				defer f.Close()
+				_, err = f.Write([]byte(formatContent))
+				if err != nil {
+					panic(err)
+				}
 
 				// 3 将此处对A的调用替换为对B的调用 -
 				// Replace values
 				cr.Replace(&ast.CallExpr{
-					Fun:  ast.NewIdent(funcName),
+					Fun:  ast.NewIdent(newFuncName),
 					Args: args,
 				})
 				return false
 			}, nil).(*ast.CallExpr)
-
-			buf.Reset()
-			printer.Fprint(buf, ins.pkg.Fset, exprValue)
-			fmt.Printf("\n==buf: %s===\n", buf.String())
+			// TODO: 虽然改了exprValue，但是依然没有影响到原来的ast，怎么样才能改呢？
+			_ = exprValue
+			// fmt.Println("===")
+			spew.Dump(exprValue)
+			// printer.Fprint(os.Stdout, token.NewFileSet(), exprValue)
+			// fmt.Println("\n===")
 		}
 
 	case *ast.ChanType: // chan T, <-chan T, chan<- T
@@ -536,6 +582,22 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 
 	return
 }
+
+var (
+	proxyTmpl = `
+func {{.newFuncName}}({{.args}}) ({{.res}}) {
+	begin := time.Now()
+
+	{{.resDefine}}
+
+	{{.resVars}} = {{.funcName}}({{.argWithoutType}})
+
+	log.Printf("used time: %v\n", time.Since(begin))
+
+	return {{.resVars}}
+}
+`
+)
 
 func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult) {
 	if stmt == nil {
