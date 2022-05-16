@@ -491,6 +491,7 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 				return false
 			}, nil).(*ast.CallExpr)
 			// TODO: 虽然改了exprValue，但是依然没有影响到原来的ast，怎么样才能改呢？
+			// 将astutil.Apply独立到一个命令里，针对特定文件执行Proxy函数生成和节点替换，然后覆盖文件
 			_ = exprValue
 			// fmt.Println("===")
 			spew.Dump(exprValue)
