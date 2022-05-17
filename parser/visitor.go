@@ -35,24 +35,24 @@ func newVisitor() *visitor {
 // Visit 断言节点类型，然后从info里拿到types.Type信息，再使用parseTypesType方法获取具体类型信息
 // 顺序是乱的
 func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
-	debug.Debug("=== node: %+v, %+v\n", node, reflect.TypeOf(node))
+	debug.Printf("=== node: %+v, %+v\n", node, reflect.TypeOf(node))
 
 	switch n := node.(type) {
 	case *ast.TypeSpec:
 		// type and value
 		tv := v.info.Types[n.Type]
-		debug.Debug("=== type: %+v, %+v, %+v, %+v, %v, %v, %v\n", n, n.Type, tv, tv.Type, types.ExprString(n.Type), strings.TrimSpace(n.Doc.Text()), n.Comment.Text())
+		debug.Printf("=== type: %+v, %+v, %+v, %+v, %v, %v, %v\n", n, n.Type, tv, tv.Type, types.ExprString(n.Type), strings.TrimSpace(n.Doc.Text()), n.Comment.Text())
 
 		// obj
 		obj := v.info.Defs[n.Name]
-		debug.Debug("=== obj: %+v\n", obj)
+		debug.Printf("=== obj: %+v\n", obj)
 
 		doc := strings.TrimSpace(n.Doc.Text())
 		comment := n.Comment.Text()
 		v.parseTypesType(tv.Type, obj, doc, comment)
 
 	case *ast.Field:
-		debug.Debug("=== field: %+v, %+v, %v, %v\n", n, n.Type, strings.TrimSpace(n.Doc.Text()), n.Comment.Text())
+		debug.Printf("=== field: %+v, %+v, %v, %v\n", n, n.Type, strings.TrimSpace(n.Doc.Text()), n.Comment.Text())
 		tv := v.info.Types[n.Type]
 		for _, name := range n.Names {
 			obj, ok := v.info.Defs[name]
@@ -70,58 +70,58 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 		v.parseTypesType(tv.Type, nil, n.Doc.Text(), n.Comment.Text())
 
 	case *ast.FieldList:
-		debug.Debug("=== fieldList: %+v\n", n.List)
+		debug.Printf("=== fieldList: %+v\n", n.List)
 
 	case *ast.StructType:
-		debug.Debug("=== struct: %+v\n", n)
+		debug.Printf("=== struct: %+v\n", n)
 
 	case *ast.DeclStmt:
-		debug.Debug("=== decl: %+v, %+v\n", n, n.Decl)
+		debug.Printf("=== decl: %+v, %+v\n", n, n.Decl)
 
 	case *ast.Ident:
-		debug.Debug("=== ident: %+v, %+v\n", n, n.Obj)
+		debug.Printf("=== ident: %+v, %+v\n", n, n.Obj)
 		if n.Obj != nil {
-			debug.Debug("=== ident obj: %+v, %+v, %+v, %+v\n", n, n.Obj, n.Obj.Decl, reflect.TypeOf(n.Obj.Decl))
+			debug.Printf("=== ident obj: %+v, %+v, %+v, %+v\n", n, n.Obj, n.Obj.Decl, reflect.TypeOf(n.Obj.Decl))
 			switch nn := n.Obj.Decl.(type) {
 			case *ast.TypeSpec:
 				obj := v.info.ObjectOf(nn.Name)
-				debug.Debug("=== ident type spec: %+v, %+v, %+v\n", nn, obj, reflect.TypeOf(obj))
+				debug.Printf("=== ident type spec: %+v, %+v, %+v\n", nn, obj, reflect.TypeOf(obj))
 				switch ot := obj.(type) {
 				case *types.TypeName:
-					debug.Debug("=== ident type spec type name: %+v, %+v\n", ot, ot.IsAlias())
+					debug.Printf("=== ident type spec type name: %+v, %+v\n", ot, ot.IsAlias())
 				}
 			}
 		}
 
 	case *ast.CommentGroup:
-		debug.Debug("=== comment group: %+v, %v\n", n, n.Text())
+		debug.Printf("=== comment group: %+v, %v\n", n, n.Text())
 
 	case *ast.ImportSpec:
-		debug.Debug("=== import spec: %+v, %+v\n", n, n.Path)
+		debug.Printf("=== import spec: %+v, %+v\n", n, n.Path)
 
 	case *ast.BasicLit:
-		debug.Debug("=== basicLit: %+v, %+v\n", n, n.Value)
+		debug.Printf("=== basicLit: %+v, %+v\n", n, n.Value)
 
 	case *ast.AssignStmt:
-		debug.Debug("=== assign stmt: %+v, %+v\n", n, n.Rhs)
+		debug.Printf("=== assign stmt: %+v, %+v\n", n, n.Rhs)
 
 	case *ast.GenDecl:
-		debug.Debug("=== gen decl: %+v, %+v\n", n, n.Specs)
+		debug.Printf("=== gen decl: %+v, %+v\n", n, n.Specs)
 		for _, singleSpec := range n.Specs {
 			switch singleSpec.(type) {
 			case *ast.ImportSpec:
-				debug.Debug("=== import spec: %+v, %+v\n", n, singleSpec)
+				debug.Printf("=== import spec: %+v, %+v\n", n, singleSpec)
 			case *ast.TypeSpec:
-				debug.Debug("=== type spec: %+v, %+v\n", n, singleSpec)
+				debug.Printf("=== type spec: %+v, %+v\n", n, singleSpec)
 			case *ast.ValueSpec:
-				debug.Debug("=== value spec: %+v, %+v\n", n, singleSpec)
+				debug.Printf("=== value spec: %+v, %+v\n", n, singleSpec)
 			default:
-				debug.Debug("=== gen decl: %+v, %+v\n", n, singleSpec)
+				debug.Printf("=== gen decl: %+v, %+v\n", n, singleSpec)
 			}
 		}
 
 	default:
-		debug.Debug("=== default: %+v\n", n)
+		debug.Printf("=== default: %+v\n", n)
 	}
 
 	return v
@@ -130,14 +130,14 @@ func (v *visitor) Visit(node ast.Node) (w ast.Visitor) {
 // 解析类型提取所需信息
 func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment string) {
 	pkgSelType := types.TypeString(t, pkgNameQualifier(qualifierParam{pkgPath: v.pkgPath}))
-	debug.Debug("pkgSelType: %+v\n", pkgSelType)
+	debug.Printf("pkgSelType: %+v\n", pkgSelType)
 
 	switch tv := t.(type) {
 	case *types.Signature:
-		debug.Debug("=== signature: %+v, %+v, %+v\n", tv, tv.Params(), tv.Results())
+		debug.Printf("=== signature: %+v, %+v, %+v\n", tv, tv.Params(), tv.Results())
 
 	case *types.Pointer:
-		debug.Debug("=== pointer: %+v, %+v\n", tv, tv.Elem())
+		debug.Printf("=== pointer: %+v, %+v\n", tv, tv.Elem())
 		v.parseTypesType(tv.Elem(), obj, doc, comment)
 
 	case *types.Named:
@@ -149,9 +149,9 @@ func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment st
 				Signature: types.TypeString(met.Type(), pkgNameQualifier(qualifierParam{pkgPath: v.pkgPath})),
 			})
 		}
-		debug.Debug("=== named: %+v, is alias: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), methods)
+		debug.Printf("=== named: %+v, is alias: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), methods)
 		if tv.Obj().IsAlias() {
-			debug.Debug("===============================: %+v\n", tv)
+			debug.Printf("===============================: %+v\n", tv)
 		}
 
 		// 怎么把methods关联到struct呢？
@@ -174,7 +174,7 @@ func (v *visitor) parseTypesType(t types.Type, obj types.Object, doc, comment st
 			fields = append(fields, tmpField)
 			v.fieldMap[field.Id()] = tmpField
 		}
-		debug.Debug("=== struct: %+v, fields: %+v\n", tv, fields)
+		debug.Printf("=== struct: %+v, fields: %+v\n", tv, fields)
 
 		if obj == nil {
 			return

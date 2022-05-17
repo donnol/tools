@@ -1,20 +1,13 @@
 package parser
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
 	"go/types"
-	"os"
 	"sort"
-	"strconv"
-	"text/template"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/internal/utils/debug"
-	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -22,19 +15,15 @@ type Inspector struct {
 	parser *Parser
 
 	pkg *packages.Package
-
-	replaceCallExpr bool
 }
 
 type InspectOption struct {
-	Parser          *Parser
-	ReplaceCallExpr bool
+	Parser *Parser
 }
 
 func NewInspector(opt InspectOption) *Inspector {
 	return &Inspector{
-		parser:          opt.Parser,
-		replaceCallExpr: opt.ReplaceCallExpr,
+		parser: opt.Parser,
 	}
 }
 
@@ -53,7 +42,7 @@ func (ins *Inspector) InspectPkg(pkg *packages.Package) Package {
 		// 替换import path
 		if ins.parser.replaceImportPath {
 			fileName := pkg.CompiledGoFiles[i]
-			debug.Debug("%v\n", pkg.CompiledGoFiles)
+			debug.Printf("%v\n", pkg.CompiledGoFiles)
 			if err := ins.parser.replaceFileImportPath(fileName, astFile); err != nil {
 				panic(fmt.Errorf("replaceFileImportPath failed: %+v", err))
 			}
@@ -170,13 +159,13 @@ func (ins *Inspector) inspectDecl(decl ast.Decl, from string) (result DeclResult
 
 	case *ast.FuncDecl:
 		// spew.Dump(declValue)
-		debug.Debug("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
+		debug.Printf("FundDecl name: %s, %s\n", declValue.Name, declValue.Doc.Text())
 
 		funcType := &types.Func{}
 		obj := ins.pkg.TypesInfo.Defs[declValue.Name]
 		switch objTyp := obj.Type().(type) {
 		case *types.Signature:
-			debug.Debug("objTyp sig: %+v, %s\n", objTyp, toString(objTyp))
+			debug.Printf("objTyp sig: %+v, %s\n", objTyp, toString(objTyp))
 			funcType = types.NewFunc(declValue.Type.Func, ins.pkg.Types, obj.Name(), objTyp)
 		}
 		method := Method{
@@ -193,12 +182,12 @@ func (ins *Inspector) inspectDecl(decl ast.Decl, from string) (result DeclResult
 			method.Calls = append(method.Calls, oneFunc)
 		}
 
-		debug.Debug(from+"method: %+v\n", method)
+		debug.Printf(from+"method: %+v\n", method)
 
 		// method receiver: func (x *X) XXX()里的(x *X)部分
 		var recvName string
 		if declValue.Recv != nil { // 方法
-			debug.Debug("FundDecl recv: %v\n", declValue.Recv.List)
+			debug.Printf("FundDecl recv: %v\n", declValue.Recv.List)
 
 			fieldResult := ins.inspectFields(declValue.Recv, from)
 			recvName = fieldResult.RecvName
@@ -239,19 +228,19 @@ func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult
 
 	switch specValue := spec.(type) {
 	case *ast.ImportSpec:
-		debug.Debug("ImportSpec, name: %v, path: %v\n", specValue.Name, specValue.Path)
+		debug.Printf("ImportSpec, name: %v, path: %v\n", specValue.Name, specValue.Path)
 
 	case *ast.ValueSpec:
-		debug.Debug("ValueSpec, name: %+v, type: %+v, value: %+v\n", specValue.Names, specValue.Type, specValue.Values)
+		debug.Printf("ValueSpec, name: %+v, type: %+v, value: %+v\n", specValue.Names, specValue.Type, specValue.Values)
 
 	case *ast.TypeSpec:
 		// 这里拿到类型信息: 名称，注释，文档
-		debug.Debug("TypeSpec name: %s, type: %+v, comment: %s, doc: %s\n", specValue.Name, specValue.Type, specValue.Comment.Text(), specValue.Doc.Text())
+		debug.Printf("TypeSpec name: %s, type: %+v, comment: %s, doc: %s\n", specValue.Name, specValue.Type, specValue.Comment.Text(), specValue.Doc.Text())
 
 		switch specValue.Type.(type) {
 		case *ast.InterfaceType:
 			exprResult := ins.inspectExpr(specValue.Type, from)
-			debug.Debug("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
+			debug.Printf("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
 
 			interType := ins.pkg.TypesInfo.TypeOf(specValue.Type)
 			r := parseTypesType(interType, parseTypesTypeOption{pkgPath: ins.pkg.PkgPath})
@@ -265,7 +254,7 @@ func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult
 				Methods:   methods,
 			}
 			mock, imports := inter.MakeMock()
-			debug.Debug("mock: %s, imports: %v\n", mock, imports)
+			debug.Printf("mock: %s, imports: %v\n", mock, imports)
 			result.interfaceMap[specValue.Name.Name] = inter
 
 		default:
@@ -325,7 +314,7 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		}
 
 	case *ast.SelectorExpr: // X.M
-		debug.Debug("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
+		debug.Printf("SelectorExpr value: %v, typesString: %s\n", exprValue, toString(exprValue))
 
 		exprResult := ins.inspectExpr(exprValue.X, from) // 也会进到下面的*ast.CallExpr分支
 		result = result.Merge(exprResult)
@@ -334,12 +323,12 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		if ok {
 			if so, ok := ins.pkg.TypesInfo.Uses[pkgID].(*types.PkgName); ok {
 				pkgPath := so.Imported().Path()
-				debug.Debug(from+"SelectorExpr pkgPath: %#v\n", pkgPath)
+				debug.Printf(from+"SelectorExpr pkgPath: %#v\n", pkgPath)
 				result.pkgPath = pkgPath
 			}
 		}
 
-		debug.Debug(from+"SelectorExpr value: %#v, result: %#v\n", exprValue, result)
+		debug.Printf(from+"SelectorExpr value: %#v, result: %#v\n", exprValue, result)
 
 	case *ast.SliceExpr: // []T, slice[1:3:5]
 		ins.inspectExpr(exprValue.X, from)
@@ -354,12 +343,12 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		result = result.Merge(exprResult)
 		exprResult = ins.inspectExpr(exprValue.Y, from)
 		result = result.Merge(exprResult)
-		debug.Debug(from+"BinaryExpr: %+v\n", result)
+		debug.Printf(from+"BinaryExpr: %+v\n", result)
 
 	case *ast.CallExpr: // M(1, 2)
-		debug.Debug(from+"funcMap 1: %#v, %+v\n", exprValue.Fun, result)
+		debug.Printf(from+"funcMap 1: %#v, %+v\n", exprValue.Fun, result)
 		exprResult := ins.inspectExpr(exprValue.Fun, from)
-		debug.Debug(from+"funcMap mid: %#v, %+v\n", exprValue.Fun, exprResult)
+		debug.Printf(from+"funcMap mid: %#v, %+v\n", exprValue.Fun, exprResult)
 
 		result.funcMap[toString(exprValue.Fun)] = Func{
 			PkgPath: exprResult.pkgPath,
@@ -367,137 +356,14 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 		}
 
 		result = result.Merge(exprResult)
-		debug.Debug(from+"funcMap 2: %#v, %+v\n", exprValue.Fun, result)
+		debug.Printf(from+"funcMap 2: %#v, %+v\n", exprValue.Fun, result)
 
 		for _, arg := range exprValue.Args {
-			debug.Debug("CallExpr: %+v, %+v\n", exprValue.Fun, arg)
+			debug.Printf("CallExpr: %+v, %+v\n", exprValue.Fun, arg)
 			exprResult := ins.inspectExpr(arg, from)
 			result = result.Merge(exprResult)
 		}
-		debug.Debug(from+"funcMap: %+v\n", result)
-
-		// https://blog.microfast.ch/refactoring-go-code-using-ast-replacement-e3cbacd7a331
-		// 通过ast替换来修改代码
-		// golang.org/x/tools/go/ast/astutil包的astutil.Apply方法
-		if ins.replaceCallExpr {
-			// spew.Dump(exprValue)
-
-			// 编译之前，通过重写ast，改为调用B（B内再调用A）
-			exprValue = astutil.Apply(exprValue, func(cr *astutil.Cursor) bool {
-				// 1 遍历源码，找到函数调用（可配置规则，以过滤出想要改变的函数）- *ast.CallExpr
-				var args []ast.Expr
-				ce, ok := cr.Node().(*ast.CallExpr)
-				if !ok {
-					return true
-				}
-				args = ce.Args
-				ident, isIdent := ce.Fun.(*ast.Ident)
-				if !isIdent {
-					return true
-				}
-				// others: *ast.SelectorExpr, *ast.IndexListExpr
-
-				debug.Debug("into replace call expr astutil apply callexpr, args: %+v, name: %s\n", args, ident.Name)
-				debug.Debug("c.Index: %d\n", cr.Index())
-				newFuncName := ident.Name + "Proxy"
-
-				// 2 生成一个对应的附加了额外逻辑的函数B（B内调用A）- *ast.FuncDecl
-				// 并将其保存到`gen_proxy.go`文件中
-				var argWithType, res, resDefine, resVars, argWithoutType string
-
-				tav, ok := ins.pkg.TypesInfo.Types[ce.Fun]
-				if !ok {
-					debug.Debug("cannot find types info of arg: %v\n", ce)
-				} else {
-					debug.Debug("find types info of arg: %v, %#v\n", ce, tav)
-					sig, ok := tav.Type.(*types.Signature)
-					if ok {
-						debug.Debug("sig: %#v\n", sig)
-
-						for i := 0; i < sig.Params().Len(); i++ {
-							p := sig.Params().At(i)
-							debug.Debug("sig, p: %#v\n", p)
-
-							argWithoutType += p.Name()
-							if i == sig.Params().Len()-1 && sig.Variadic() {
-								slice, ok := p.Type().(*types.Slice)
-								if ok {
-									argWithType += p.Name() + " ..." + slice.Elem().String()
-									argWithoutType += "..."
-								}
-							} else {
-								argWithType += p.Name() + " " + p.Type().String()
-							}
-							if i != sig.Params().Len()-1 {
-								argWithType += ", "
-								argWithoutType += ", "
-							}
-						}
-						for i := 0; i < sig.Results().Len(); i++ {
-							r := sig.Results().At(i)
-							debug.Debug("sig, r: %#v\n", r)
-
-							res += r.Name() + " " + r.Type().String()
-							resVarName := "r" + strconv.Itoa(i)
-							resDefine += "var " + resVarName + " " + r.Type().String() + "\n"
-							resVars += resVarName
-							if i != sig.Results().Len()-1 {
-								res += ", "
-								resVars += ", "
-							}
-						}
-					}
-				}
-
-				tmpl, err := template.New("proxyTmpl").Parse(proxyTmpl)
-				if err != nil {
-					panic(err)
-				}
-				tmplBuf := new(bytes.Buffer)
-				err = tmpl.Execute(tmplBuf, map[string]interface{}{
-					"args":           argWithType,
-					"res":            res,
-					"resDefine":      resDefine,
-					"resVars":        resVars,
-					"funcName":       ident.Name,
-					"argWithoutType": argWithoutType,
-					"newFuncName":    newFuncName,
-				})
-				if err != nil {
-					panic(err)
-				}
-				debug.Debug("tmplBuf: %s\n", tmplBuf.String())
-
-				formatContent, err := format.Format("gen_proxy.go", tmplBuf.String(), false)
-				if err != nil {
-					panic(err)
-				}
-				f, err := os.OpenFile("gen_proxy.go", os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
-				if err != nil {
-					panic(err)
-				}
-				defer f.Close()
-				_, err = f.Write([]byte(formatContent))
-				if err != nil {
-					panic(err)
-				}
-
-				// 3 将此处对A的调用替换为对B的调用 -
-				// Replace values
-				cr.Replace(&ast.CallExpr{
-					Fun:  ast.NewIdent(newFuncName),
-					Args: args,
-				})
-				return false
-			}, nil).(*ast.CallExpr)
-			// TODO: 虽然改了exprValue，但是依然没有影响到原来的ast，怎么样才能改呢？
-			// 将astutil.Apply独立到一个命令里，针对特定文件执行Proxy函数生成和节点替换，然后覆盖文件
-			_ = exprValue
-			// fmt.Println("===")
-			spew.Dump(exprValue)
-			// printer.Fprint(os.Stdout, token.NewFileSet(), exprValue)
-			// fmt.Println("\n===")
-		}
+		debug.Printf(from+"funcMap: %+v\n", result)
 
 	case *ast.ChanType: // chan T, <-chan T, chan<- T
 		exprResult := ins.inspectExpr(exprValue.Value, from)
@@ -524,9 +390,9 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 	case *ast.Ident:
 
 		if exprValue != nil {
-			debug.Debug(from+"Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
+			debug.Printf(from+"Ident, name: %s, obj: %+v\n", exprValue.Name, exprValue.Obj)
 		} else {
-			debug.Debug(from+"Ident is nil: %+v\n", expr)
+			debug.Printf(from+"Ident is nil: %+v\n", expr)
 		}
 
 		obj, ok := ins.pkg.TypesInfo.Uses[exprValue]
@@ -541,14 +407,14 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 					switch ptrElem := ptr.Elem().(type) {
 					case *types.Named:
 						varTypePkgPath = ptrElem.Obj().Pkg().Path()
-						debug.Debug(from+"Ident obj: %#v, ptr: %#v, pkgPath: %#v\n", obj.Type(), ptr, varTypePkgPath)
+						debug.Printf(from+"Ident obj: %#v, ptr: %#v, pkgPath: %#v\n", obj.Type(), ptr, varTypePkgPath)
 					}
 				}
 				result.pkgPath = varTypePkgPath
 			}
 		}
 
-		debug.Debug(from+"Ident value: %#v, result: %#v\n", exprValue, result)
+		debug.Printf(from+"Ident value: %#v, result: %#v\n", exprValue, result)
 
 	case *ast.IndexExpr: // s[1], arr[1]
 		exprResult := ins.inspectExpr(exprValue.X, from)
@@ -583,22 +449,6 @@ func (ins *Inspector) inspectExpr(expr ast.Expr, from string) (result ExprResult
 
 	return
 }
-
-var (
-	proxyTmpl = `
-func {{.newFuncName}}({{.args}}) ({{.res}}) {
-	begin := time.Now()
-
-	{{.resDefine}}
-
-	{{.resVars}} = {{.funcName}}({{.argWithoutType}})
-
-	log.Printf("used time: %v\n", time.Since(begin))
-
-	return {{.resVars}}
-}
-`
-)
 
 func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult) {
 	if stmt == nil {
@@ -638,11 +488,11 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult
 
 	case *ast.BlockStmt:
 		for _, single := range stmtValue.List {
-			debug.Debug(from+"block stmt: %+v\n", single)
+			debug.Printf(from+"block stmt: %+v\n", single)
 			res := ins.inspectStmt(single, from)
 			result = result.Merge(res)
 		}
-		debug.Debug(from+"block funcMap: %+v\n", result.funcMap)
+		debug.Printf(from+"block funcMap: %+v\n", result.funcMap)
 
 	case *ast.BranchStmt:
 		exprResult := ins.inspectExpr(stmtValue.Label, from)
@@ -676,10 +526,10 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult
 	case *ast.EmptyStmt:
 
 	case *ast.ExprStmt:
-		debug.Debug(from+"expr stmt: %+v\n", stmtValue.X)
+		debug.Printf(from+"expr stmt: %+v\n", stmtValue.X)
 		exprResult := ins.inspectExpr(stmtValue.X, from)
 		result = result.MergeExprResult(exprResult)
-		debug.Debug(from+"expr funcMap: %+v\n", result.funcMap)
+		debug.Printf(from+"expr funcMap: %+v\n", result.funcMap)
 
 	case *ast.ForStmt: // for i:=0; i< l; i++ { }
 		ins.inspectStmt(stmtValue.Init, from)
@@ -724,7 +574,7 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult
 		for _, one := range stmtValue.Results {
 			exprResult := ins.inspectExpr(one, from)
 			result = result.MergeExprResult(exprResult)
-			debug.Debug(from+"return stmt: %#v, %+v\n", one, result.funcMap)
+			debug.Printf(from+"return stmt: %#v, %+v\n", one, result.funcMap)
 		}
 
 	case *ast.TypeSwitchStmt: // switch x := m(); a := x.(type) { }
@@ -749,7 +599,7 @@ func (ins *Inspector) inspectFields(fields *ast.FieldList, from string) (result 
 
 	for _, field := range fields.List {
 		// 拿field的名称，类型，tag，注释，文档
-		debug.Debug("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
+		debug.Printf("StructType field name: %v, type: %+v, tag: %v, comment: %s, doc: %s\n", field.Names, field.Type, field.Tag, field.Comment.Text(), field.Doc.Text())
 
 		// 获取receiver name
 		fieldTyp := field.Type
@@ -810,14 +660,14 @@ func toString(v any) string {
 }
 
 func getTypesPkgPath(t types.Type) string {
-	debug.Debug("pvar type: %s\n", t)
+	debug.Printf("pvar type: %s\n", t)
 
 	pkgPath := ""
 	switch v := t.(type) {
 	case *types.Named:
 		if v.Obj().Pkg() != nil {
 			pkgPath = v.Obj().Pkg().Path()
-			debug.Debug("path: %s\n", pkgPath)
+			debug.Printf("path: %s\n", pkgPath)
 		}
 	}
 

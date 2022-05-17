@@ -39,7 +39,7 @@ func (pkg Package) NewGoFileWithSuffix(suffix string) (file string) {
 		fmt.Printf("pkg.Module is nil\n")
 	}
 	part := strings.ReplaceAll(pkg.PkgPath, pkg.Module.Path, "")
-	debug.Debug("pkg: %+v, module: %+v, %s\n", pkg.PkgPath, pkg.Module, part)
+	debug.Printf("pkg: %+v, module: %+v, %s\n", pkg.PkgPath, pkg.Module, part)
 
 	dir := filepath.Join(pkg.Module.Dir, part)
 	file = filepath.Join(dir, suffix+".go")
@@ -69,7 +69,7 @@ func (pkg Package) SaveInterface(file string) error {
 	if err != nil {
 		return err
 	}
-	debug.Debug("content: %s, file: %s\n", formatContent, file)
+	debug.Printf("content: %s, file: %s\n", formatContent, file)
 
 	if err = ioutil.WriteFile(file, []byte(formatContent), os.ModePerm); err != nil {
 		return err
@@ -85,10 +85,10 @@ func (pkg Package) SaveMock(file string) error {
 	// 因为是生成mock结构体，所以有包引用的都是参数和返回值
 	imports := make(map[string]struct{}, 4)
 
-	debug.Debug("===test\n")
+	debug.Printf("===test\n")
 	var content string
 	for _, single := range pkg.Interfaces {
-		debug.Debug("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
+		debug.Printf("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
 		if single.Interface.NumEmbeddeds() != 0 {
 			log.Printf("have type set: %+v\n", single.Interface)
 			continue
@@ -125,14 +125,14 @@ func (pkg Package) SaveMock(file string) error {
 	}
 	if impcontent != "" {
 		impcontent = "import (\n" + impcontent + ")\n"
-		debug.Debug("import: %s\n", impcontent)
+		debug.Printf("import: %s\n", impcontent)
 	}
 
 	gocontent += impcontent
 
 	// mock
 	gocontent += content
-	debug.Debug("gocontent: %s\n", gocontent)
+	debug.Printf("gocontent: %s\n", gocontent)
 
 	// TODO:检查是否重复
 
@@ -144,7 +144,7 @@ func (pkg Package) SaveMock(file string) error {
 	if err != nil {
 		return fmt.Errorf("format failed: %w, content: \n%s", err, gocontent)
 	}
-	debug.Debug("content: %s, file: %s\n", formatContent, file)
+	debug.Printf("content: %s, file: %s\n", formatContent, file)
 
 	if err = ioutil.WriteFile(file, []byte(formatContent), os.ModePerm); err != nil {
 		return err
@@ -324,7 +324,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	is += "\n" + "\n\n" + proxyFunc + "\n"
 	is += ms
 
-	debug.Debug("is: %s\n", is)
+	debug.Printf("is: %s\n", is)
 
 	return is, imports
 }
@@ -347,7 +347,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	if sigType.Variadic() {
 		//  在这里获取完整签名字符串时，还是正常的：func(interface{}, string, ...interface{}) error
 		typStr := types.TypeString(sigType, pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
-		debug.Debug("typ: %+v, str: %s\n", sigType, typStr)
+		debug.Printf("typ: %+v, str: %s\n", sigType, typStr)
 	}
 	params := sigType.Params()
 	for i := 0; i < params.Len(); i++ {
@@ -372,7 +372,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		if sigType.Variadic() && i == params.Len()-1 {
 			paramTypePrefix = "..."
 			variadic = true
-			debug.Debug("typ: %+v, str: %s, params: %v\n", pvar.Type(), typStr, params.String())
+			debug.Printf("typ: %+v, str: %s, params: %v\n", pvar.Type(), typStr, params.String())
 		}
 
 		// FIXME:感觉不太好，怎么办呢？
@@ -415,7 +415,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	resString = leftParent + resString + rightParent
 	methodSig = methodSig + resString
 
-	debug.Debug("methodSig: %v\n", methodSig)
+	debug.Printf("methodSig: %v\n", methodSig)
 
 	call = strings.TrimRight(call, sep)
 	call = leftParent + call + rightParent

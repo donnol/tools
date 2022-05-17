@@ -169,8 +169,7 @@ func (p *Parser) ParseByGoPackages(patterns ...string) (result Packages, err err
 	result.Patterns = patterns
 	result.Pkgs = make([]Package, 0, len(pkgs))
 	inspector := NewInspector(InspectOption{
-		Parser:          p,
-		ReplaceCallExpr: p.replaceCallExpr,
+		Parser: p,
 	})
 	for _, pkg := range pkgs {
 		p.fset = pkg.Fset
@@ -295,7 +294,7 @@ func (p *Parser) replaceFileImportPath(fileName string, file *ast.File) error {
 
 			rewrote := astutil.RewriteImport(p.fset, file, path, topath)
 
-			debug.Debug("From %s to %s, rewrote: %v\n", p.fromPath, p.toPath, rewrote)
+			debug.Printf("From %s to %s, rewrote: %v\n", p.fromPath, p.toPath, rewrote)
 		}
 	}
 

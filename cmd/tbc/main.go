@@ -1,17 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"go/ast"
+	"go/printer"
+	"go/token"
 	"go/types"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"text/template"
 
+	"github.com/davecgh/go-spew/spew"
+	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/importpath"
 	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/donnol/tools/parser"
+	"golang.org/x/tools/go/ast/astutil"
+	"golang.org/x/tools/go/packages"
 
 	"github.com/spf13/cobra"
 )
@@ -243,7 +253,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 			if err != nil {
 				log.Fatal(err)
 			}
-			debug.Debug("inters: %+v\n", inters)
+			debug.Printf("inters: %+v\n", inters)
 			for _, pkg := range inters.Pkgs {
 				fmt.Printf("pkg: %+v\n", pkg)
 				for _, one := range pkg.Interfaces {
@@ -252,7 +262,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 					}
 					interType = one.Interface
 
-					debug.Debug("interface: %+v\n", one.Interface)
+					debug.Printf("interface: %+v\n", one.Interface)
 				}
 			}
 
@@ -328,13 +338,13 @@ like:
 			var targetFunc parser.Func
 			for _, pkg := range pkgs.Pkgs {
 				for _, oneFunc := range pkg.Funcs {
-					debug.Debug("oneFunc: %+v\n", oneFunc)
+					debug.Printf("oneFunc: %+v\n", oneFunc)
 
 					if len(funcParts) == 2 {
 						if oneFunc.Recv == "" {
 							continue
 						}
-						debug.Debug("%+v, %s, %s\n", funcParts, oneFunc.Recv, oneFunc.Name)
+						debug.Printf("%+v, %s, %s\n", funcParts, oneFunc.Recv, oneFunc.Name)
 						if funcParts[0] != oneFunc.Recv ||
 							funcParts[1] != oneFunc.Name {
 							continue
@@ -372,7 +382,7 @@ like:
 
 			oneFuncPtr := &targetFunc
 			oneFuncPtr.Set(funcMap, depth)
-			debug.Debug("=== got: %+v\n", targetFunc)
+			debug.Printf("=== got: %+v\n", targetFunc)
 			targetFunc.PrintCallGraph(newIgnores, depth)
 		},
 	})
@@ -390,7 +400,208 @@ like:
 			_ = err
 		},
 	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpGenProxy),
+		Short: "gen proxy by @proxy directive from source code, notice: this will change the origin code",
+		Long: `
+		-p path maybe a directory, or an import path of a package, like: '~/a/b/c', 'bytes', 'github.com/donnol/tools'...
+		--func specify func name which will be added '[func]Proxy'
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// 标志
+			flags := cmd.Flags()
+			path, _ := flags.GetString("path")
+			funcName, _ := flags.GetString("func")
+			if path == "" {
+				panic("path cannot be empty")
+			}
+			if funcName == "" {
+				panic("func cannot be empty")
+			}
+			fmt.Printf("| %s | %+v, %s\n", parser.OpGenProxy, path, funcName)
+
+			cfg := &packages.Config{
+				Mode: packages.NeedName |
+					packages.NeedFiles |
+					packages.NeedCompiledGoFiles |
+					packages.NeedImports |
+					packages.NeedDeps |
+					packages.NeedExportsFile |
+					packages.NeedTypes |
+					packages.NeedSyntax |
+					packages.NeedTypesInfo |
+					packages.NeedTypesSizes |
+					packages.NeedModule,
+			}
+			pkgs, err := packages.Load(cfg, path)
+			if err != nil {
+				return
+			}
+
+			for _, pkg := range pkgs {
+
+				file := ""
+				if len(pkg.Syntax) > 0 {
+					file = pkg.CompiledGoFiles[0]
+				}
+				genFile := filepath.Join(filepath.Dir(file), "gen_proxy.go")
+				f, err := os.OpenFile(genFile, os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+				if err != nil {
+					panic(err)
+				}
+				defer f.Close()
+
+				for i, fileSyntax := range pkg.Syntax {
+					file := pkg.CompiledGoFiles[i]
+					if file == genFile {
+						continue
+					}
+					// https://blog.microfast.ch/refactoring-go-code-using-ast-replacement-e3cbacd7a331
+					// 通过ast替换来修改代码
+					// golang.org/x/tools/go/ast/astutil包的astutil.Apply方法
+
+					newNode := astutil.Apply(fileSyntax, func(cr *astutil.Cursor) bool {
+						var args []ast.Expr
+						ce, ok := cr.Node().(*ast.CallExpr)
+						if !ok {
+							return true
+						}
+						args = ce.Args
+						ident, isIdent := ce.Fun.(*ast.Ident)
+						if !isIdent {
+							return true
+						}
+						// TODO: others: *ast.SelectorExpr, *ast.IndexListExpr
+
+						if ident.Name != funcName {
+							return true
+						}
+
+						debug.Printf("into replace call expr astutil apply callexpr, args: %+v, name: %s\n", args, ident.Name)
+						debug.Printf("c.Index: %d\n", cr.Index())
+						newFuncName := ident.Name + "Proxy"
+
+						var argWithType, res, resDefine, resVars, argWithoutType string
+
+						tav, ok := pkg.TypesInfo.Types[ce.Fun]
+						if !ok {
+							debug.Printf("cannot find types info of arg: %v\n", ce)
+							return true
+						}
+						debug.Printf("find types info of arg: %v, %#v\n", ce, tav)
+
+						sig, ok := tav.Type.(*types.Signature)
+						if ok {
+							debug.Printf("sig: %#v\n", sig)
+
+							for i := 0; i < sig.Params().Len(); i++ {
+								p := sig.Params().At(i)
+								debug.Printf("sig, p: %#v\n", p)
+
+								argWithoutType += p.Name()
+								if i == sig.Params().Len()-1 && sig.Variadic() {
+									slice, ok := p.Type().(*types.Slice)
+									if ok {
+										argWithType += p.Name() + " ..." + slice.Elem().String()
+										argWithoutType += "..."
+									}
+								} else {
+									argWithType += p.Name() + " " + p.Type().String()
+								}
+								if i != sig.Params().Len()-1 {
+									argWithType += ", "
+									argWithoutType += ", "
+								}
+							}
+							for i := 0; i < sig.Results().Len(); i++ {
+								r := sig.Results().At(i)
+								debug.Printf("sig, r: %#v\n", r)
+
+								res += r.Name() + " " + r.Type().String()
+								resVarName := "r" + strconv.Itoa(i)
+								resDefine += "var " + resVarName + " " + r.Type().String() + "\n"
+								resVars += resVarName
+								if i != sig.Results().Len()-1 {
+									res += ", "
+									resVars += ", "
+								}
+							}
+						}
+
+						tmplBuf := new(bytes.Buffer)
+						err = tmpl.Execute(tmplBuf, map[string]interface{}{
+							"args":           argWithType,
+							"res":            res,
+							"resDefine":      resDefine,
+							"resVars":        resVars,
+							"funcName":       ident.Name,
+							"argWithoutType": argWithoutType,
+							"newFuncName":    newFuncName,
+						})
+						if err != nil {
+							panic(err)
+						}
+						debug.Printf("tmplBuf: %s\n", tmplBuf.String())
+
+						formatContent, err := format.Format("gen_proxy.go", tmplBuf.String(), false)
+						if err != nil {
+							panic(err)
+						}
+
+						_, err = f.Write([]byte(formatContent))
+						if err != nil {
+							panic(err)
+						}
+
+						// Replace values
+						cr.Replace(&ast.CallExpr{
+							Fun:      ast.NewIdent(newFuncName),
+							Lparen:   ce.Lparen,
+							Args:     args,
+							Ellipsis: ce.Ellipsis,
+							Rparen:   ce.Rparen,
+						})
+						return false
+					}, nil).(*ast.File)
+
+					if debug.IsDebug() {
+						spew.Dump(newNode)
+					}
+
+					f, err := os.OpenFile(file, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+					if err != nil {
+						panic(err)
+					}
+					printer.Fprint(f, token.NewFileSet(), newNode)
+				}
+			}
+		},
+	})
 }
+
+var (
+	proxyTmpl = `
+func {{.newFuncName}}({{.args}}) ({{.res}}) {
+	begin := time.Now()
+
+	{{.resDefine}}
+
+	{{.resVars}} = {{.funcName}}({{.argWithoutType}})
+
+	log.Printf("used time: %v\n", time.Since(begin))
+
+	return {{.resVars}}
+}
+`
+	tmpl = func() *template.Template {
+		tmpl, err := template.New("proxyTmpl").Parse(proxyTmpl)
+		if err != nil {
+			panic(err)
+		}
+		return tmpl
+	}()
+)
 
 func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error) {
 	var err error

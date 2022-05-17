@@ -48,14 +48,14 @@ func parseTypesType(t types.Type, opt parseTypesTypeOption) (r struct {
 				Signature: types.TypeString(met.Type(), pkgNameQualifier(qualifierParam{pkgPath: opt.pkgPath})),
 			})
 		}
-		debug.Debug("| parseTypesType | interface methods: %+v\n", methods)
+		debug.Printf("| parseTypesType | interface methods: %+v\n", methods)
 		r.methods = methods
 
 	case *types.Signature:
-		debug.Debug("=== signature: %+v, %+v, %+v\n", tv, tv.Params(), tv.Results())
+		debug.Printf("=== signature: %+v, %+v, %+v\n", tv, tv.Params(), tv.Results())
 
 	case *types.Pointer:
-		debug.Debug("=== pointer: %+v, %+v\n", tv, tv.Elem())
+		debug.Printf("=== pointer: %+v, %+v\n", tv, tv.Elem())
 		parseTypesType(tv.Elem(), opt)
 
 	case *types.Named:
@@ -67,9 +67,9 @@ func parseTypesType(t types.Type, opt parseTypesTypeOption) (r struct {
 				Signature: types.TypeString(met.Type(), pkgNameQualifier(qualifierParam{pkgPath: opt.pkgPath})),
 			})
 		}
-		debug.Debug("=== named: %+v, is alias: %v, pkgPath: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), tv.Obj().Pkg().Path(), methods)
+		debug.Printf("=== named: %+v, is alias: %v, pkgPath: %v, methods: %+v\n", tv, tv.Obj().IsAlias(), tv.Obj().Pkg().Path(), methods)
 		if tv.Obj().IsAlias() {
-			debug.Debug("===============================: %+v\n", tv)
+			debug.Printf("===============================: %+v\n", tv)
 		}
 
 	case *types.Struct:
@@ -84,30 +84,30 @@ func parseTypesType(t types.Type, opt parseTypesTypeOption) (r struct {
 			}
 			fields = append(fields, tmpField)
 		}
-		debug.Debug("=== struct: %+v, fields: %+v\n", tv, fields)
+		debug.Printf("=== struct: %+v, fields: %+v\n", tv, fields)
 
 	case *types.Slice:
-		debug.Debug("| parseTypesType | elem: %+v\n", tv.Elem())
+		debug.Printf("| parseTypesType | elem: %+v\n", tv.Elem())
 		parseTypesType(tv.Elem(), opt)
 
 	case *types.Array:
-		debug.Debug("| parseTypesType | elem: %+v\n", tv.Elem())
+		debug.Printf("| parseTypesType | elem: %+v\n", tv.Elem())
 		parseTypesType(tv.Elem(), opt)
 
 	case *types.Basic:
-		debug.Debug("| parseTypesType | elem: %+v\n", tv.Info())
+		debug.Printf("| parseTypesType | elem: %+v\n", tv.Info())
 
 	case *types.Chan:
-		debug.Debug("| parseTypesType | elem: %+v\n", tv.Elem())
+		debug.Printf("| parseTypesType | elem: %+v\n", tv.Elem())
 		parseTypesType(tv.Elem(), opt)
 
 	case *types.Map:
-		debug.Debug("| parseTypesType | key: %+v, value: %+v\n", tv.Key(), tv.Elem())
+		debug.Printf("| parseTypesType | key: %+v, value: %+v\n", tv.Key(), tv.Elem())
 		parseTypesType(tv.Key(), opt)
 		parseTypesType(tv.Elem(), opt)
 
 	case *types.Tuple:
-		debug.Debug("| parseTypesType | len: %+v\n", tv.Len())
+		debug.Printf("| parseTypesType | len: %+v\n", tv.Len())
 
 	default:
 		fmt.Printf("| parseTypesType | tv: %+v\n", tv)

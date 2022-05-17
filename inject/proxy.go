@@ -152,7 +152,7 @@ func (impl *proxyImpl) around(provider any, mock any, arounder Arounder) any {
 					if !ok {
 						panic(fmt.Errorf("找不到名称对应的方法"))
 					}
-					debug.Debug("tag: %+v\n", methodTag)
+					debug.Printf("tag: %+v\n", methodTag)
 					name = methodTag
 
 					method = firstOut.MethodByName(name)
@@ -161,14 +161,14 @@ func (impl *proxyImpl) around(provider any, mock any, arounder Arounder) any {
 						panic(fmt.Errorf("使用tag也找不到名称对应的方法"))
 					}
 				}
-				debug.Debug("method: %+v\n", method)
+				debug.Printf("method: %+v\n", method)
 
 				pctx := ProxyContext{
 					PkgPath:       firstOutType.PkgPath(),
 					InterfaceName: firstOutType.Name(),
 					MethodName:    methodType.Name,
 				}
-				debug.Debug("pctx: %+v\n", pctx)
+				debug.Printf("pctx: %+v\n", pctx)
 
 				// newMethod会在实际请求时被调用
 				// 当被调用时，newMethod内部就会调用绑定好的Arounder，然后将原函数method和参数args传入
@@ -176,12 +176,12 @@ func (impl *proxyImpl) around(provider any, mock any, arounder Arounder) any {
 				newMethod := reflect.MakeFunc(methodType.Type, func(args []reflect.Value) []reflect.Value {
 					var result []reflect.Value
 
-					debug.Debug("args: %+v\n", args)
+					debug.Printf("args: %+v\n", args)
 
 					// Around是对整个结构的统一包装，如果需要对不同方法做不同处理，可以根据pctx里的方法名在Around接口的实现里做处理
 					result = arounder.Around(pctx, method, args)
 
-					debug.Debug("result: %+v\n", result)
+					debug.Printf("result: %+v\n", result)
 
 					return result
 				})

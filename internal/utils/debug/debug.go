@@ -5,8 +5,15 @@ import (
 	"os"
 )
 
-func Debug(format string, args ...any) {
-	if v := os.Getenv("TOOLDEBUG"); v != "" {
+func Printf(format string, args ...any) {
+	if IsDebug() {
 		fmt.Printf("| debug | "+format, args...)
 	}
+}
+
+func IsDebug() bool {
+	if v := os.Getenv("TOOLDEBUG"); v != "" {
+		return true
+	}
+	return false
 }
