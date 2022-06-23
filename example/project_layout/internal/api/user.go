@@ -1,23 +1,23 @@
 package api
 
 import (
-	"net/http"
-	"project_layout/model/request/common"
+	"context"
 	"project_layout/model/request/user"
 
 	"github.com/gin-gonic/gin"
 )
 
 func (api *API) ModName() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+	return jsonHandler(func(ctx context.Context, p *Param) (interface{}, error) {
 		var req user.Req
-		if err := ctx.ShouldBindJSON(&req); err != nil {
-			return
+		if err := p.Parse(ctx, &req); err != nil {
+			return nil, err
 		}
 
-		res := api.UserSrv.ModName(req.Id.Id, req.Name)
-		ctx.JSON(http.StatusOK, common.Result{
-			Data: res,
-		})
-	}
+		if err := api.UserSrv.ModName(req.Id.Id, req.Name); err != nil {
+			return nil, err
+		}
+
+		return nil, nil
+	})
 }
