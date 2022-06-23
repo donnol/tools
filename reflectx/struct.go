@@ -198,7 +198,7 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 		}
 	}
 	if !exist {
-		debug.Debug("Can't find comment info of %s", structName)
+		debug.Printf("Can't find comment info of %s", structName)
 	}
 
 	return structCommentMap, fieldCommentMap, nil

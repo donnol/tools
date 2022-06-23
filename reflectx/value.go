@@ -390,9 +390,9 @@ func getTypeRandomValue(typ reflect.Type) reflect.Value {
 
 		// value是个nil
 		// 当调用value.Method(i)时会报错：panic: reflect: Method on nil interface value
-		debug.Debug("typ: %+v\n", typ)
+		debug.Printf("typ: %+v\n", typ)
 		value = reflect.New(typ).Elem()
-		debug.Debug("value: %+v\n", value)
+		debug.Printf("value: %+v\n", value)
 
 		// 需要借助mock struct才行，具体可参考inject的proxy
 		// for i := 0; i < typ.NumMethod(); i++ {
@@ -418,19 +418,19 @@ func getTypeRandomValue(typ reflect.Type) reflect.Value {
 		// 假设typ: *string
 		// reflect.New会添加多一层指针
 		value = reflect.New(typ) // **string
-		debug.Debug("call reflect.New: %+v\n", value.Type())
+		debug.Printf("call reflect.New: %+v\n", value.Type())
 
 		// 取Elem解一层指针
 		value = value.Elem() // *string
-		debug.Debug("call value.Elem: %+v\n", value.Type())
+		debug.Printf("call value.Elem: %+v\n", value.Type())
 
 		// 获取原始类型随机值
 		e := getTypeRandomValue(typ.Elem()) // string
-		debug.Debug("get random value: %+v\n", e.Type())
+		debug.Printf("get random value: %+v\n", e.Type())
 
 		// 通过中间value，给原变量赋指针值
 		tv := reflect.New(typ.Elem()).Elem() // 新建原始类型指针: string
-		debug.Debug("call reflect.New to new origin value: %+v\n", tv.Type())
+		debug.Printf("call reflect.New to new origin value: %+v\n", tv.Type())
 
 		tv.Set(e) // 设置值
 
