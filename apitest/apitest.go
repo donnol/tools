@@ -31,7 +31,7 @@ import (
 // Predefined error
 var (
 	// ErrNilParam 参数为nil
-	ErrNilParam = errors.New("Please input param, param is nil now")
+	ErrNilParam = errors.New("please input param, param is nil now")
 )
 
 // AT api test
@@ -280,12 +280,12 @@ func (at *AT) Equal(args ...any) *AT {
 	l := len(args)
 	d := l % 2
 	if d != 0 {
-		at.setErr(fmt.Errorf("Please Input Double Args: %v", args))
+		at.setErr(fmt.Errorf("please Input Double Args: %v", args))
 		return at
 	}
 	for i := 0; i < l; i += 2 {
 		if !reflect.DeepEqual(args[i], args[i+1]) {
-			at.setErr(fmt.Errorf("No.%d Not Equal, Have %v, Want %v", i/2+1, args[i], args[i+1]))
+			at.setErr(fmt.Errorf("no.%d Not Equal, Have %v, Want %v", i/2+1, args[i], args[i+1]))
 			return at
 		}
 	}
@@ -322,7 +322,7 @@ func (at *AT) WriteFile(w io.Writer) *AT {
 	}
 
 	if at.doc == "" {
-		at.setErr(fmt.Errorf("Empty doc"))
+		at.setErr(fmt.Errorf("empty doc"))
 		return at
 	}
 
@@ -583,8 +583,9 @@ func (at *AT) makeDoc() *AT {
 	}
 	doc += resph
 
+	// TODO: 在解析参数和返回的同时，收集注释信息：map[string]string, 其中key的值需要保留每层的路径，如：|list|name
 	// 参数
-	block, err := structToBlock(paramName, at.param)
+	block, pkcm, err := structToBlock(paramName, at.param)
 	if err != nil {
 		at.setErr(err)
 		return at
@@ -592,7 +593,7 @@ func (at *AT) makeDoc() *AT {
 	doc += block
 
 	// 返回
-	block, err = structToBlock(returnName, at.result)
+	block, rkcm, err := structToBlock(returnName, at.result)
 	if err != nil {
 		at.setErr(err)
 		return at
@@ -612,9 +613,9 @@ func (at *AT) makeDoc() *AT {
 	// 参数和返回示例
 	switch at.method {
 	case http.MethodGet, http.MethodDelete:
-		doc += dataToSummary(paramName, []byte(at.req.URL.RawQuery), false)
+		doc += dataToSummary(paramName, []byte(at.req.URL.RawQuery), false, nil)
 	case http.MethodPost, http.MethodPut:
-		doc += dataToSummary(paramName, at.reqBody, true)
+		doc += dataToSummary(paramName, at.reqBody, true, pkcm)
 	}
 
 	// 复制resp.Body
@@ -632,7 +633,7 @@ func (at *AT) makeDoc() *AT {
 			return at
 		}
 	}
-	doc += dataToSummary(returnName, data, true)
+	doc += dataToSummary(returnName, data, true, rkcm)
 
 	at.doc = doc
 

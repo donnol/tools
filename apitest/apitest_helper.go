@@ -1,6 +1,7 @@
 package apitest
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -550,7 +551,7 @@ func structToMap(v any) (map[string]any, error) {
 
 func structTypeValue(v any) (vtype reflect.Type, vvalue reflect.Value, err error) {
 	if v == nil {
-		err = fmt.Errorf("Input is nil")
+		err = fmt.Errorf("input is nil")
 		return
 	}
 	vtype = reflect.TypeOf(v)
@@ -560,7 +561,7 @@ func structTypeValue(v any) (vtype reflect.Type, vvalue reflect.Value, err error
 		vvalue = vvalue.Elem()
 	}
 	if vtype.Kind() != reflect.Struct {
-		err = fmt.Errorf("Input is not struct or struct pointer")
+		err = fmt.Errorf("input is not struct or struct pointer")
 		return
 	}
 
@@ -667,25 +668,27 @@ func structToList(name string, data ...ate) (string, error) {
 	return list, nil
 }
 
-func structToBlock(name string, data any) (string, error) {
+func structToBlock(name string, data any) (string, map[string]string, error) {
 	var block string
 
 	dataStruct, err := reflectx.ResolveStruct(data)
 	if err != nil {
-		return block, err
+		return block, nil, err
 	}
 
 	block += name + "\n\n"
 	fields := dataStruct.GetFields()
 	var level int
-	lines := fieldsToLine(level, fields)
+	lines, kcm := fieldsToLine(level, fields)
 	block += lines + "\n"
 
-	return block, nil
+	return block, kcm, nil
 }
 
-func fieldsToLine(level int, fields []reflectx.Field) string {
+func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string) {
 	var lines string
+	// TODO:
+	var keyCommentMap = make(map[string]string)
 	for _, field := range fields {
 		var fieldName, fieldTypeName, fieldComment string
 
@@ -737,12 +740,13 @@ func fieldsToLine(level int, fields []reflectx.Field) string {
 			if !isEmbed { // 如果是内嵌结构体，不需要向内缩进
 				newLevel = level + 1
 			}
-			innerLines := fieldsToLine(newLevel, field.Struct.Fields)
+			innerLines, kcm := fieldsToLine(newLevel, field.Struct.Fields)
+			_ = kcm
 			lines += innerLines
 		}
 	}
 
-	return lines
+	return lines, keyCommentMap
 }
 
 func linePrefix(level int) string {
@@ -760,7 +764,10 @@ func linePrefix(level int) string {
 	return r + prefix
 }
 
-func dataToSummary(name string, data []byte, isJSON bool) string {
+func dataToSummary(name string, data []byte, isJSON bool, kcm map[string]string) string {
+	const (
+		eol = "\n"
+	)
 	var summary string
 
 	summary += `<details>
@@ -770,11 +777,90 @@ func dataToSummary(name string, data []byte, isJSON bool) string {
 		if data != nil {
 			JSONIndent(buf, data)
 		}
-		summary += buf.String()
+		// 逐行遍历
+		// 每遇到一个'{'表示开始一层，每遇到一个'}'表示结束一层
+		// 开始一层时，key需要附带上上层的key
+		var innerLeftBracket bool
+		var lastKey, lastLineKey string
+		scanner := bufio.NewScanner(buf)
+		for scanner.Scan() {
+			addComment := true
+
+			// 拿到每一行文本，根据键名找到注释
+			text := scanner.Text()
+
+			linekey := findKeyByText(text)
+			if linekey != "" {
+				lastLineKey = linekey
+			}
+
+			// 根据层，决定key
+			var setLastKeyAfter bool
+			if strings.LastIndex(text, "{") == len(text)-1 {
+				if !innerLeftBracket {
+					lastKey += "|"
+					innerLeftBracket = true
+				}
+				// 又遇到一个'|'的时候
+				if linekey == "" {
+					lastKey += lastLineKey
+					if lastLineKey != "" {
+						lastKey += "|"
+					}
+				} else {
+					setLastKeyAfter = true
+				}
+			} else if strings.TrimSpace(text) == "}" ||
+				strings.TrimSpace(text) == "}," {
+				lki := strings.LastIndex(strings.TrimRight(lastKey, "|"), "|")
+				lastKey = lastKey[:lki+1]
+
+				addComment = false
+			} else if strings.TrimSpace(text) == "]" ||
+				strings.TrimSpace(text) == "]," {
+				addComment = false
+			}
+
+			key := lastKey + linekey
+			// fmt.Printf("text: %s, lastKey: %s, linekey: %s, key: %s, lastlinekey: %s\n", text, lastKey, linekey, key, lastLineKey)
+			comment := kcm[key]
+
+			if comment == "" || !addComment {
+				summary += text
+			} else {
+				summary += text + " // " + comment
+			}
+
+			if setLastKeyAfter {
+				lastKey += lastLineKey
+				if lastLineKey != "" {
+					lastKey += "|"
+				}
+			}
+			summary += eol
+		}
+		if err := scanner.Err(); err != nil {
+			panic(err)
+		}
+		summary = strings.TrimRight(summary, eol)
 	} else {
 		summary += string(data)
 	}
 	summary += "\n```\n\n" + `</details>` + "\n\n"
 
 	return summary
+}
+
+func findKeyByText(text string) (key string) {
+	// 首个"到第二个"之间的部分
+	fi := strings.Index(text, "\"")
+	if fi == -1 {
+		return
+	}
+	ei := strings.Index(text[fi+1:], "\"") + fi + 1
+	if ei == -1 {
+		return
+	}
+	key = text[fi+1 : ei]
+	return
 }
