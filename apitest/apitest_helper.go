@@ -687,7 +687,6 @@ func structToBlock(name string, data any) (string, map[string]string, error) {
 
 func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string) {
 	var lines string
-	// TODO:
 	var keyCommentMap = make(map[string]string)
 	for _, field := range fields {
 		var fieldName, fieldTypeName, fieldComment string
@@ -727,10 +726,16 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 		// 字段注释
 		fieldComment = field.Comment
 
+		key := "|" + fieldName
+		keyCommentMap[key] = fieldComment
+		ignoreKey := false
+
 		// 添加一行
 		if !isEmbed { // 如果是内嵌结构体，不需要添加该行
 			line := fmt.Sprintf("%s %s (*%s*) %s\n", linePrefix(level), fieldName, fieldTypeName, fieldComment)
 			lines += line
+
+			ignoreKey = true
 		}
 
 		// 结构体，切片等复合结构，需要继续遍历，并且在写入时向内缩进
@@ -741,7 +746,13 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 				newLevel = level + 1
 			}
 			innerLines, kcm := fieldsToLine(newLevel, field.Struct.Fields)
-			_ = kcm
+			for k, v := range kcm {
+				tk := key + k
+				if !ignoreKey {
+					tk = k
+				}
+				keyCommentMap[tk] = v
+			}
 			lines += innerLines
 		}
 	}

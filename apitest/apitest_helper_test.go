@@ -3,26 +3,29 @@ package apitest
 import (
 	"encoding/json"
 	"testing"
+
+	"github.com/donnol/tools/apitest/testtype"
 )
 
-type inner struct {
-	Phone string `json:"phone"` // 手机
-}
-
-type testModel struct {
-	Name string `json:"name"` // 名称
-	List []struct {
-		Id   uint   `json:"id"`   // id
-		Name string `json:"name"` // 名字
-		Age  int    `json:"age"`  // 年龄
-		Addr struct {
-			City string `json:"city"` // 城市
-			Home string `json:"home"` // 家
-		} `json:"addr"` // 地址
-
-		inner
-	} `json:"list"` // 用户列表
-}
+var (
+	tm = testtype.TestModel{
+		Name: "users",
+		List: []testtype.User{
+			{
+				Id:   1,
+				Name: "jd",
+				Age:  20,
+				Addr: testtype.Addr{
+					City: "gd",
+					Home: "gz",
+				},
+				Inner: testtype.Inner{
+					Phone: "123908",
+				},
+			},
+		},
+	}
+)
 
 var (
 	kcm = map[string]string{
@@ -38,36 +41,25 @@ var (
 	}
 )
 
-func Test_dataToSummary(t *testing.T) {
-	tm := testModel{
-		Name: "users",
-		List: []struct {
-			Id   uint   "json:\"id\""
-			Name string "json:\"name\""
-			Age  int    "json:\"age\""
-			Addr struct {
-				City string "json:\"city\""
-				Home string "json:\"home\""
-			} "json:\"addr\""
-			inner
-		}{
-			{
-				Id:   1,
-				Name: "jd",
-				Age:  20,
-				Addr: struct {
-					City string "json:\"city\""
-					Home string "json:\"home\""
-				}{
-					City: "gd",
-					Home: "gz",
-				},
-				inner: inner{
-					Phone: "123908",
-				},
-			},
-		},
+func TestStructToBlock(t *testing.T) {
+	_, lkcm, err := structToBlock("test", &testtype.TestModel{})
+	if err != nil {
+		t.Fatal(err)
 	}
+
+	for k, v := range kcm {
+		lv, ok := lkcm[k]
+		if !ok {
+			t.Fatalf("cant find %s in local kcm", k)
+		}
+		if lv != v {
+			t.Fatalf("compare value failed: %s != %s", lv, v)
+		}
+	}
+}
+
+func Test_dataToSummary(t *testing.T) {
+
 	data, err := json.Marshal(tm)
 	if err != nil {
 		t.Fatal(err)
