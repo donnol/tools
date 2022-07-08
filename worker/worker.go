@@ -162,6 +162,10 @@ func (w *Worker) doWithTimeout(job Job) {
 			}
 		}()
 
+		// FIXME:
+		// 这里不能直接这样调，如果job.run()执行的时间很长，将不会在超时后停止
+		// 正确的做法应该是传入一个stopper管道，用户端代码需要适时检查该管道，判断是否需要停止
+		// 参照'github.com/eapache/go-resiliency'的deadline包
 		if err := job.run(); err != nil {
 			w.errChan <- err
 		}
