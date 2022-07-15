@@ -708,19 +708,26 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 		if fieldType.Kind() == reflect.Ptr {
 			fieldType = fieldType.Elem()
 		}
-		switch fieldType.Kind() {
-		case reflect.Struct:
-			fieldTypeName = "object"
-		case reflect.Slice:
-			sliceType := fieldType.Elem()
-			if sliceType.Kind() == reflect.Struct {
+
+		index := strings.Index(fieldName, ",")
+		if index != -1 {
+			fieldTypeName = fieldName[index+1:]
+			fieldName = fieldName[:index]
+		} else {
+			switch fieldType.Kind() {
+			case reflect.Struct:
 				fieldTypeName = "object"
-			} else {
-				fieldTypeName = sliceType.String()
+			case reflect.Slice:
+				sliceType := fieldType.Elem()
+				if sliceType.Kind() == reflect.Struct {
+					fieldTypeName = "object"
+				} else {
+					fieldTypeName = sliceType.String()
+				}
+				fieldTypeName += " list"
+			default:
+				fieldTypeName = fieldType.Kind().String()
 			}
-			fieldTypeName += " list"
-		default:
-			fieldTypeName = fieldType.Kind().String()
 		}
 
 		// 字段注释

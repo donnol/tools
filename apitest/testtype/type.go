@@ -10,10 +10,10 @@ type TestModel struct {
 }
 
 type User struct {
-	Id   uint   `json:"id"`   // id
-	Name string `json:"name"` // 名字
-	Age  int    `json:"age"`  // 年龄
-	Addr Addr   `json:"addr"` // 地址
+	Id   uint   `json:"id,string"` // id
+	Name string `json:"name"`      // 名字
+	Age  int    `json:"age"`       // 年龄
+	Addr Addr   `json:"addr"`      // 地址
 
 	Inner
 }

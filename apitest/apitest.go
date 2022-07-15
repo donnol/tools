@@ -560,7 +560,7 @@ func (at *AT) makeDoc() *AT {
 		if k == at.authHeaderKey && at.authHeaderValue != "" {
 			v1 = at.authHeaderValue
 		}
-		h += fmt.Sprintf("- '%s': %s\n", k, v1)
+		h += fmt.Sprintf("- %s: %s\n", k, v1)
 	}
 	doc += h + "\n"
 
@@ -575,7 +575,7 @@ func (at *AT) makeDoc() *AT {
 			if len(v) > 0 {
 				v1 = v[0]
 			}
-			resph += fmt.Sprintf("- '%s': %s\n", k, v1)
+			resph += fmt.Sprintf("- %s: %s\n", k, v1)
 		}
 		resph += "\n"
 	} else {
@@ -583,7 +583,7 @@ func (at *AT) makeDoc() *AT {
 	}
 	doc += resph
 
-	// TODO: 在解析参数和返回的同时，收集注释信息：map[string]string, 其中key的值需要保留每层的路径，如：|list|name
+	// 在解析参数和返回的同时，收集注释信息：map[string]string, 其中key的值需要保留每层的路径，如：|list|name
 	// 参数
 	block, pkcm, err := structToBlock(paramName, at.param)
 	if err != nil {

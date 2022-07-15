@@ -42,10 +42,11 @@ var (
 )
 
 func TestStructToBlock(t *testing.T) {
-	_, lkcm, err := structToBlock("test", &testtype.TestModel{})
+	line, lkcm, err := structToBlock("test", &testtype.TestModel{})
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Log("line", line)
 
 	for k, v := range kcm {
 		lv, ok := lkcm[k]
@@ -87,7 +88,7 @@ func Test_dataToSummary(t *testing.T) {
     "name": "users", // 名称
     "list": [ // 用户列表
         {
-            "id": 1, // id
+            "id": "1", // id
             "name": "jd", // 名字
             "age": 20, // 年龄
             "addr": { // 地址
