@@ -26,6 +26,8 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/worker"
+	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
 // Predefined error
@@ -330,6 +332,2795 @@ func (at *AT) WriteFile(w io.Writer) *AT {
 		at.setErr(err)
 		return at
 	}
+	return at
+}
+
+func (at *AT) ToSwagger() *AT {
+	// new a swagger and encode to yaml
+	_ = openapi2.T{
+		ExtensionProps: openapi3.ExtensionProps{
+			Extensions: map[string]interface{}{
+				"": nil,
+			},
+		},
+		Swagger: "",
+		Info: openapi3.Info{
+			ExtensionProps: openapi3.ExtensionProps{
+				Extensions: map[string]interface{}{
+					"": nil,
+				},
+			},
+			Title:          "",
+			Description:    "",
+			TermsOfService: "",
+			Contact: &openapi3.Contact{
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Name:  "",
+				URL:   "",
+				Email: "",
+			},
+			License: &openapi3.License{
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Name: "",
+				URL:  "",
+			},
+			Version: "",
+		},
+		ExternalDocs: &openapi3.ExternalDocs{
+			ExtensionProps: openapi3.ExtensionProps{
+				Extensions: map[string]interface{}{
+					"": nil,
+				},
+			},
+			Description: "",
+			URL:         "",
+		},
+		Schemes:  []string{},
+		Consumes: []string{},
+		Produces: []string{},
+		Host:     "",
+		BasePath: "",
+		Paths: map[string]*openapi2.PathItem{
+			"": {
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Ref: "",
+				Delete: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Get: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Head: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Options: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Patch: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Post: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Put: &openapi2.Operation{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					Summary:     "",
+					Description: "",
+					Deprecated:  false,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					Tags:        []string{},
+					OperationID: "",
+					Parameters:  []*openapi2.Parameter{},
+					Responses: map[string]*openapi2.Response{
+						"": {
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:         "",
+							Description: "",
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Headers: map[string]*openapi2.Header{
+								"": {
+									Parameter: openapi2.Parameter{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Ref:              "",
+										In:               "",
+										Name:             "",
+										Description:      "",
+										CollectionFormat: "",
+										Type:             "",
+										Format:           "",
+										Pattern:          "",
+										AllowEmptyValue:  false,
+										Required:         false,
+										UniqueItems:      false,
+										ExclusiveMin:     false,
+										ExclusiveMax:     false,
+										Schema: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Items: &openapi3.SchemaRef{
+											Ref: "",
+											Value: &openapi3.Schema{
+												ExtensionProps: openapi3.ExtensionProps{
+													Extensions: map[string]interface{}{
+														"": nil,
+													},
+												},
+												OneOf:       []*openapi3.SchemaRef{},
+												AnyOf:       []*openapi3.SchemaRef{},
+												AllOf:       []*openapi3.SchemaRef{},
+												Not:         &openapi3.SchemaRef{},
+												Type:        "",
+												Title:       "",
+												Format:      "",
+												Description: "",
+												Enum:        []interface{}{},
+												Default:     nil,
+												Example:     nil,
+												ExternalDocs: &openapi3.ExternalDocs{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Description: "",
+													URL:         "",
+												},
+												UniqueItems:     false,
+												ExclusiveMin:    false,
+												ExclusiveMax:    false,
+												Nullable:        false,
+												ReadOnly:        false,
+												WriteOnly:       false,
+												AllowEmptyValue: false,
+												Deprecated:      false,
+												XML: &openapi3.XML{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													Name:      "",
+													Namespace: "",
+													Prefix:    "",
+													Attribute: false,
+													Wrapped:   false,
+												},
+												Min:        nil,
+												Max:        nil,
+												MultipleOf: nil,
+												MinLength:  0,
+												MaxLength:  nil,
+												Pattern:    "",
+												MinItems:   0,
+												MaxItems:   nil,
+												Items:      &openapi3.SchemaRef{},
+												Required:   []string{},
+												Properties: map[string]*openapi3.SchemaRef{
+													"": {},
+												},
+												MinProps:                    0,
+												MaxProps:                    nil,
+												AdditionalPropertiesAllowed: nil,
+												AdditionalProperties:        &openapi3.SchemaRef{},
+												Discriminator: &openapi3.Discriminator{
+													ExtensionProps: openapi3.ExtensionProps{
+														Extensions: map[string]interface{}{
+															"": nil,
+														},
+													},
+													PropertyName: "",
+													Mapping: map[string]string{
+														"": "",
+													},
+												},
+											},
+										},
+										Enum:       []interface{}{},
+										MultipleOf: nil,
+										Minimum:    nil,
+										Maximum:    nil,
+										MaxLength:  nil,
+										MaxItems:   nil,
+										MinLength:  0,
+										MinItems:   0,
+										Default:    nil,
+									},
+								},
+							},
+							Examples: map[string]interface{}{
+								"": nil,
+							},
+						},
+					},
+					Consumes: []string{},
+					Produces: []string{},
+					Schemes:  []string{},
+					Security: nil,
+				},
+				Parameters: []*openapi2.Parameter{},
+			},
+		},
+		Definitions: map[string]*openapi3.SchemaRef{
+			"": {
+				Ref: "",
+				Value: &openapi3.Schema{
+					ExtensionProps: openapi3.ExtensionProps{
+						Extensions: map[string]interface{}{
+							"": nil,
+						},
+					},
+					OneOf:       []*openapi3.SchemaRef{},
+					AnyOf:       []*openapi3.SchemaRef{},
+					AllOf:       []*openapi3.SchemaRef{},
+					Not:         &openapi3.SchemaRef{},
+					Type:        "",
+					Title:       "",
+					Format:      "",
+					Description: "",
+					Enum:        []interface{}{},
+					Default:     nil,
+					Example:     nil,
+					ExternalDocs: &openapi3.ExternalDocs{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Description: "",
+						URL:         "",
+					},
+					UniqueItems:     false,
+					ExclusiveMin:    false,
+					ExclusiveMax:    false,
+					Nullable:        false,
+					ReadOnly:        false,
+					WriteOnly:       false,
+					AllowEmptyValue: false,
+					Deprecated:      false,
+					XML: &openapi3.XML{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						Name:      "",
+						Namespace: "",
+						Prefix:    "",
+						Attribute: false,
+						Wrapped:   false,
+					},
+					Min:        nil,
+					Max:        nil,
+					MultipleOf: nil,
+					MinLength:  0,
+					MaxLength:  nil,
+					Pattern:    "",
+					MinItems:   0,
+					MaxItems:   nil,
+					Items:      &openapi3.SchemaRef{},
+					Required:   []string{},
+					Properties: map[string]*openapi3.SchemaRef{
+						"": {},
+					},
+					MinProps:                    0,
+					MaxProps:                    nil,
+					AdditionalPropertiesAllowed: nil,
+					AdditionalProperties:        &openapi3.SchemaRef{},
+					Discriminator: &openapi3.Discriminator{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						PropertyName: "",
+						Mapping: map[string]string{
+							"": "",
+						},
+					},
+				},
+			},
+		},
+		Parameters: map[string]*openapi2.Parameter{
+			"": {
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Ref:              "",
+				In:               "",
+				Name:             "",
+				Description:      "",
+				CollectionFormat: "",
+				Type:             "",
+				Format:           "",
+				Pattern:          "",
+				AllowEmptyValue:  false,
+				Required:         false,
+				UniqueItems:      false,
+				ExclusiveMin:     false,
+				ExclusiveMax:     false,
+				Schema: &openapi3.SchemaRef{
+					Ref: "",
+					Value: &openapi3.Schema{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						OneOf:       []*openapi3.SchemaRef{},
+						AnyOf:       []*openapi3.SchemaRef{},
+						AllOf:       []*openapi3.SchemaRef{},
+						Not:         &openapi3.SchemaRef{},
+						Type:        "",
+						Title:       "",
+						Format:      "",
+						Description: "",
+						Enum:        []interface{}{},
+						Default:     nil,
+						Example:     nil,
+						ExternalDocs: &openapi3.ExternalDocs{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Description: "",
+							URL:         "",
+						},
+						UniqueItems:     false,
+						ExclusiveMin:    false,
+						ExclusiveMax:    false,
+						Nullable:        false,
+						ReadOnly:        false,
+						WriteOnly:       false,
+						AllowEmptyValue: false,
+						Deprecated:      false,
+						XML: &openapi3.XML{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Name:      "",
+							Namespace: "",
+							Prefix:    "",
+							Attribute: false,
+							Wrapped:   false,
+						},
+						Min:        nil,
+						Max:        nil,
+						MultipleOf: nil,
+						MinLength:  0,
+						MaxLength:  nil,
+						Pattern:    "",
+						MinItems:   0,
+						MaxItems:   nil,
+						Items:      &openapi3.SchemaRef{},
+						Required:   []string{},
+						Properties: map[string]*openapi3.SchemaRef{
+							"": {},
+						},
+						MinProps:                    0,
+						MaxProps:                    nil,
+						AdditionalPropertiesAllowed: nil,
+						AdditionalProperties:        &openapi3.SchemaRef{},
+						Discriminator: &openapi3.Discriminator{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							PropertyName: "",
+							Mapping: map[string]string{
+								"": "",
+							},
+						},
+					},
+				},
+				Items: &openapi3.SchemaRef{
+					Ref: "",
+					Value: &openapi3.Schema{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						OneOf:       []*openapi3.SchemaRef{},
+						AnyOf:       []*openapi3.SchemaRef{},
+						AllOf:       []*openapi3.SchemaRef{},
+						Not:         &openapi3.SchemaRef{},
+						Type:        "",
+						Title:       "",
+						Format:      "",
+						Description: "",
+						Enum:        []interface{}{},
+						Default:     nil,
+						Example:     nil,
+						ExternalDocs: &openapi3.ExternalDocs{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Description: "",
+							URL:         "",
+						},
+						UniqueItems:     false,
+						ExclusiveMin:    false,
+						ExclusiveMax:    false,
+						Nullable:        false,
+						ReadOnly:        false,
+						WriteOnly:       false,
+						AllowEmptyValue: false,
+						Deprecated:      false,
+						XML: &openapi3.XML{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Name:      "",
+							Namespace: "",
+							Prefix:    "",
+							Attribute: false,
+							Wrapped:   false,
+						},
+						Min:        nil,
+						Max:        nil,
+						MultipleOf: nil,
+						MinLength:  0,
+						MaxLength:  nil,
+						Pattern:    "",
+						MinItems:   0,
+						MaxItems:   nil,
+						Items:      &openapi3.SchemaRef{},
+						Required:   []string{},
+						Properties: map[string]*openapi3.SchemaRef{
+							"": {},
+						},
+						MinProps:                    0,
+						MaxProps:                    nil,
+						AdditionalPropertiesAllowed: nil,
+						AdditionalProperties:        &openapi3.SchemaRef{},
+						Discriminator: &openapi3.Discriminator{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							PropertyName: "",
+							Mapping: map[string]string{
+								"": "",
+							},
+						},
+					},
+				},
+				Enum:       []interface{}{},
+				MultipleOf: nil,
+				Minimum:    nil,
+				Maximum:    nil,
+				MaxLength:  nil,
+				MaxItems:   nil,
+				MinLength:  0,
+				MinItems:   0,
+				Default:    nil,
+			},
+		},
+		Responses: map[string]*openapi2.Response{
+			"": {
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Ref:         "",
+				Description: "",
+				Schema: &openapi3.SchemaRef{
+					Ref: "",
+					Value: &openapi3.Schema{
+						ExtensionProps: openapi3.ExtensionProps{
+							Extensions: map[string]interface{}{
+								"": nil,
+							},
+						},
+						OneOf:       []*openapi3.SchemaRef{},
+						AnyOf:       []*openapi3.SchemaRef{},
+						AllOf:       []*openapi3.SchemaRef{},
+						Not:         &openapi3.SchemaRef{},
+						Type:        "",
+						Title:       "",
+						Format:      "",
+						Description: "",
+						Enum:        []interface{}{},
+						Default:     nil,
+						Example:     nil,
+						ExternalDocs: &openapi3.ExternalDocs{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Description: "",
+							URL:         "",
+						},
+						UniqueItems:     false,
+						ExclusiveMin:    false,
+						ExclusiveMax:    false,
+						Nullable:        false,
+						ReadOnly:        false,
+						WriteOnly:       false,
+						AllowEmptyValue: false,
+						Deprecated:      false,
+						XML: &openapi3.XML{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Name:      "",
+							Namespace: "",
+							Prefix:    "",
+							Attribute: false,
+							Wrapped:   false,
+						},
+						Min:        nil,
+						Max:        nil,
+						MultipleOf: nil,
+						MinLength:  0,
+						MaxLength:  nil,
+						Pattern:    "",
+						MinItems:   0,
+						MaxItems:   nil,
+						Items:      &openapi3.SchemaRef{},
+						Required:   []string{},
+						Properties: map[string]*openapi3.SchemaRef{
+							"": {},
+						},
+						MinProps:                    0,
+						MaxProps:                    nil,
+						AdditionalPropertiesAllowed: nil,
+						AdditionalProperties:        &openapi3.SchemaRef{},
+						Discriminator: &openapi3.Discriminator{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							PropertyName: "",
+							Mapping: map[string]string{
+								"": "",
+							},
+						},
+					},
+				},
+				Headers: map[string]*openapi2.Header{
+					"": {
+						Parameter: openapi2.Parameter{
+							ExtensionProps: openapi3.ExtensionProps{
+								Extensions: map[string]interface{}{
+									"": nil,
+								},
+							},
+							Ref:              "",
+							In:               "",
+							Name:             "",
+							Description:      "",
+							CollectionFormat: "",
+							Type:             "",
+							Format:           "",
+							Pattern:          "",
+							AllowEmptyValue:  false,
+							Required:         false,
+							UniqueItems:      false,
+							ExclusiveMin:     false,
+							ExclusiveMax:     false,
+							Schema: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Items: &openapi3.SchemaRef{
+								Ref: "",
+								Value: &openapi3.Schema{
+									ExtensionProps: openapi3.ExtensionProps{
+										Extensions: map[string]interface{}{
+											"": nil,
+										},
+									},
+									OneOf:       []*openapi3.SchemaRef{},
+									AnyOf:       []*openapi3.SchemaRef{},
+									AllOf:       []*openapi3.SchemaRef{},
+									Not:         &openapi3.SchemaRef{},
+									Type:        "",
+									Title:       "",
+									Format:      "",
+									Description: "",
+									Enum:        []interface{}{},
+									Default:     nil,
+									Example:     nil,
+									ExternalDocs: &openapi3.ExternalDocs{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Description: "",
+										URL:         "",
+									},
+									UniqueItems:     false,
+									ExclusiveMin:    false,
+									ExclusiveMax:    false,
+									Nullable:        false,
+									ReadOnly:        false,
+									WriteOnly:       false,
+									AllowEmptyValue: false,
+									Deprecated:      false,
+									XML: &openapi3.XML{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										Name:      "",
+										Namespace: "",
+										Prefix:    "",
+										Attribute: false,
+										Wrapped:   false,
+									},
+									Min:        nil,
+									Max:        nil,
+									MultipleOf: nil,
+									MinLength:  0,
+									MaxLength:  nil,
+									Pattern:    "",
+									MinItems:   0,
+									MaxItems:   nil,
+									Items:      &openapi3.SchemaRef{},
+									Required:   []string{},
+									Properties: map[string]*openapi3.SchemaRef{
+										"": {},
+									},
+									MinProps:                    0,
+									MaxProps:                    nil,
+									AdditionalPropertiesAllowed: nil,
+									AdditionalProperties:        &openapi3.SchemaRef{},
+									Discriminator: &openapi3.Discriminator{
+										ExtensionProps: openapi3.ExtensionProps{
+											Extensions: map[string]interface{}{
+												"": nil,
+											},
+										},
+										PropertyName: "",
+										Mapping: map[string]string{
+											"": "",
+										},
+									},
+								},
+							},
+							Enum:       []interface{}{},
+							MultipleOf: nil,
+							Minimum:    nil,
+							Maximum:    nil,
+							MaxLength:  nil,
+							MaxItems:   nil,
+							MinLength:  0,
+							MinItems:   0,
+							Default:    nil,
+						},
+					},
+				},
+				Examples: map[string]interface{}{
+					"": nil,
+				},
+			},
+		},
+		SecurityDefinitions: map[string]*openapi2.SecurityScheme{
+			"": {
+				ExtensionProps: openapi3.ExtensionProps{
+					Extensions: map[string]interface{}{
+						"": nil,
+					},
+				},
+				Ref:              "",
+				Description:      "",
+				Type:             "",
+				In:               "",
+				Name:             "",
+				Flow:             "",
+				AuthorizationURL: "",
+				TokenURL:         "",
+				Scopes: map[string]string{
+					"": "",
+				},
+				Tags: []*openapi3.Tag{},
+			},
+		},
+		Security: []map[string][]string{},
+		Tags:     []*openapi3.Tag{},
+	}
+
 	return at
 }
 
