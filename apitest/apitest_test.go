@@ -1,12 +1,14 @@
 package apitest
 
 import (
+	"encoding/json"
 	"os"
 	"reflect"
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/reflectx"
+	"github.com/getkin/kin-openapi/openapi2"
 )
 
 var (
@@ -131,4 +133,26 @@ func TestFakeStruct(t *testing.T) {
 	}
 
 	t.Logf("user with random value: %+v\n", user)
+}
+
+func TestToSwagger(t *testing.T) {
+	data, err := os.ReadFile("./testdata/swagger.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var doc openapi2.T
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, path := range doc.Paths {
+		t.Logf("doc path: %+v\n", path)
+	}
+
+	data2, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	JSONIndent(os.Stdout, data2)
 }
