@@ -312,7 +312,7 @@ func (at *AT) EqualThen(f func(*AT) error, args ...any) *AT {
 	return at
 }
 
-// WriteFile 写入文件
+// WriteFile 写入markdown文件
 func (at *AT) WriteFile(w io.Writer) *AT {
 	if w == nil {
 		at.setErr(fmt.Errorf("nil writer"))
@@ -336,14 +336,14 @@ func (at *AT) WriteFile(w io.Writer) *AT {
 }
 
 func (at *AT) ToSwagger() *AT {
-	// new a swagger and encode to yaml
-	_ = openapi2.T{
+	// new a swagger
+	yt := openapi2.T{
 		Swagger:     "",
 		Info:        openapi3.Info{},
 		Schemes:     []string{},
 		Consumes:    []string{},
 		Produces:    []string{},
-		Host:        "",
+		Host:        at.host,
 		BasePath:    "",
 		Paths:       map[string]*openapi2.PathItem{},
 		Definitions: map[string]*openapi3.SchemaRef{},
@@ -352,6 +352,10 @@ func (at *AT) ToSwagger() *AT {
 		Security:    []map[string][]string{},
 		Tags:        []*openapi3.Tag{},
 	}
+	_ = yt
+
+	// merge swagger json - https://github.com/evanphx/json-patch: MergeMergePatches merge json string
+	// merge struct or map - https://github.com/imdario/mergo
 
 	return at
 }

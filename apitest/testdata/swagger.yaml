@@ -1,0 +1,941 @@
+extensionprops: {}
+swagger: "2.0"
+info:
+    extensionprops: {}
+    title: Swagger Petstore
+    description: 'This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.'
+    termsOfService: http://swagger.io/terms/
+    contact:
+        extensionprops: {}
+        email: apiteam@swagger.io
+    license:
+        extensionprops: {}
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    version: 1.0.3
+externalDocs:
+    extensionprops: {}
+    description: Find out more about Swagger
+    url: http://swagger.io
+schemes:
+    - https
+    - http
+host: petstore.swagger.io
+basePath: /v2
+paths:
+    /pet:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: Add a new pet to the store
+            tags:
+                - pet
+            operationId: addPet
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: Pet object that needs to be added to the store
+                  required: true
+                  schema:
+                    ref: '#/definitions/Pet'
+                    value: null
+            responses:
+                "405":
+                    extensionprops: {}
+                    description: Invalid input
+            consumes:
+                - application/json
+                - application/xml
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+        put:
+            extensionprops: {}
+            summary: Update an existing pet
+            tags:
+                - pet
+            operationId: updatePet
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: Pet object that needs to be added to the store
+                  required: true
+                  schema:
+                    ref: '#/definitions/Pet'
+                    value: null
+            responses:
+                "400":
+                    extensionprops: {}
+                    description: Invalid ID supplied
+                "404":
+                    extensionprops: {}
+                    description: Pet not found
+                "405":
+                    extensionprops: {}
+                    description: Validation exception
+            consumes:
+                - application/json
+                - application/xml
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+    /pet/{petId}:
+        extensionprops: {}
+        delete:
+            extensionprops: {}
+            summary: Deletes a pet
+            tags:
+                - pet
+            operationId: deletePet
+            parameters:
+                - extensionprops: {}
+                  in: header
+                  name: api_key
+                  type: string
+                - extensionprops: {}
+                  in: path
+                  name: petId
+                  description: Pet id to delete
+                  type: integer
+                  format: int64
+                  required: true
+            responses:
+                "400":
+                    extensionprops: {}
+                    description: Invalid ID supplied
+                "404":
+                    extensionprops: {}
+                    description: Pet not found
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+        get:
+            extensionprops: {}
+            summary: Find pet by ID
+            description: Returns a single pet
+            tags:
+                - pet
+            operationId: getPetById
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: petId
+                  description: ID of pet to return
+                  type: integer
+                  format: int64
+                  required: true
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: '#/definitions/Pet'
+                        value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid ID supplied
+                "404":
+                    extensionprops: {}
+                    description: Pet not found
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - api_key: []
+        post:
+            extensionprops: {}
+            summary: Updates a pet in the store with form data
+            tags:
+                - pet
+            operationId: updatePetWithForm
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: petId
+                  description: ID of pet that needs to be updated
+                  type: integer
+                  format: int64
+                  required: true
+                - extensionprops: {}
+                  in: formData
+                  name: name
+                  description: Updated name of the pet
+                  type: string
+                - extensionprops: {}
+                  in: formData
+                  name: status
+                  description: Updated status of the pet
+                  type: string
+            responses:
+                "405":
+                    extensionprops: {}
+                    description: Invalid input
+            consumes:
+                - application/x-www-form-urlencoded
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+    /pet/{petId}/uploadImage:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: uploads an image
+            tags:
+                - pet
+            operationId: uploadFile
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: petId
+                  description: ID of pet to update
+                  type: integer
+                  format: int64
+                  required: true
+                - extensionprops: {}
+                  in: formData
+                  name: additionalMetadata
+                  description: Additional data to pass to server
+                  type: string
+                - extensionprops: {}
+                  in: formData
+                  name: file
+                  description: file to upload
+                  type: file
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: '#/definitions/ApiResponse'
+                        value: null
+            consumes:
+                - multipart/form-data
+            produces:
+                - application/json
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+    /pet/findByStatus:
+        extensionprops: {}
+        get:
+            extensionprops: {}
+            summary: Finds Pets by status
+            description: Multiple status values can be provided with comma separated strings
+            tags:
+                - pet
+            operationId: findPetsByStatus
+            parameters:
+                - extensionprops: {}
+                  in: query
+                  name: status
+                  description: Status values that need to be considered for filter
+                  type: array
+                  required: true
+                  items:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                        enum:
+                            - available
+                            - pending
+                            - sold
+                        default: available
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: ""
+                        value:
+                            extensionprops: {}
+                            type: array
+                            items:
+                                ref: '#/definitions/Pet'
+                                value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid status value
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+    /pet/findByTags:
+        extensionprops: {}
+        get:
+            extensionprops: {}
+            summary: Finds Pets by tags
+            description: Multiple tags can be provided with comma separated strings. Use tag1, tag2, tag3 for testing.
+            tags:
+                - pet
+            operationId: findPetsByTags
+            parameters:
+                - extensionprops: {}
+                  in: query
+                  name: tags
+                  description: Tags to filter by
+                  type: array
+                  required: true
+                  items:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: ""
+                        value:
+                            extensionprops: {}
+                            type: array
+                            items:
+                                ref: '#/definitions/Pet'
+                                value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid tag value
+            produces:
+                - application/json
+                - application/xml
+            security:
+                - petstore_auth:
+                    - write:pets
+                    - read:pets
+    /store/inventory:
+        extensionprops: {}
+        get:
+            extensionprops: {}
+            summary: Returns pet inventories by status
+            description: Returns a map of status codes to quantities
+            tags:
+                - store
+            operationId: getInventory
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: ""
+                        value:
+                            extensionprops: {}
+                            type: object
+            produces:
+                - application/json
+            security:
+                - api_key: []
+    /store/order:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: Place an order for a pet
+            tags:
+                - store
+            operationId: placeOrder
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: order placed for purchasing the pet
+                  required: true
+                  schema:
+                    ref: '#/definitions/Order'
+                    value: null
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: '#/definitions/Order'
+                        value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid Order
+            consumes:
+                - application/json
+            produces:
+                - application/json
+                - application/xml
+    /store/order/{orderId}:
+        extensionprops: {}
+        delete:
+            extensionprops: {}
+            summary: Delete purchase order by ID
+            description: For valid response try integer IDs with positive integer value. Negative or non-integer values will generate API errors
+            tags:
+                - store
+            operationId: deleteOrder
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: orderId
+                  description: ID of the order that needs to be deleted
+                  type: integer
+                  format: int64
+                  required: true
+                  minimum: 1
+            responses:
+                "400":
+                    extensionprops: {}
+                    description: Invalid ID supplied
+                "404":
+                    extensionprops: {}
+                    description: Order not found
+            produces:
+                - application/json
+                - application/xml
+        get:
+            extensionprops: {}
+            summary: Find purchase order by ID
+            description: For valid response try integer IDs with value >= 1 and <= 10. Other values will generated exceptions
+            tags:
+                - store
+            operationId: getOrderById
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: orderId
+                  description: ID of pet that needs to be fetched
+                  type: integer
+                  format: int64
+                  required: true
+                  minimum: 1
+                  maximum: 10
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: '#/definitions/Order'
+                        value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid ID supplied
+                "404":
+                    extensionprops: {}
+                    description: Order not found
+            produces:
+                - application/json
+                - application/xml
+    /user:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: Create user
+            description: This can only be done by the logged in user.
+            tags:
+                - user
+            operationId: createUser
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: Created user object
+                  required: true
+                  schema:
+                    ref: '#/definitions/User'
+                    value: null
+            responses:
+                default:
+                    extensionprops: {}
+                    description: successful operation
+            consumes:
+                - application/json
+            produces:
+                - application/json
+                - application/xml
+    /user/{username}:
+        extensionprops: {}
+        delete:
+            extensionprops: {}
+            summary: Delete user
+            description: This can only be done by the logged in user.
+            tags:
+                - user
+            operationId: deleteUser
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: username
+                  description: The name that needs to be deleted
+                  type: string
+                  required: true
+            responses:
+                "400":
+                    extensionprops: {}
+                    description: Invalid username supplied
+                "404":
+                    extensionprops: {}
+                    description: User not found
+            produces:
+                - application/json
+                - application/xml
+        get:
+            extensionprops: {}
+            summary: Get user by user name
+            tags:
+                - user
+            operationId: getUserByName
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: username
+                  description: 'The name that needs to be fetched. Use user1 for testing. '
+                  type: string
+                  required: true
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: '#/definitions/User'
+                        value: null
+                "400":
+                    extensionprops: {}
+                    description: Invalid username supplied
+                "404":
+                    extensionprops: {}
+                    description: User not found
+            produces:
+                - application/json
+                - application/xml
+        put:
+            extensionprops: {}
+            summary: Updated user
+            description: This can only be done by the logged in user.
+            tags:
+                - user
+            operationId: updateUser
+            parameters:
+                - extensionprops: {}
+                  in: path
+                  name: username
+                  description: name that need to be updated
+                  type: string
+                  required: true
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: Updated user object
+                  required: true
+                  schema:
+                    ref: '#/definitions/User'
+                    value: null
+            responses:
+                "400":
+                    extensionprops: {}
+                    description: Invalid user supplied
+                "404":
+                    extensionprops: {}
+                    description: User not found
+            consumes:
+                - application/json
+            produces:
+                - application/json
+                - application/xml
+    /user/createWithArray:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: Creates list of users with given input array
+            tags:
+                - user
+            operationId: createUsersWithArrayInput
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: List of user object
+                  required: true
+                  schema:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: array
+                        items:
+                            ref: '#/definitions/User'
+                            value: null
+            responses:
+                default:
+                    extensionprops: {}
+                    description: successful operation
+            consumes:
+                - application/json
+            produces:
+                - application/json
+                - application/xml
+    /user/createWithList:
+        extensionprops: {}
+        post:
+            extensionprops: {}
+            summary: Creates list of users with given input array
+            tags:
+                - user
+            operationId: createUsersWithListInput
+            parameters:
+                - extensionprops: {}
+                  in: body
+                  name: body
+                  description: List of user object
+                  required: true
+                  schema:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: array
+                        items:
+                            ref: '#/definitions/User'
+                            value: null
+            responses:
+                default:
+                    extensionprops: {}
+                    description: successful operation
+            consumes:
+                - application/json
+            produces:
+                - application/json
+                - application/xml
+    /user/login:
+        extensionprops: {}
+        get:
+            extensionprops: {}
+            summary: Logs user into the system
+            tags:
+                - user
+            operationId: loginUser
+            parameters:
+                - extensionprops: {}
+                  in: query
+                  name: username
+                  description: The user name for login
+                  type: string
+                  required: true
+                - extensionprops: {}
+                  in: query
+                  name: password
+                  description: The password for login in clear text
+                  type: string
+                  required: true
+            responses:
+                "200":
+                    extensionprops: {}
+                    description: successful operation
+                    schema:
+                        ref: ""
+                        value:
+                            extensionprops: {}
+                            type: string
+                    headers:
+                        X-Expires-After:
+                            parameter:
+                                extensionprops: {}
+                                description: date in UTC when token expires
+                                type: string
+                        X-Rate-Limit:
+                            parameter:
+                                extensionprops: {}
+                                description: calls per hour allowed by the user
+                                type: integer
+                "400":
+                    extensionprops: {}
+                    description: Invalid username/password supplied
+            produces:
+                - application/json
+                - application/xml
+    /user/logout:
+        extensionprops: {}
+        get:
+            extensionprops: {}
+            summary: Logs out current logged in user session
+            tags:
+                - user
+            operationId: logoutUser
+            responses:
+                default:
+                    extensionprops: {}
+                    description: successful operation
+            produces:
+                - application/json
+                - application/xml
+definitions:
+    ApiResponse:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            properties:
+                code:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int32
+                message:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                type:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+    Category:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            xml:
+                extensionprops: {}
+                name: Category
+            properties:
+                id:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                name:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+    Order:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            xml:
+                extensionprops: {}
+                name: Order
+            properties:
+                complete:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: boolean
+                id:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                petId:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                quantity:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int32
+                shipDate:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                        format: date-time
+                status:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                        description: Order Status
+                        enum:
+                            - placed
+                            - approved
+                            - delivered
+    Pet:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            xml:
+                extensionprops: {}
+                name: Pet
+            required:
+                - name
+                - photoUrls
+            properties:
+                category:
+                    ref: '#/definitions/Category'
+                    value: null
+                id:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                name:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                        example: doggie
+                photoUrls:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: array
+                        xml:
+                            extensionprops: {}
+                            wrapped: true
+                        items:
+                            ref: ""
+                            value:
+                                extensionprops: {}
+                                type: string
+                                xml:
+                                    extensionprops: {}
+                                    name: photoUrl
+                status:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                        description: pet status in the store
+                        enum:
+                            - available
+                            - pending
+                            - sold
+                tags:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: array
+                        xml:
+                            extensionprops: {}
+                            wrapped: true
+                        items:
+                            ref: '#/definitions/Tag'
+                            value: null
+    Tag:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            xml:
+                extensionprops: {}
+                name: Tag
+            properties:
+                id:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                name:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+    User:
+        ref: ""
+        value:
+            extensionprops: {}
+            type: object
+            xml:
+                extensionprops: {}
+                name: User
+            properties:
+                email:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                firstName:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                id:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int64
+                lastName:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                password:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                phone:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+                userStatus:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: integer
+                        format: int32
+                        description: User Status
+                username:
+                    ref: ""
+                    value:
+                        extensionprops: {}
+                        type: string
+securityDefinitions:
+    api_key:
+        extensionprops: {}
+        type: apiKey
+        in: header
+        name: api_key
+    petstore_auth:
+        extensionprops: {}
+        type: oauth2
+        flow: implicit
+        authorizationUrl: https://petstore.swagger.io/oauth/authorize
+        scopes:
+            read:pets: read your pets
+            write:pets: modify pets in your account
+tags:
+    - extensionprops: {}
+      name: pet
+      description: Everything about your Pets
+      externalDocs:
+        extensionprops: {}
+        description: Find out more
+        url: http://swagger.io
+    - extensionprops: {}
+      name: store
+      description: Access to Petstore orders
+    - extensionprops: {}
+      name: user
+      description: Operations about user
+      externalDocs:
+        extensionprops: {}
+        description: Find out more about our store
+        url: http://swagger.io

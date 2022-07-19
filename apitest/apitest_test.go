@@ -9,6 +9,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/reflectx"
 	"github.com/getkin/kin-openapi/openapi2"
+	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -136,23 +137,46 @@ func TestFakeStruct(t *testing.T) {
 }
 
 func TestToSwagger(t *testing.T) {
-	data, err := os.ReadFile("./testdata/swagger.json")
-	if err != nil {
-		t.Fatal(err)
-	}
+	t.Run("json", func(t *testing.T) {
+		data, err := os.ReadFile("./testdata/swagger.json")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-	var doc openapi2.T
-	if err := json.Unmarshal(data, &doc); err != nil {
-		t.Fatal(err)
-	}
+		var doc openapi2.T
+		if err := json.Unmarshal(data, &doc); err != nil {
+			t.Fatal(err)
+		}
 
-	for _, path := range doc.Paths {
-		t.Logf("doc path: %+v\n", path)
-	}
+		for _, path := range doc.Paths {
+			t.Logf("doc path: %+v\n", path)
+		}
 
-	data2, err := json.Marshal(doc)
-	if err != nil {
-		t.Fatal(err)
-	}
-	JSONIndent(os.Stdout, data2)
+		data2, err := json.Marshal(doc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		JSONIndent(os.Stdout, data2)
+	})
+
+	t.Run("yaml", func(t *testing.T) {
+		data, err := os.ReadFile("./testdata/swagger.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var doc openapi2.T
+		if err := json.Unmarshal(data, &doc); err != nil {
+			t.Fatal(err)
+		}
+
+		data2, err := yaml.Marshal(doc)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = os.WriteFile("./testdata/swagger.yaml", data2, os.ModePerm)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
