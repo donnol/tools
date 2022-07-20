@@ -2,6 +2,7 @@ package apitest
 
 import (
 	"encoding/json"
+	"net/http"
 	"os"
 	"reflect"
 	"testing"
@@ -9,6 +10,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/donnol/tools/reflectx"
 	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
 )
 
@@ -179,4 +181,25 @@ func TestToSwagger(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+}
+
+func TestStartSwaggerServer(t *testing.T) {
+	startSwaggerServer(t)
+}
+
+func startSwaggerServer(t *testing.T) {
+	r := gin.Default()
+
+	// 配置本地生成的swagger.json
+	r.StaticFile("/swaggerjson", "./testdata/swagger.json")
+
+	// 从项目`github.com/swagger-api/swagger-ui`复制dist目录
+	// 修改swagger-initializer.js文件里的url为上述/swaggerjson路径
+	r.Static("/swaggerui/", "./testdata/swaggerui/dist/")
+
+	port := ":8000"
+	t.Logf("listen %v", port)
+	if err := http.ListenAndServe(port, r); err != nil {
+		t.Fatal(err)
+	}
 }

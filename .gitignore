@@ -20,3 +20,5 @@
 
 # vscode
 .vscode
+
+apitest/testdata/swaggerui/dist/*
