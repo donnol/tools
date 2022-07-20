@@ -139,6 +139,34 @@ func TestFakeStruct(t *testing.T) {
 }
 
 func TestToSwagger(t *testing.T) {
+	f, err := os.OpenFile("testdata/swagger_test.json", os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	at := NewAT("/api/user", http.MethodGet, "获取用户信息", nil, nil)
+	var res = struct {
+		UserId uint   `json:"userId"`
+		Name   string `json:"name"`
+	}{
+		UserId: 1,
+		Name:   "jd",
+	}
+
+	if err := at.SetParam(&struct {
+		UserId uint   `json:"userId"`
+		Name   string `json:"name"`
+	}{UserId: 1, Name: "jd"}).
+		FakeRun().
+		Result(&res).
+		ToSwagger(f).
+		Err(); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestSwaggerJSON(t *testing.T) {
 	t.Run("json", func(t *testing.T) {
 		data, err := os.ReadFile("./testdata/swagger.json")
 		if err != nil {
@@ -191,7 +219,7 @@ func startSwaggerServer(t *testing.T) {
 	r := gin.Default()
 
 	// 配置本地生成的swagger.json
-	r.StaticFile("/swaggerjson", "./testdata/swagger.json")
+	r.StaticFile("/swaggerjson", "./testdata/swagger_test.json")
 
 	// 从项目`github.com/swagger-api/swagger-ui`复制dist目录
 	// 修改swagger-initializer.js文件里的url为上述/swaggerjson路径

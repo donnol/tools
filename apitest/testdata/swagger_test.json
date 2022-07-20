@@ -1,0 +1,42 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "API doc",
+        "version": ""
+    },
+    "schemes": [
+        "https",
+        "http"
+    ],
+    "paths": {
+        "/api/user": {
+            "get": {
+                "description": "获取用户信息",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "UserId",
+                        "type": "uint"
+                    },
+                    {
+                        "in": "path",
+                        "name": "Name",
+                        "type": "string"
+                    }
+                ],
+                "responses": {
+                    "0": {
+                        "examples": {
+                            "0": {
+                                "userId": 1,
+                                "name": "jd"
+                            }
+                        },
+                        "schema": {}
+                    }
+                },
+                "summary": "获取用户信息"
+            }
+        }
+    }
+}
