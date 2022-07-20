@@ -138,6 +138,44 @@ func TestFakeStruct(t *testing.T) {
 	t.Logf("user with random value: %+v\n", user)
 }
 
+func TestWriteFile(t *testing.T) {
+	f, err := OpenFile("testdata/user.md", "用户接口文档")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+
+	for _, tc := range []struct {
+		path    string
+		method  string
+		comment string
+	}{
+		{path: "/api/user", method: http.MethodGet, comment: "获取用户信息"},
+		{path: "/api/user", method: http.MethodPost, comment: "添加用户信息"},
+	} {
+		t.Run(tc.method+"-"+tc.path, func(t *testing.T) {
+			at := NewAT(tc.path, tc.method, tc.comment, nil, nil)
+			var res = struct {
+				UserId uint   `json:"userId"`
+				Name   string `json:"name"`
+			}{
+				UserId: 1,
+				Name:   "jd",
+			}
+			if err := at.SetParam(&struct {
+				UserId uint   `json:"userId"`
+				Name   string `json:"name"`
+			}{UserId: 1, Name: "jd"}).
+				FakeRun().
+				Result(&res).
+				WriteFile(f).
+				Err(); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
 func TestToSwagger(t *testing.T) {
 	f, err := os.OpenFile("testdata/swagger_test.json", os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
 	if err != nil {

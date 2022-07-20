@@ -631,11 +631,16 @@ func (at *AT) collectATE() *AT {
 	return at
 }
 
+const (
+	paramName   = "Param"
+	returnName  = "Return"
+	errorName   = "Error"
+	exampleName = "Example"
+)
+
 // 生成文档
 func (at *AT) makeDoc() *AT {
-	const paramName = "Param"
-	const returnName = "Return"
-	const errorName = "Error"
+
 	var doc string
 
 	// 保存请求和响应
@@ -690,7 +695,7 @@ func (at *AT) makeDoc() *AT {
 
 	// 在解析参数和返回的同时，收集注释信息：map[string]string, 其中key的值需要保留每层的路径，如：|list|name
 	// 参数
-	block, pkcm, err := structToBlock(paramName, at.param)
+	block, pkcm, err := structToBlock(paramName, at.method, at.param)
 	if err != nil {
 		at.setErr(err)
 		return at
@@ -698,7 +703,7 @@ func (at *AT) makeDoc() *AT {
 	doc += block
 
 	// 返回
-	block, rkcm, err := structToBlock(returnName, at.result)
+	block, rkcm, err := structToBlock(returnName, at.method, at.result)
 	if err != nil {
 		at.setErr(err)
 		return at
@@ -714,6 +719,8 @@ func (at *AT) makeDoc() *AT {
 		}
 		doc += block
 	}
+
+	doc += exampleName + ":\n\n"
 
 	// 参数和返回示例
 	switch at.method {

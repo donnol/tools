@@ -2,6 +2,7 @@ package apitest
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/donnol/tools/apitest/testtype"
@@ -42,11 +43,11 @@ var (
 )
 
 func TestStructToBlock(t *testing.T) {
-	line, lkcm, err := structToBlock("test", &testtype.TestModel{})
+	line, lkcm, err := structToBlock(paramName, http.MethodGet, &testtype.TestModel{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log("line", line)
+	t.Logf("line:\n%s", line)
 
 	for k, v := range kcm {
 		lv, ok := lkcm[k]

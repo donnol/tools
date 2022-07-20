@@ -668,7 +668,7 @@ func structToList(name string, data ...ate) (string, error) {
 	return list, nil
 }
 
-func structToBlock(name string, data any) (string, map[string]string, error) {
+func structToBlock(name, method string, data any) (string, map[string]string, error) {
 	var block string
 
 	dataStruct, err := reflectx.ResolveStruct(data)
@@ -676,7 +676,18 @@ func structToBlock(name string, data any) (string, map[string]string, error) {
 		return block, nil, err
 	}
 
-	block += name + "\n\n"
+	block += name
+	switch name {
+	case paramName:
+		block += " - "
+		switch method {
+		case http.MethodGet, http.MethodDelete:
+			block += "Query"
+		case http.MethodPost, http.MethodPut:
+			block += "Body"
+		}
+	}
+	block += "\n\n"
 	fields := dataStruct.GetFields()
 	var level int
 	lines, kcm := fieldsToLine(level, fields)
