@@ -32,11 +32,33 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 			Id: 1,
 		}).FakeRun().
 			Result(&struct {
-				Id   uint   `json:"id"`
-				Name string `json:"string"`
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+				User struct {
+					Id   uint   `json:"id"`
+					Name string `json:"string"`
+				}
 			}{
-				Id:   1,
-				Name: "jd",
+				User: struct {
+					Id   uint   `json:"id"`
+					Name string `json:"string"`
+				}{
+					Id:   1,
+					Name: "jd",
+				},
+			}).
+			Errors(&struct {
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+			}{
+				Code: 1,
+				Msg:  "认证失败",
+			}, &struct {
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+			}{
+				Code: 2,
+				Msg:  "校验失败",
 			}).
 			WriteFile(f).
 			Err(); err != nil {
@@ -57,13 +79,36 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 			Id: 1,
 		}).FakeRun().
 			Result(&struct {
-				Id   uint   `json:"id"`
-				Name string `json:"string"`
-				Page int    `json:"page"`
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+				Book struct {
+					Id   uint   `json:"id"`
+					Name string `json:"string"`
+					Page int    `json:"page"`
+				}
 			}{
-				Id:   1,
-				Name: "jd",
-				Page: 100,
+				Book: struct {
+					Id   uint   `json:"id"`
+					Name string `json:"string"`
+					Page int    `json:"page"`
+				}{
+					Id:   1,
+					Name: "jd",
+					Page: 100,
+				},
+			}).
+			Errors(&struct {
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+			}{
+				Code: 1,
+				Msg:  "认证失败",
+			}, &struct {
+				Code int    `json:"code"`
+				Msg  string `json:"msg"`
+			}{
+				Code: 2,
+				Msg:  "校验失败",
 			}).
 			WriteFile(f).
 			Err(); err != nil {

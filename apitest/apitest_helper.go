@@ -655,13 +655,26 @@ func apiKey(path, method string) string {
 	return fmt.Sprintf("%s %s", method, path)
 }
 
-func structToList(name string, data ...ate) (string, error) {
+type APIError interface {
+	Code() string
+	Msg() string
+}
+
+func structToList(name string, data ...any) (string, error) {
 	var list string
 
 	list += name + "\n\n"
 	var lines string
 	for _, d := range data {
-		lines += fmt.Sprintf("* `%d` %s\n", d.Code, d.Msg)
+		if v, ok := d.(APIError); ok {
+			lines += fmt.Sprintf("* `%s` %s\n", v.Code(), v.Msg())
+		} else {
+			dd, err := json.Marshal(d)
+			if err != nil {
+				return "", fmt.Errorf("json marshal d '%v' failed: %v", d, err)
+			}
+			lines += fmt.Sprintf("* %s\n", dd)
+		}
 	}
 	list += lines + "\n"
 

@@ -55,7 +55,7 @@ type AT struct {
 	cookies         []*http.Cookie
 	param           any
 	result          any
-	ates            []ate
+	ates            []any
 
 	// 请求和响应
 	req     *http.Request
@@ -75,12 +75,6 @@ type AT struct {
 	isPressureBatch bool
 
 	err error
-}
-
-// ate api test错误
-type ate struct {
-	Code int    `json:"Code"` // 错误码
-	Msg  string `json:"msg"`  // 错误信息
 }
 
 // NewAT 新建
@@ -275,6 +269,12 @@ func (at *AT) Result(r any) *AT {
 
 	at.jsonIndent(os.Stdout, r)
 
+	return at
+}
+
+// Errors 获取错误
+func (at *AT) Errors(errs ...any) *AT {
+	at.ates = errs
 	return at
 }
 
@@ -592,40 +592,6 @@ func (at *AT) run(realDo bool) *AT {
 		// https://stackoverflow.com/questions/17948827/reusing-http-connections-in-golang
 		// 只要不关闭response，client就不会重用连接，而是新建连接
 		at.resp = resp
-	}
-
-	// 收集错误码
-	at = at.collectATE()
-
-	return at
-}
-
-// 收集错误码
-func (at *AT) collectATE() *AT {
-	// 复制resp.Body
-	if at.resp != nil {
-		data, _, err := copyResponseBody(at.resp)
-		if err != nil {
-			at.setErr(err)
-			return at
-		}
-		tmpATE := ate{}
-		if err := json.Unmarshal(data, &tmpATE); err != nil {
-			at.setErr(err)
-			return at
-		}
-		if tmpATE.Code != 0 {
-			var exist bool
-			for _, e := range at.ates {
-				if tmpATE.Code == e.Code {
-					exist = true
-					break
-				}
-			}
-			if !exist {
-				at.ates = append(at.ates, tmpATE)
-			}
-		}
 	}
 
 	return at
