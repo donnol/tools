@@ -198,7 +198,7 @@ func TestToSwagger(t *testing.T) {
 	}{UserId: 1, Name: "jd"}).
 		FakeRun().
 		Result(&res).
-		ToSwagger(f).
+		toSwagger(f).
 		Err(); err != nil {
 		t.Fatal(err)
 	}

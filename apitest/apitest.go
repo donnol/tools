@@ -336,7 +336,7 @@ func (at *AT) WriteFile(w io.Writer) *AT {
 	return at
 }
 
-func (at *AT) ToSwagger(w io.Writer) *AT {
+func (at *AT) toSwagger(w io.Writer) *AT {
 	// new a swagger
 	dataStruct, err := reflectx.ResolveStruct(at.param)
 	if err != nil {
