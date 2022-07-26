@@ -16,6 +16,7 @@ require (
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/smallnest/chanx v0.0.0-20210513123655-46bd697efd41
 	github.com/spf13/cobra v1.0.0
+	github.com/yuin/goldmark v1.2.1
 	golang.org/x/mod v0.3.0
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
 	golang.org/x/tools v0.0.0-20200913032122-97363e29fc9b

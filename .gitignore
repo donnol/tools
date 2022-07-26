@@ -22,3 +22,4 @@
 .vscode
 
 apitest/testdata/swaggerui/dist/*
+apitest/doc
