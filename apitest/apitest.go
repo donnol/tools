@@ -56,6 +56,7 @@ type AT struct {
 	param           any
 	result          any
 	ates            []any
+	handlerMap      map[string]any // 如："gin.HandlerFunc", gin.HandlerFunc(nil),
 
 	// 请求和响应
 	req     *http.Request
@@ -734,4 +735,22 @@ func (at *AT) jsonIndent(w io.Writer, r any) *AT {
 
 func (at *AT) clone() *AT {
 	return NewAT(at.path, at.method, at.comment, at.header, at.cookies)
+}
+
+var (
+	_ = (&AT{}).registerHandler("http.Handler", http.Handler(nil))
+	_ = (&AT{}).registerHandler("http.HandlerFunc", http.HandlerFunc(nil))
+)
+
+// 提供`registerHandler`方法，传入的handler参数值，应该是(http.Handler)(nil)
+func (at *AT) registerHandler(name string, handler any) *AT {
+	if at.handlerMap == nil {
+		at.handlerMap = make(map[string]any)
+	}
+	// 解析handler，得到其接口类型，后续解析源码时，寻找该类型的变量，进而生成代码
+	// 如果可以的话，在寻找到handler之后，在handler里解析出param和result结构体，
+	// 从而得到接口定义里最需要的三个信息：路由、参数、返回。
+	at.handlerMap[name] = handler
+
+	return at
 }
