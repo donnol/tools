@@ -13,6 +13,7 @@ package apitest
 import (
 	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -54,7 +55,9 @@ type AT struct {
 	header          http.Header
 	cookies         []*http.Cookie
 	param           any
+	paramFormat     string // 结果格式，默认为`json`
 	result          any
+	resultFormat    string // 结果格式，默认为`json`
 	ates            []any
 	handlerMap      map[string]any // 如："gin.HandlerFunc", gin.HandlerFunc(nil),
 
@@ -142,6 +145,25 @@ func (at *AT) SetParam(param any) *AT {
 	return at
 }
 
+// UseXMLFormat 设置参数和结果格式为XML
+func (at *AT) UseXMLFormat() *AT {
+	at.paramFormat = "xml"
+	at.resultFormat = "xml"
+	return at
+}
+
+// UseXMLParamFormat 设置参数格式为XML
+func (at *AT) UseXMLParamFormat() *AT {
+	at.resultFormat = "xml"
+	return at
+}
+
+// UseXMLResultFormat 设置结果格式为XML
+func (at *AT) UseXMLResultFormat() *AT {
+	at.resultFormat = "xml"
+	return at
+}
+
 // Run 运行
 func (at *AT) Run() *AT {
 	return at.run(true)
@@ -164,9 +186,7 @@ func (at *AT) MonkeyRun() *AT {
 		at.setErr(fmt.Errorf("generate param value failed: %w", err))
 		return at
 	}
-	if at.debug { // 打印随机值
-		JSONIndent(os.Stdout, at.param)
-	}
+	at.jsonIndent(os.Stdout, at.param)
 
 	return at.run(true)
 }
@@ -268,9 +288,17 @@ func (at *AT) Result(r any) *AT {
 		}
 
 		// 解析data到r
-		if err := json.Unmarshal(data, r); err != nil {
-			at.setErr(err)
-			return at
+		switch at.resultFormat {
+		case "xml":
+			if err := xml.Unmarshal(data, r); err != nil {
+				at.setErr(err)
+				return at
+			}
+		default:
+			if err := json.Unmarshal(data, r); err != nil {
+				at.setErr(err)
+				return at
+			}
 		}
 	}
 	at.result = r
@@ -521,10 +549,21 @@ func (at *AT) run(realDo bool) *AT {
 		}
 		u.RawQuery = q.Encode()
 	case http.MethodPost, http.MethodPut:
-		paramBytes, err := json.Marshal(at.param)
-		if err != nil {
-			at.setErr(err)
-			return at
+		var paramBytes []byte
+		var err error
+		switch at.paramFormat {
+		case "xml":
+			paramBytes, err = xml.Marshal(at.param)
+			if err != nil {
+				at.setErr(err)
+				return at
+			}
+		default:
+			paramBytes, err = json.Marshal(at.param)
+			if err != nil {
+				at.setErr(err)
+				return at
+			}
 		}
 		_, err = body.Write(paramBytes)
 		if err != nil {
@@ -549,9 +588,15 @@ func (at *AT) run(realDo bool) *AT {
 	}
 
 	// 设置header
-	for headerKey, headerValue := range map[string]string{
+	innerHeader := map[string]string{
 		"Content-Type": "application/json; charset=utf-8",
-	} {
+	}
+	if at.paramFormat == "xml" {
+		innerHeader = map[string]string{
+			"Content-Type": "application/xml; charset=utf-8",
+		}
+	}
+	for headerKey, headerValue := range innerHeader {
 		req.Header.Set(headerKey, headerValue)
 	}
 	for k, v := range at.header {
@@ -659,7 +704,12 @@ func (at *AT) makeDoc() *AT {
 		}
 		resph += "\n"
 	} else {
-		resph += "- Content-Type: application/json; charset=utf-8\n\n"
+		switch at.resultFormat {
+		case "xml":
+			resph += "- Content-Type: application/xml; charset=utf-8\n\n"
+		default:
+			resph += "- Content-Type: application/json; charset=utf-8\n\n"
+		}
 	}
 	doc += resph
 
@@ -695,9 +745,9 @@ func (at *AT) makeDoc() *AT {
 	// 参数和返回示例
 	switch at.method {
 	case http.MethodGet, http.MethodDelete:
-		doc += dataToSummary(paramName, []byte(at.req.URL.RawQuery), false, nil)
+		doc += dataToSummary(paramName, []byte(at.req.URL.RawQuery), at.paramFormat, false, nil)
 	case http.MethodPost, http.MethodPut:
-		doc += dataToSummary(paramName, at.reqBody, true, pkcm)
+		doc += dataToSummary(paramName, at.reqBody, at.paramFormat, true, pkcm)
 	}
 
 	// 复制resp.Body
@@ -709,13 +759,22 @@ func (at *AT) makeDoc() *AT {
 			return at
 		}
 	} else {
-		data, err = json.Marshal(at.result)
-		if err != nil {
-			at.setErr(err)
-			return at
+		switch at.resultFormat {
+		case "xml":
+			data, err = xml.Marshal(at.result)
+			if err != nil {
+				at.setErr(err)
+				return at
+			}
+		default:
+			data, err = json.Marshal(at.result)
+			if err != nil {
+				at.setErr(err)
+				return at
+			}
 		}
 	}
-	doc += dataToSummary(returnName, data, true, rkcm)
+	doc += dataToSummary(returnName, data, at.resultFormat, true, rkcm)
 
 	at.doc = doc
 

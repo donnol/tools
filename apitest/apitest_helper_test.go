@@ -108,7 +108,7 @@ func Test_dataToSummary(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := dataToSummary(tt.args.name, tt.args.data, tt.args.isJSON, kcm); got != tt.want {
+			if got := dataToSummary(tt.args.name, tt.args.data, "", tt.args.isJSON, kcm); got != tt.want {
 				t.Errorf("dataToSummary() = %v, want %v", got, tt.want)
 			}
 		})

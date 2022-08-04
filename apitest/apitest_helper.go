@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/donnol/tools/reflectx"
+	"github.com/go-xmlfmt/xmlfmt"
 )
 
 func init() {
@@ -45,6 +46,27 @@ func JSONIndent(w io.Writer, v any) {
 	if err := json.Indent(&out, b, "", "    "); err != nil {
 		panic(err)
 	}
+	if _, err := out.WriteTo(w); err != nil {
+		panic(err)
+	}
+}
+
+func XMLIndent(w io.Writer, v any) {
+	var b []byte
+	if vb, ok := v.([]byte); ok {
+		b = vb
+	} else if buf, ok1 := v.(*bytes.Buffer); ok1 {
+		b = buf.Bytes()
+	} else {
+		var err error
+		b, err = json.Marshal(v)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	indent := xmlfmt.FormatXML(string(b), "", "    ")
+	out := bytes.NewBufferString(indent)
 	if _, err := out.WriteTo(w); err != nil {
 		panic(err)
 	}
@@ -806,7 +828,7 @@ func linePrefix(level int) string {
 	return r + prefix
 }
 
-func dataToSummary(name string, data []byte, isJSON bool, kcm map[string]string) string {
+func dataToSummary(name string, data []byte, format string, isJSON bool, kcm map[string]string) string {
 	const (
 		eol = "\n"
 	)
@@ -817,7 +839,12 @@ func dataToSummary(name string, data []byte, isJSON bool, kcm map[string]string)
 	if isJSON {
 		var buf = new(bytes.Buffer)
 		if data != nil {
-			JSONIndent(buf, data)
+			switch format {
+			case "xml":
+				XMLIndent(buf, data)
+			default:
+				JSONIndent(buf, data)
+			}
 		}
 		// 逐行遍历
 		// 每遇到一个'{'表示开始一层，每遇到一个'}'表示结束一层
