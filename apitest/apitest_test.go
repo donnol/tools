@@ -123,6 +123,26 @@ func TestMakeFunc(t *testing.T) {
 	makeFunc()
 }
 
+func TestPath(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{"normal", "/api/abc", "/api/abc"},
+		{"normal", "/api/abc?ws", "/api/abc?ws"},
+		{"normal", "/api/abc?name=jd", "/api/abc?name=jd"},
+	} {
+		at := NewAT(tc.path, http.MethodPost, tc.name, nil, nil)
+		if err := at.Err(); err != nil {
+			t.Fatal(err)
+		}
+		if at.path != tc.want {
+			t.Fatalf("base case, %v != %v", tc.path, tc.want)
+		}
+	}
+}
+
 func TestCollectStructField(t *testing.T) {
 	typ := reflect.TypeOf(testStruct)
 	sf := collectStructField(typ)

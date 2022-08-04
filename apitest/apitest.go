@@ -86,13 +86,20 @@ func NewAT(
 	h http.Header,
 	cookies []*http.Cookie,
 ) *AT {
-	return &AT{
+	at := &AT{
 		path:    path,
 		method:  method,
 		comment: comment,
 		header:  h,
 		cookies: cookies,
 	}
+
+	_, err := url.Parse(path)
+	if err != nil {
+		at.setErr(err)
+	}
+
+	return at
 }
 
 // New 克隆一个新的AT
@@ -612,10 +619,6 @@ func (at *AT) makeDoc() *AT {
 
 	// 保存请求和响应
 	path := at.path
-	rawurl, err := url.Parse(path)
-	if err == nil {
-		path = rawurl.Path
-	}
 	key := apiKey(path, at.method)
 
 	// 标题
