@@ -169,12 +169,16 @@ func TestWriteFile(t *testing.T) {
 		path    string
 		method  string
 		comment string
+		header  http.Header
 	}{
 		{path: "/api/user", method: http.MethodGet, comment: "获取用户信息"},
 		{path: "/api/user", method: http.MethodPost, comment: "添加用户信息"},
+		{path: "/api/user/import", method: http.MethodPost, comment: "导入用户信息(以csv文件格式)", header: http.Header{"Content-Type": []string{
+			"text/csv; charset=utf-8",
+		}}},
 	} {
 		t.Run(tc.method+"-"+tc.path, func(t *testing.T) {
-			at := NewAT(tc.path, tc.method, tc.comment, nil, nil)
+			at := NewAT(tc.path, tc.method, tc.comment, tc.header, nil)
 			var res = struct {
 				UserId uint   `json:"userId"`
 				Name   string `json:"name"`

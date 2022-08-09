@@ -89,3 +89,49 @@ Example:
 
 </details>
 
+## 导入用户信息(以csv文件格式)
+
+`POST /api/user/import`
+
+Request header:
+- Content-Type: text/csv; charset=utf-8
+
+Response header:
+- Content-Type: application/json; charset=utf-8
+
+Param - Body
+
+* userId (*uint*) 
+* name (*string*) 
+
+Return
+
+* userId (*uint*) 
+* name (*string*) 
+
+Example:
+
+<details>
+<summary>Param</summary>
+
+```json
+{
+    "userId": 1,
+    "name": "jd"
+}
+```
+
+</details>
+
+<details>
+<summary>Return</summary>
+
+```json
+{
+    "userId": 1,
+    "name": "jd"
+}
+```
+
+</details>
+

@@ -17,6 +17,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
@@ -56,6 +57,7 @@ type AT struct {
 	cookies         []*http.Cookie
 	param           any
 	paramFormat     string // 结果格式，默认为`json`
+	file            string // 文件
 	result          any
 	resultFormat    string // 结果格式，默认为`json`
 	ates            []any
@@ -142,6 +144,17 @@ func (at *AT) SetParam(param any) *AT {
 	}
 
 	at.param = param
+	return at
+}
+
+// SetFile 设置文件
+func (at *AT) SetFile(file string) *AT {
+	if file == "" {
+		at.setErr(fmt.Errorf("empty file"))
+		return at
+	}
+
+	at.file = file
 	return at
 }
 
@@ -575,6 +588,37 @@ func (at *AT) run(realDo bool) *AT {
 		return at
 	}
 
+	// 文件内容
+	var fileContentType string
+	if at.file != "" {
+		f, err := os.OpenFile(at.file, os.O_RDONLY, os.ModePerm)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
+		defer f.Close()
+
+		body.Reset()
+		bodyWriter := multipart.NewWriter(body)
+
+		// this step is very important
+		fileWriter, err := bodyWriter.CreateFormFile("file", at.file)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
+
+		//iocopy
+		_, err = io.Copy(fileWriter, f)
+		if err != nil {
+			at.setErr(err)
+			return at
+		}
+
+		fileContentType = bodyWriter.FormDataContentType()
+		bodyWriter.Close()
+	}
+
 	// 复制一份请求body
 	reqBody := make([]byte, body.Len())
 	copy(reqBody, body.Bytes())
@@ -601,8 +645,11 @@ func (at *AT) run(realDo bool) *AT {
 	}
 	for k, v := range at.header {
 		for _, vv := range v {
-			req.Header.Add(k, vv)
+			req.Header.Set(k, vv)
 		}
+	}
+	if fileContentType != "" {
+		req.Header.Set("Content-Type", fileContentType)
 	}
 
 	// 添加cookie, 支持设置多个
@@ -747,7 +794,8 @@ func (at *AT) makeDoc() *AT {
 	case http.MethodGet, http.MethodDelete:
 		doc += dataToSummary(paramName, []byte(at.req.URL.RawQuery), at.paramFormat, false, nil)
 	case http.MethodPost, http.MethodPut:
-		doc += dataToSummary(paramName, at.reqBody, at.paramFormat, true, pkcm)
+		isjson := at.file == ""
+		doc += dataToSummary(paramName, at.reqBody, at.paramFormat, isjson, pkcm)
 	}
 
 	// 复制resp.Body
