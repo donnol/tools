@@ -487,7 +487,28 @@ func (at *AT) toSwagger(w io.Writer) *AT {
 	return at
 }
 
-// Err 获取error
+// === Get api info ===
+
+func (at *AT) Title(w io.Writer) string {
+	return at.comment
+}
+
+func (at *AT) Method(w io.Writer) string {
+	return at.method
+}
+
+func (at *AT) Path(w io.Writer) string {
+	return at.path
+}
+
+func (at *AT) CatalogEntry() CatalogEntry {
+	return CatalogEntry{
+		Title:  at.comment,
+		Method: at.method,
+		Path:   at.path,
+	}
+}
+
 func (at *AT) Err() error {
 	return at.err
 }
@@ -704,6 +725,10 @@ const (
 	exampleName = "Example"
 )
 
+func toAnchor(str string) string {
+	return fmt.Sprintf(`<a name="%s" href="#%s">%s</a>`, str, str, str)
+}
+
 // 生成文档
 func (at *AT) makeDoc() *AT {
 
@@ -714,7 +739,8 @@ func (at *AT) makeDoc() *AT {
 	key := apiKey(path, at.method)
 
 	// 标题
-	doc += "## " + at.comment + "\n\n"
+	// 支持anchor：<a name="推送样本到目标" href="#推送样本到目标">推送样本到目标</a>
+	doc += "## " + toAnchor(at.comment) + "\n\n"
 
 	// 方法
 	doc += "`" + key + "`\n\n"

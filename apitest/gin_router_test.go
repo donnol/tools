@@ -24,9 +24,26 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer f.Close()
+		var catalogEntries []CatalogEntry
+		content := new(bytes.Buffer)
+		defer func() {
+			// 添加目录
+			catalog, err := MakeCatalog(catalogEntries)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write([]byte(catalog)); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write(content.Bytes()); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := NewAT(routePrefix+"/user", http.MethodGet, "获取用户信息", nil, nil).SetParam(&struct {
+			f.Close()
+		}()
+
+		at := NewAT(routePrefix+"/user", http.MethodGet, "获取用户信息", nil, nil)
+		if err := at.SetParam(&struct {
 			Id uint `json:"id"`
 		}{
 			Id: 1,
@@ -60,10 +77,11 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 				Code: 2,
 				Msg:  "校验失败",
 			}).
-			WriteFile(f).
+			WriteFile(content).
 			Err(); err != nil {
 			t.Fatal(err)
 		}
+		catalogEntries = append(catalogEntries, at.CatalogEntry())
 	})
 
 	t.Run("gen doc book", func(t *testing.T) {
@@ -71,9 +89,26 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer f.Close()
+		var catalogEntries []CatalogEntry
+		content := new(bytes.Buffer)
+		defer func() {
+			// 添加目录
+			catalog, err := MakeCatalog(catalogEntries)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write([]byte(catalog)); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write(content.Bytes()); err != nil {
+				t.Fatal(err)
+			}
 
-		if err := NewAT(routePrefix+"/book", http.MethodGet, "获取图书信息", nil, nil).SetParam(&struct {
+			f.Close()
+		}()
+
+		at := NewAT(routePrefix+"/book", http.MethodGet, "获取图书信息", nil, nil)
+		if err := at.SetParam(&struct {
 			Id uint `json:"id"`
 		}{
 			Id: 1,
@@ -110,10 +145,11 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 				Code: 2,
 				Msg:  "校验失败",
 			}).
-			WriteFile(f).
+			WriteFile(content).
 			Err(); err != nil {
 			t.Fatal(err)
 		}
+		catalogEntries = append(catalogEntries, at.CatalogEntry())
 	})
 
 	// 启动服务，注册路由
@@ -124,6 +160,11 @@ func TestGinHandlerAPIDoc(t *testing.T) {
 	{
 		GinHandlerAPIDoc(doc, "doc", "jdlau")
 	}
+
+	// if err := engine.Run(":8888"); err != nil {
+	// 	panic(err)
+	// }
+
 	go func() {
 		if err := engine.Run(":8888"); err != nil {
 			panic(err)

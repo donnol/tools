@@ -114,3 +114,50 @@ func Test_dataToSummary(t *testing.T) {
 		})
 	}
 }
+
+func TestCatalog(t *testing.T) {
+	type args struct {
+		entries []CatalogEntry
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{name: "", args: args{
+			entries: []CatalogEntry{
+				{Title: "获取用户信息", Method: http.MethodGet, Path: "/user"},
+				{Title: "添加用户信息", Method: http.MethodPost, Path: "/user"},
+				{Title: "更新用户信息", Method: http.MethodPut, Path: "/user"},
+				{Title: "删除用户信息", Method: http.MethodDelete, Path: "/user"},
+				{Title: "获取书本信息", Method: http.MethodGet, Path: "/book"},
+			},
+		}, want: `**目录**：
+
+* <a href="#获取用户信息"><b>获取用户信息 -- GET /user</b></a>
+
+* <a href="#添加用户信息"><b>添加用户信息 -- POST /user</b></a>
+
+* <a href="#更新用户信息"><b>更新用户信息 -- PUT /user</b></a>
+
+* <a href="#删除用户信息"><b>删除用户信息 -- DELETE /user</b></a>
+
+* <a href="#获取书本信息"><b>获取书本信息 -- GET /book</b></a>
+
+`, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := MakeCatalog(tt.args.entries)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Catalog() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Catalog() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

@@ -161,6 +161,7 @@ func GinHandlerAPIDoc(doc *gin.RouterGroup, dir string, brand string) {
 			),
 			goldmark.WithRendererOptions(
 				html.WithHardWraps(),
+				html.WithUnsafe(),
 				html.WithXHTML(),
 			),
 		)

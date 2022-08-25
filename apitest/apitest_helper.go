@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/donnol/tools/reflectx"
@@ -101,6 +102,37 @@ func OpenFile(file, title string) (*os.File, error) {
 	}
 
 	return f, nil
+}
+
+const (
+	catalogTitle = "**目录**：\n"
+	catalogTmpl  = `{{range $k, $v := .list}}
+* <a href="#{{$v.Title}}"><b>{{$v.Title}} -- {{$v.Method}} {{$v.Path}}</b></a>
+{{end}}`
+)
+
+type (
+	CatalogEntry struct {
+		Title  string
+		Method string
+		Path   string
+	}
+)
+
+func MakeCatalog(entries []CatalogEntry) (string, error) {
+	temp, err := template.New(
+		"Catalog",
+	).Parse(catalogTmpl)
+	if err != nil {
+		return "", fmt.Errorf("parse catalog template failed: %v", err)
+	}
+	buf := new(bytes.Buffer)
+	if err := temp.ExecuteTemplate(buf, "Catalog", map[string]interface{}{
+		"list": entries,
+	}); err != nil {
+		return "", fmt.Errorf("[apidoc] exec index template failed: %v", err)
+	}
+	return catalogTitle + buf.String() + "\n", nil
 }
 
 func structRandomValue(v any) (any, error) {

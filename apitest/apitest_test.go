@@ -1,6 +1,7 @@
 package apitest
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"os"
@@ -159,11 +160,28 @@ func TestFakeStruct(t *testing.T) {
 }
 
 func TestWriteFile(t *testing.T) {
-	f, err := OpenFile("testdata/user.md", "用户接口文档")
+	fileTitle := "用户接口文档"
+	f, err := OpenFile("testdata/user.md", fileTitle)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
+	var catalogEntries []CatalogEntry
+	content := new(bytes.Buffer)
+	defer func() {
+		// 添加目录
+		catalog, err := MakeCatalog(catalogEntries)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Write([]byte(catalog)); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Write(content.Bytes()); err != nil {
+			t.Fatal(err)
+		}
+
+		f.Close()
+	}()
 
 	for _, tc := range []struct {
 		path    string
@@ -192,10 +210,11 @@ func TestWriteFile(t *testing.T) {
 			}{UserId: 1, Name: "jd"}).
 				FakeRun().
 				Result(&res).
-				WriteFile(f).
+				WriteFile(content).
 				Err(); err != nil {
 				t.Fatal(err)
 			}
+			catalogEntries = append(catalogEntries, at.CatalogEntry())
 		})
 	}
 }

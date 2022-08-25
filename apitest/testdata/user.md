@@ -1,6 +1,14 @@
 # 用户接口文档
 
-## 获取用户信息
+**目录**：
+
+* <a href="#获取用户信息"><b>获取用户信息 -- GET /api/user</b></a>
+
+* <a href="#添加用户信息"><b>添加用户信息 -- POST /api/user</b></a>
+
+* <a href="#导入用户信息(以csv文件格式)"><b>导入用户信息(以csv文件格式) -- POST /api/user/import</b></a>
+
+## <a name="获取用户信息" href="#获取用户信息">获取用户信息</a>
 
 `GET /api/user`
 
@@ -43,7 +51,7 @@ name=jd&userId=1
 
 </details>
 
-## 添加用户信息
+## <a name="添加用户信息" href="#添加用户信息">添加用户信息</a>
 
 `POST /api/user`
 
@@ -89,7 +97,7 @@ Example:
 
 </details>
 
-## 导入用户信息(以csv文件格式)
+## <a name="导入用户信息(以csv文件格式)" href="#导入用户信息(以csv文件格式)">导入用户信息(以csv文件格式)</a>
 
 `POST /api/user/import`
 
