@@ -3,6 +3,7 @@ package apitest
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"testing"
 
 	"github.com/donnol/tools/apitest/testtype"
@@ -157,6 +158,48 @@ func TestCatalog(t *testing.T) {
 			}
 			if got != tt.want {
 				t.Errorf("Catalog() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_getFieldNameByTag(t *testing.T) {
+	type args struct {
+		tag     reflect.StructTag
+		tagName string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		{name: "1", args: args{
+			tag: reflect.StructTag(`json:"jd"`),
+		}, want: "jd"},
+		{name: "2", args: args{
+			tag:     reflect.StructTag(`form:"jd"`),
+			tagName: "form",
+		}, want: "jd"},
+		{name: "3", args: args{
+			tag:     reflect.StructTag(`xml:"jd"`),
+			tagName: "xml",
+		}, want: "jd"},
+		{name: "3", args: args{
+			tag:     reflect.StructTag(`xml:"jd"`),
+			tagName: "xml",
+		}, want: "jd"},
+		{name: "4", args: args{
+			tag:     reflect.StructTag(`custom:"jd"`),
+			tagName: "custom",
+		}, want: "jd"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.args.tagName != "" {
+				RegisterTagName(tt.args.tagName)
+			}
+			if got := getFieldNameByTag(tt.args.tag); got != tt.want {
+				t.Errorf("getFieldNameByTag() = %v, want %v", got, tt.want)
 			}
 		})
 	}

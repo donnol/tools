@@ -9,7 +9,6 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -641,7 +640,7 @@ func toMap(vtype reflect.Type, vvalue reflect.Value, m map[string]any) {
 			}
 			toMap(fieldType, value, m)
 		} else {
-			jsonName := field.Tag.Get("json")
+			jsonName := getFieldNameByTag(field.Tag)
 			if jsonName == "-" { // 忽略字段
 				continue
 			}
@@ -699,7 +698,7 @@ func copyResponseBody(resp *http.Response) ([]byte, int64, error) {
 	}
 
 	// 重置resp.Body
-	resp.Body = ioutil.NopCloser(buf)
+	resp.Body = io.NopCloser(buf)
 
 	return buf.Bytes(), int64(buf.Len()), nil
 }
@@ -763,6 +762,27 @@ func structToBlock(name, method string, data any) (string, map[string]string, er
 	return block, kcm, nil
 }
 
+var (
+	tagNames []string
+)
+
+func RegisterTagName(tagName string) {
+	tagNames = append(tagNames, tagName)
+}
+
+func getFieldNameByTag(tag reflect.StructTag) string {
+	for _, tagName := range tagNames {
+		v, ok := tag.Lookup(tagName)
+		if !ok {
+			continue
+		}
+		return v
+	}
+
+	// at least get once by json
+	return tag.Get("json")
+}
+
 func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string) {
 	var lines string
 	var keyCommentMap = make(map[string]string)
@@ -773,7 +793,7 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 		isEmbed := field.StructField.Anonymous
 
 		// 字段名
-		fieldName = field.StructField.Tag.Get("json")
+		fieldName = getFieldNameByTag(field.StructField.Tag)
 		if fieldName == "-" {
 			continue
 		}
