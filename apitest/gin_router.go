@@ -83,6 +83,7 @@ const (
 	
 	<body>
 		<div class="content">
+		<p><a id="gotoindex" href="javascript:;" onclick="gotoIndex()">返回首页</a></p>
 `
 
 	suffixTmpl = `</div>
@@ -92,9 +93,25 @@ const (
     </footer>
 </body>
 <script text="javascript">
-    function directPath(path) {
-        window.location.href = window.location.pathname.replace('/apidoc/index', path)
-    }
+	function getIndexPath() {
+		return '%s/index'
+	}
+	function directPath(path) {
+		window.location.href = window.location.pathname.replace(getIndexPath(), path)
+	}
+	function gotoIndex() {
+		window.location.href = getIndexPath()
+	}
+	function isIndex() {
+		return window.location.pathname === getIndexPath()
+	}
+	function showGotoIndex() {
+		if(isIndex()) {
+			document.getElementById('gotoindex').hidden = true
+		}
+	}
+
+	showGotoIndex()
 </script>
 </html>
 	`
@@ -171,7 +188,7 @@ func GinHandlerAPIDoc(doc *gin.RouterGroup, dir string, brand string) {
 			return err
 		}
 		htmlFileName := fileName + ".html"
-		content := fillContent(buf.Bytes(), brand)
+		content := fillContent(buf.Bytes(), brand, doc.BasePath())
 		os.WriteFile(filepath.Join(dir, htmlFileName), content, os.ModePerm)
 
 		// 注册路由
@@ -204,7 +221,7 @@ func GinHandlerAPIDoc(doc *gin.RouterGroup, dir string, brand string) {
 		log.Errorf("[apidoc] exec index template failed: %v", err)
 		return
 	}
-	content := fillContent(indexBuf.Bytes(), brand)
+	content := fillContent(indexBuf.Bytes(), brand, doc.BasePath())
 	if err := os.WriteFile(indexFilePath, content, os.ModePerm); err != nil {
 		log.Errorf("[apidoc] write file failed: %v", err)
 		return
@@ -212,8 +229,8 @@ func GinHandlerAPIDoc(doc *gin.RouterGroup, dir string, brand string) {
 	doc.StaticFile("/"+indexRoute, indexFilePath)
 }
 
-func fillContent(in []byte, brand string) []byte {
-	suffixContent := fmt.Sprintf(suffixTmpl, brand)
+func fillContent(in []byte, brand, parentPath string) []byte {
+	suffixContent := fmt.Sprintf(suffixTmpl, brand, parentPath)
 
 	content := []byte(prefixTmpl)
 	content = append(content, in...)
