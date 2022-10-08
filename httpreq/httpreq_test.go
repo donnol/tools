@@ -41,6 +41,17 @@ func TestDoHTTPRequest(t *testing.T) {
 			},
 			want: result{BgQuality: 50},
 		},
+		{
+			name: "nil",
+			args: args[result]{
+				method:        http.MethodGet,
+				link:          "https://www.bing.com/hp/api/model",
+				body:          nil,
+				codeChecker:   nil,
+				extractResult: nil,
+			},
+			want: result{BgQuality: 50},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

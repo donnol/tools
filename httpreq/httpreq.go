@@ -42,11 +42,17 @@ func Do[R any](
 		return r, err
 	}
 
+	if codeChecker == nil {
+		codeChecker = CodeIs200
+	}
 	err = codeChecker(resp.StatusCode)
 	if err != nil {
 		return r, fmt.Errorf("check code failed: %v, data: %s", err, data)
 	}
 
+	if extractResult == nil {
+		extractResult = JSONExtractor[R]
+	}
 	r, err = extractResult(data)
 	if err != nil {
 		return r, fmt.Errorf("extract result failed: %v, data: %s", err, data)
