@@ -807,11 +807,19 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 			fieldType = fieldType.Elem()
 		}
 
-		index := strings.Index(fieldName, ",")
-		if index != -1 {
-			fieldTypeName = fieldName[index+1:]
-			fieldName = fieldName[:index]
-		} else {
+		parts := strings.Split(fieldName, ",")
+		if len(parts) > 1 {
+			// 名字肯定是第一个
+			fieldName = parts[0]
+
+			for _, part := range parts[1:] {
+				if part == "omitempty" {
+					continue
+				}
+				fieldTypeName = part
+			}
+		}
+		if fieldTypeName == "" {
 			switch fieldType.Kind() {
 			case reflect.Struct:
 				fieldTypeName = "object"
