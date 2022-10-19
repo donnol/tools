@@ -14,15 +14,22 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/pkg/errors v0.9.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
+	github.com/samber/lo v1.33.0
 	github.com/smallnest/chanx v0.0.0-20210513123655-46bd697efd41
 	github.com/spf13/cobra v1.0.0
-	github.com/yuin/goldmark v1.2.1
-	golang.org/x/mod v0.3.0
+	github.com/yuin/goldmark v1.4.1
+	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba
-	golang.org/x/tools v0.0.0-20200913032122-97363e29fc9b
+	golang.org/x/tools v0.1.8-0.20211029000441-d6a9af8af023
 )
 
-require github.com/josharian/intern v1.0.0 // indirect
+require (
+	github.com/fogleman/gg v1.3.0 // indirect
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
+	github.com/josharian/intern v1.0.0 // indirect
+	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
+	golang.org/x/image v0.0.0-20200119044424-58c23975cae1 // indirect
+)
 
 require (
 	github.com/deepmap/oapi-codegen v1.3.13 // indirect
@@ -33,6 +40,7 @@ require (
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-xmlfmt/xmlfmt v0.0.0-20220206211657-0a94163c4677
+	github.com/goccy/go-graphviz v0.0.10-0.20220527024716-04a0120c8afb
 	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
@@ -46,7 +54,7 @@ require (
 	github.com/shopspring/decimal v0.0.0-20180709203117-cd690d0c9e24 // indirect
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
-	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
