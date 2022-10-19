@@ -20,13 +20,23 @@ Response header:
 
 Param - Query
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Return
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Example:
 
@@ -34,7 +44,7 @@ Example:
 <summary>Param</summary>
 
 ```json
-name=jd&userId=1
+addr=%7B+%7D&age=0&id=1&name=jd&phone=
 ```
 
 </details>
@@ -44,8 +54,14 @@ name=jd&userId=1
 
 ```json
 {
-    "userId": 1,
-    "name": "jd"
+    "id": "1", // id
+    "name": "jd", // 名字
+    "age": 0, // 年龄
+    "addr": { // 地址
+        "city": "", // 城市
+        "home": "" // 家
+    },
+    "phone": "" // 手机
 }
 ```
 
@@ -63,13 +79,23 @@ Response header:
 
 Param - Body
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Return
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Example:
 
@@ -78,8 +104,14 @@ Example:
 
 ```json
 {
-    "userId": 1,
-    "name": "jd"
+    "id": "1", // id
+    "name": "jd", // 名字
+    "age": 0, // 年龄
+    "addr": { // 地址
+        "city": "", // 城市
+        "home": "" // 家
+    },
+    "phone": "" // 手机
 }
 ```
 
@@ -90,8 +122,14 @@ Example:
 
 ```json
 {
-    "userId": 1,
-    "name": "jd"
+    "id": "1", // id
+    "name": "jd", // 名字
+    "age": 0, // 年龄
+    "addr": { // 地址
+        "city": "", // 城市
+        "home": "" // 家
+    },
+    "phone": "" // 手机
 }
 ```
 
@@ -109,13 +147,23 @@ Response header:
 
 Param - Body
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Return
 
-* userId (*uint*) 
-* name (*string*) 
+* id (*string*) id
+* name (*string*) 名字
+* age (*int*) 年龄
+* addr (*object*) 地址
+    * city (*string*) 城市
+    * home (*string*) 家
+* phone (*string*) 手机
 
 Example:
 
@@ -124,8 +172,14 @@ Example:
 
 ```json
 {
-    "userId": 1,
-    "name": "jd"
+    "id": "1", // id
+    "name": "jd", // 名字
+    "age": 0, // 年龄
+    "addr": { // 地址
+        "city": "", // 城市
+        "home": "" // 家
+    },
+    "phone": "" // 手机
 }
 ```
 
@@ -136,8 +190,14 @@ Example:
 
 ```json
 {
-    "userId": 1,
-    "name": "jd"
+    "id": "1", // id
+    "name": "jd", // 名字
+    "age": 0, // 年龄
+    "addr": { // 地址
+        "city": "", // 城市
+        "home": "" // 家
+    },
+    "phone": "" // 手机
 }
 ```
 

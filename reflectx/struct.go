@@ -152,6 +152,16 @@ const (
 	descriptionKey = "description"
 )
 
+var (
+	structCommentCache = make(map[string]StructCommentEntity)
+)
+
+type StructCommentEntity struct {
+	StructName    string
+	StructComment map[string]string
+	FieldComment  map[string]string
+}
+
 func resolve(structName string) (map[string]string, map[string]string, error) {
 	return resolveWithParser(structName)
 }
@@ -159,6 +169,10 @@ func resolve(structName string) (map[string]string, map[string]string, error) {
 func resolveWithParser(structName string) (map[string]string, map[string]string, error) {
 	var structCommentMap = make(map[string]string)
 	var fieldCommentMap = make(map[string]string)
+
+	if ent, ok := structCommentCache[structName]; ok {
+		return ent.StructComment, ent.FieldComment, nil
+	}
 
 	ip := &importpath.ImportPath{}
 	path, err := ip.GetByCurrentDir()
@@ -187,15 +201,26 @@ func resolveWithParser(structName string) (map[string]string, map[string]string,
 
 	var exist bool
 	for _, oneStruct := range structs {
+		// 缓存
+		var tmpStructCommentMap = make(map[string]string)
+		var tmpFieldCommentMap = make(map[string]string)
+		tmpStructCommentMap[commentKey] = strings.TrimSpace(oneStruct.Comment)
+		tmpStructCommentMap[descriptionKey] = strings.TrimSpace(oneStruct.Doc)
+		for _, field := range oneStruct.Fields {
+			tmpFieldCommentMap[field.Name] = strings.TrimSpace(field.Comment)
+		}
+		structName := path + "." + oneStruct.Name
+		structCommentCache[structName] = StructCommentEntity{
+			StructName:    structName,
+			StructComment: tmpStructCommentMap,
+			FieldComment:  tmpFieldCommentMap,
+		}
+
 		if oneStruct.Name != name {
 			continue
 		}
 		exist = true
-		structCommentMap[commentKey] = strings.TrimSpace(oneStruct.Comment)
-		structCommentMap[descriptionKey] = strings.TrimSpace(oneStruct.Doc)
-		for _, field := range oneStruct.Fields {
-			fieldCommentMap[field.Name] = strings.TrimSpace(field.Comment)
-		}
+		structCommentMap, fieldCommentMap = tmpStructCommentMap, tmpFieldCommentMap
 	}
 	if !exist {
 		debug.Printf("Can't find comment info of %s", structName)

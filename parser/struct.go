@@ -225,7 +225,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	mockType := s.makeMockName()
 	mockRecv := s.makeMockRecv()
 	proxyFuncName := s.makeProxyFuncName()
-	fmt.Printf("proxyfuncname:%s\n", proxyFuncName)
+	debug.Printf("proxyfuncname:%s\n", proxyFuncName)
 
 	proxyFunc := "func " + proxyFuncName + "(base " + s.Name + ") *" + mockType + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))

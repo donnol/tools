@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/donnol/tools/apitest/testtype"
 	"github.com/donnol/tools/reflectx"
 	"github.com/getkin/kin-openapi/openapi2"
 	"github.com/gin-gonic/gin"
@@ -197,17 +198,11 @@ func TestWriteFile(t *testing.T) {
 	} {
 		t.Run(tc.method+"-"+tc.path, func(t *testing.T) {
 			at := NewAT(tc.path, tc.method, tc.comment, tc.header, nil)
-			var res = struct {
-				UserId uint   `json:"userId"`
-				Name   string `json:"name"`
-			}{
-				UserId: 1,
-				Name:   "jd",
+			var res = testtype.User{
+				Id:   1,
+				Name: "jd",
 			}
-			if err := at.SetParam(&struct {
-				UserId uint   `json:"userId"`
-				Name   string `json:"name"`
-			}{UserId: 1, Name: "jd"}).
+			if err := at.SetParam(&testtype.User{Id: 1, Name: "jd"}).
 				FakeRun().
 				Result(&res).
 				WriteFile(content).
