@@ -2,7 +2,7 @@ package importpath
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -85,7 +85,7 @@ func getPkgPathFromDir() (pkgPath string, err error) {
 	}
 
 	// 解析目录里的go.mod文件，获取模块名
-	content, err := ioutil.ReadFile(modfilePath)
+	content, err := os.ReadFile(modfilePath)
 	if err != nil {
 		return
 	}
@@ -105,4 +105,49 @@ func (p *ImportPath) SplitImportPathWithType(importPathWithType string) (string,
 		panic(fmt.Errorf("路径有问题: %s", importPathWithType))
 	}
 	return importPathWithType[:lastDotIndex], importPathWithType[lastDotIndex+1:]
+}
+
+type Module struct {
+	modfile.Module
+
+	RelDir string
+}
+
+// FindAllModule 寻找目录下的所有module
+func (p *ImportPath) FindAllModule(dir string) (mods []Module, err error) {
+	if err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if errors.Is(err, os.ErrPermission) {
+				return filepath.SkipDir
+			}
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+		if d.Name() != "go.mod" {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		f, err := modfile.Parse(path, content, nil)
+		if err != nil {
+			return err
+		}
+
+		mod := Module{
+			Module: *f.Module,
+			RelDir: filepath.Dir(path),
+		}
+		mods = append(mods, mod)
+
+		return nil
+	}); err != nil {
+		return
+	}
+	return
 }

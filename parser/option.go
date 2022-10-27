@@ -32,4 +32,5 @@ const (
 	OpCallgraph  Op = "callgraph"
 	OpGenProject Op = "genproject"
 	OpGenProxy   Op = "genproxy"
+	OpFind       Op = "find"
 )

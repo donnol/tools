@@ -7,7 +7,6 @@ import (
 	"go/printer"
 	"go/token"
 	"go/types"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -578,6 +577,31 @@ like:
 			}
 		},
 	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpFind),
+		Short: "find all module under directory",
+		Long: `
+		-p path specify a directory like: '~/a/b/c'
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// 标志
+			flags := cmd.Flags()
+			path, _ := flags.GetString("path")
+
+			fmt.Printf("| %s | %+v\n", parser.OpFind, path)
+
+			p := &importpath.ImportPath{}
+			mods, err := p.FindAllModule(path)
+			if err != nil {
+				panic(err)
+			}
+
+			for _, mod := range mods {
+				fmt.Printf("module: %s, %s, %s\n", mod.RelDir, mod.Mod.Path, mod.Mod.Version)
+			}
+		},
+	})
 }
 
 var (
@@ -685,7 +709,7 @@ func collectGoFileDir(dir string) ([]string, error) {
 
 func checkDirHaveGoFile(dir string) (bool, error) {
 
-	fileInfos, err := ioutil.ReadDir(dir)
+	fileInfos, err := os.ReadDir(dir)
 	if err != nil {
 		return false, err
 	}

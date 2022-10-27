@@ -61,3 +61,40 @@ func TestGetCurrentDirPath(t *testing.T) {
 		t.Fatalf("Bad result: %v != %v\n", path, want)
 	}
 }
+
+func TestImportPath_FindAllModule(t *testing.T) {
+	type args struct {
+		dir string
+	}
+	tests := []struct {
+		name     string
+		p        *ImportPath
+		args     args
+		wantMods []Module
+		wantErr  bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			p:    &ImportPath{},
+			args: args{
+				dir: "../../",
+			},
+			wantMods: nil,
+			wantErr:  false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &ImportPath{}
+			gotMods, err := p.FindAllModule(tt.args.dir)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ImportPath.FindAllModule() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if len(gotMods) == 0 {
+				t.Errorf("ImportPath.FindAllModule() = %v", gotMods)
+			}
+		})
+	}
+}
