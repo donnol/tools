@@ -29,6 +29,24 @@ type (
 	}
 )
 
+type (
+	UserEmbedReq struct {
+		UserReq
+
+		Addr []string
+	}
+	UserEmbed struct {
+		UserTable
+
+		Addr []string
+	}
+	UserEmbedTwice struct {
+		UserEmbed
+
+		Like []string
+	}
+)
+
 func TestConvByFieldName(t *testing.T) {
 	from := UserReq{
 		Phone: "12345678901",
@@ -40,6 +58,41 @@ func TestConvByFieldName(t *testing.T) {
 		t.Fatalf("converse failed: %s != %s\n", to.Phone, from.Phone)
 	}
 
+	{
+		from := UserEmbedReq{
+			UserReq: UserReq{
+				Phone: "123",
+			},
+		}
+		to := &UserEmbed{}
+		ConvByFieldName(from, to)
+		if to.Phone == "" || to.Phone != from.Phone {
+			t.Fatalf("converse failed: %s != %s\n", to.Phone, from.Phone)
+		}
+	}
+
+	{
+		from := UserReq{
+			Phone: "123",
+		}
+		to := &UserEmbed{}
+		ConvByFieldName(from, to)
+		if to.Phone == "" || to.Phone != from.Phone {
+			t.Fatalf("converse failed: %s != %s\n", to.Phone, from.Phone)
+		}
+	}
+
+	{
+		from := UserReq{
+			Phone: "123",
+		}
+		to := &UserEmbedTwice{}
+		ConvByFieldName(from, to)
+		if to.Phone == "" || to.Phone != from.Phone {
+			t.Fatalf("converse failed: %s != %s\n", to.Phone, from.Phone)
+		}
+	}
+
 	to.Id = 1
 	to.Name = "jd"
 	to.Age = 18
@@ -47,11 +100,25 @@ func TestConvByFieldName(t *testing.T) {
 	to2 := &UserResp{}
 	ConvByFieldName(to, to2)
 
-	if to2.Name != to.Name {
+	if to2.Name == "" || to2.Name != to.Name {
 		t.Fatalf("converse failed: %s != %s\n", to2.Name, to.Name)
 	}
-	if to2.Age != to.Age {
+	if to2.Age == 0 || to2.Age != to.Age {
 		t.Fatalf("converse failed: %d != %d\n", to2.Age, to.Age)
+	}
+
+	{
+		from := UserEmbedReq{
+			Addr: []string{"luowei", "haidao"},
+		}
+		to := &UserEmbed{}
+		ConvByFieldName(from, to)
+		if len(to.Addr) != len(from.Addr) {
+			t.Fatalf("conv failed of length %v != %v", len(to.Addr), len(from.Addr))
+		}
+		if !reflect.DeepEqual(to.Addr, from.Addr) {
+			t.Fatalf("conv failed of not equal %v != %v", to.Addr, from.Addr)
+		}
 	}
 }
 

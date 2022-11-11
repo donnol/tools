@@ -42,19 +42,27 @@ func toByFieldNameReflect[F, T any](from F, to T) {
 	}
 
 	toValue := reflect.ValueOf(to)
-	toType := toValue.Type()
-	if toType.Kind() != reflect.Pointer {
+	if toValue.Type().Kind() != reflect.Pointer {
 		panic(fmt.Errorf("to is not a pointer"))
 	}
 	toElemValue := toValue.Elem()
-	toElemType := toType.Elem()
-	if toElemType.Kind() != reflect.Struct {
+	if toElemValue.Type().Kind() != reflect.Struct {
 		panic(fmt.Errorf("to is not a struct"))
 	}
 
-	for i := 0; i < toElemType.NumField(); i++ {
-		field := toElemType.Field(i)
+	tobytoByFieldNameReflectValue(fromValue, toElemValue)
+}
+
+func tobytoByFieldNameReflectValue(fromValue, toElemValue reflect.Value) {
+	for i := 0; i < toElemValue.Type().NumField(); i++ {
+		field := toElemValue.Type().Field(i)
 		fieldValue := toElemValue.Field(i)
+
+		// 匿名
+		if field.Anonymous {
+			tobytoByFieldNameReflectValue(fromValue, fieldValue)
+			continue
+		}
 
 		fromFieldValue := fromValue.FieldByName(field.Name)
 		if fromFieldValue == emptyValue {
