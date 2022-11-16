@@ -11,19 +11,31 @@ func Do[R any](
 	client *http.Client,
 	method string,
 	link string,
-	body io.Reader,
+	reader io.Reader,
 	codeChecker CodeChecker,
 	extractResult ResultExtractor[R],
 ) (R, error) {
 	var r R
 
 	if method == "" || link == "" {
-		return r, fmt.Errorf("bad param")
+		return r, fmt.Errorf("bad param: method or link is empty")
+	}
+
+	body := reader
+	var header http.Header
+	if hr, ok := reader.(*HeaderAndReader); ok {
+		body = hr.reader
+		header = hr.Header()
 	}
 
 	req, err := http.NewRequest(method, link, body)
 	if err != nil {
 		return r, err
+	}
+	for k, v := range header {
+		for _, vv := range v {
+			req.Header.Set(k, vv)
+		}
 	}
 
 	if client == nil {

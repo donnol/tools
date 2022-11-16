@@ -1,6 +1,7 @@
 package httpreq
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"reflect"
@@ -49,6 +50,24 @@ func TestDoHTTPRequest(t *testing.T) {
 				body:          nil,
 				codeChecker:   nil,
 				extractResult: nil,
+			},
+			want: result{BgQuality: 50},
+		},
+		{
+			name: "header",
+			args: args[result]{
+				method: http.MethodGet,
+				link:   "https://www.bing.com/hp/api/model",
+				body: NewHeaderAndReader(nil, http.Header{
+					"User-Agent": []string{`Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36`},
+				}),
+				codeChecker: func(code int) error {
+					if code != http.StatusOK {
+						return fmt.Errorf("code is %d", code)
+					}
+					return nil
+				},
+				extractResult: JSONExtractor[result],
 			},
 			want: result{BgQuality: 50},
 		},
