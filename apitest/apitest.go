@@ -1,13 +1,14 @@
 // Package apitest Usage:
-// 	NewAT(xxx).
-// 		SetParam(xxx).
-// 		Debug().
-// 		Run().
-// 		EqualCode(xxx).
-// 		Result(xxx).
-// 		Equal(...).
-// 		WriteFile(xxx).
-// 		Err()
+//
+//	NewAT(xxx).
+//		SetParam(xxx).
+//		Debug().
+//		Run().
+//		EqualCode(xxx).
+//		Result(xxx).
+//		Equal(...).
+//		WriteFile(xxx).
+//		Err()
 package apitest
 
 import (
@@ -296,7 +297,7 @@ func (at *AT) Result(r any) *AT {
 	if at.resp != nil {
 		data, _, err := copyResponseBody(at.resp)
 		if err != nil {
-			at.setErr(err)
+			at.setErr(fmt.Errorf("xml decode failed: %+v, resp: %+v", err, at.resp))
 			return at
 		}
 
@@ -304,12 +305,12 @@ func (at *AT) Result(r any) *AT {
 		switch at.resultFormat {
 		case "xml":
 			if err := xml.Unmarshal(data, r); err != nil {
-				at.setErr(err)
+				at.setErr(fmt.Errorf("xml decode failed: %+v, data: %s", err, data))
 				return at
 			}
 		default:
 			if err := json.Unmarshal(data, r); err != nil {
-				at.setErr(err)
+				at.setErr(fmt.Errorf("json decode failed: %+v, data: %s", err, data))
 				return at
 			}
 		}
