@@ -490,15 +490,15 @@ func (at *AT) toSwagger(w io.Writer) *AT {
 
 // === Get api info ===
 
-func (at *AT) Title(w io.Writer) string {
+func (at *AT) Title() string {
 	return at.comment
 }
 
-func (at *AT) Method(w io.Writer) string {
+func (at *AT) Method() string {
 	return at.method
 }
 
-func (at *AT) Path(w io.Writer) string {
+func (at *AT) Path() string {
 	return at.path
 }
 
