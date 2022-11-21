@@ -510,6 +510,10 @@ func (at *AT) CatalogEntry() CatalogEntry {
 	}
 }
 
+func (at *AT) Resp() *http.Response {
+	return at.resp
+}
+
 func (at *AT) Err() error {
 	return at.err
 }
