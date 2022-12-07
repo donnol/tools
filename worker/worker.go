@@ -75,10 +75,10 @@ func (job Job) run() error {
 // Worker 工人
 type Worker struct {
 	// 所有管道都要有make, read, write, close操作
-	limitChan chan struct{}       // 并发控制管道
-	stopChan  chan struct{}       // 停止管道
-	jobChan   chanx.UnboundedChan // 工作管道
-	errChan   chan error          // 错误管道
+	limitChan chan struct{}             // 并发控制管道
+	stopChan  chan struct{}             // 停止管道
+	jobChan   *chanx.UnboundedChan[Job] // 工作管道
+	errChan   chan error                // 错误管道
 
 	wg   *sync.WaitGroup
 	stop bool // 是否调用了Stop方法
@@ -92,7 +92,7 @@ func New(n int) *Worker {
 	return &Worker{
 		limitChan: make(chan struct{}, n),
 		stopChan:  make(chan struct{}),
-		jobChan:   chanx.NewUnboundedChan(n),
+		jobChan:   chanx.NewUnboundedChan[Job](n),
 		errChan:   make(chan error, errCount),
 		wg:        new(sync.WaitGroup),
 	}
@@ -114,7 +114,7 @@ func (w *Worker) start() {
 				continue
 			}
 
-			w.do(job.(Job))
+			w.do(job)
 
 		case <-w.stopChan:
 			w.close()
