@@ -24,6 +24,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -111,6 +112,18 @@ func NewAT(
 // New 克隆一个新的AT
 func (at *AT) New() *AT {
 	return at.clone()
+}
+
+// SetScheme 设置scheme
+func (at *AT) SetScheme(scheme string) *AT {
+	at.scheme = scheme
+	return at
+}
+
+// SetHost 设置host
+func (at *AT) SetHost(host string) *AT {
+	at.host = host
+	return at
 }
 
 // SetPort 设置端口，如":8080"
@@ -543,9 +556,15 @@ func (at *AT) makeURL() *AT {
 		path = rawurl.Path
 		query = rawurl.Query().Encode()
 	}
+	var realHost string
+	if strings.Contains(host, ":") {
+		realHost = host
+	} else {
+		realHost = host + port
+	}
 	at.url = url.URL{
 		Scheme:   scheme,
-		Host:     host + port,
+		Host:     realHost,
 		Path:     path,
 		RawQuery: query,
 	}
