@@ -29,10 +29,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/donnol/tools/reflectx"
 	"github.com/donnol/tools/worker"
-	"github.com/getkin/kin-openapi/openapi2"
-	"github.com/getkin/kin-openapi/openapi3"
 )
 
 // Predefined error
@@ -396,108 +393,6 @@ func (at *AT) WriteFile(w io.Writer) *AT {
 		at.setErr(err)
 		return at
 	}
-	return at
-}
-
-func (at *AT) toSwagger(w io.Writer) *AT {
-	// new a swagger
-	dataStruct, err := reflectx.ResolveStruct(at.param)
-	if err != nil {
-		return at
-	}
-	fields := dataStruct.GetFields()
-	var in string
-	switch at.method {
-	case http.MethodGet, http.MethodDelete:
-		in = "path"
-	case http.MethodPost, http.MethodPut, http.MethodPatch:
-		in = "body"
-	}
-	params := make([]*openapi2.Parameter, 0)
-	for _, field := range fields {
-		params = append(params, &openapi2.Parameter{
-			In:          in,
-			Name:        field.Name, // FIXME
-			Type:        field.Type.Name(),
-			Description: field.Comment,
-		})
-	}
-	resps := map[string]*openapi2.Response{
-		"0": {
-			Ref:         "",
-			Description: "",
-			Schema: &openapi3.SchemaRef{
-				Value: &openapi3.Schema{},
-			},
-			Examples: map[string]any{
-				"0": at.result,
-			},
-		},
-	}
-	operation := &openapi2.Operation{
-		Summary:     at.comment,
-		Description: at.comment,
-		Deprecated:  false,
-		Tags:        []string{},
-		OperationID: "",
-		Parameters:  params,
-		Responses:   resps,
-		Consumes:    []string{},
-		Produces:    []string{},
-		Schemes:     []string{},
-		Security:    nil,
-	}
-	var pathItem = new(openapi2.PathItem)
-	switch at.method {
-	case http.MethodGet:
-		pathItem.Get = operation
-	case http.MethodPost:
-		pathItem.Post = operation
-	case http.MethodPut:
-		pathItem.Put = operation
-	case http.MethodPatch:
-		pathItem.Patch = operation
-	case http.MethodDelete:
-		pathItem.Delete = operation
-	case http.MethodHead:
-		pathItem.Head = operation
-	case http.MethodOptions:
-		pathItem.Options = operation
-	}
-	yt := openapi2.T{
-		Swagger: "2.0",
-		Info: openapi3.Info{
-			Title: "API doc",
-		},
-		Schemes: []string{
-			"https",
-			"http",
-		},
-		Consumes: []string{},
-		Produces: []string{},
-		Host:     at.host,
-		BasePath: "",
-		Paths: map[string]*openapi2.PathItem{
-			at.path: pathItem,
-		},
-		Definitions: map[string]*openapi3.SchemaRef{},
-		Parameters:  map[string]*openapi2.Parameter{},
-		Responses:   map[string]*openapi2.Response{},
-		Security:    []map[string][]string{},
-		Tags:        []*openapi3.Tag{},
-	}
-	_ = yt
-
-	data, err := json.Marshal(yt)
-	if err != nil {
-		at.setErr(err)
-		return at
-	}
-	JSONIndent(w, data)
-
-	// merge swagger json - https://github.com/evanphx/json-patch: MergeMergePatches merge json string
-	// merge struct or map - https://github.com/imdario/mergo
-
 	return at
 }
 

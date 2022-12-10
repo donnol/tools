@@ -214,34 +214,6 @@ func TestWriteFile(t *testing.T) {
 	}
 }
 
-func TestToSwagger(t *testing.T) {
-	f, err := os.OpenFile("testdata/swagger_test.json", os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer f.Close()
-
-	at := NewAT("/api/user", http.MethodGet, "获取用户信息", nil, nil)
-	var res = struct {
-		UserId uint   `json:"userId"`
-		Name   string `json:"name"`
-	}{
-		UserId: 1,
-		Name:   "jd",
-	}
-
-	if err := at.SetParam(&struct {
-		UserId uint   `json:"userId"`
-		Name   string `json:"name"`
-	}{UserId: 1, Name: "jd"}).
-		FakeRun().
-		Result(&res).
-		toSwagger(f).
-		Err(); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestSwaggerJSON(t *testing.T) {
 	t.Run("json", func(t *testing.T) {
 		data, err := os.ReadFile("./testdata/swagger.json")
