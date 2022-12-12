@@ -564,6 +564,10 @@ func (at *AT) run(realDo bool) *AT {
 	copy(reqBody, body.Bytes())
 	at.reqBody = reqBody
 
+	if at.debug {
+		fmt.Printf("will do request %s %s with body %s\n", at.method, u.String(), body.String())
+	}
+
 	// 新建请求
 	req, err := http.NewRequest(at.method, u.String(), body)
 	if err != nil {
