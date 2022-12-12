@@ -459,7 +459,7 @@ like:
 					packages.NeedCompiledGoFiles |
 					packages.NeedImports |
 					packages.NeedDeps |
-					packages.NeedExportsFile |
+					packages.NeedExportFile |
 					packages.NeedTypes |
 					packages.NeedSyntax |
 					packages.NeedTypesInfo |
