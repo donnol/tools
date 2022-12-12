@@ -19,6 +19,7 @@ import (
 	"github.com/donnol/tools/importpath"
 	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/donnol/tools/parser"
+	"github.com/donnol/tools/sqlparser"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 
@@ -68,6 +69,29 @@ func main() {
 }
 
 func addSubCommand(rootCmd *cobra.Command) {
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpGenStructFromSQL),
+		Short: "gen struct from sql",
+		Long:  `tbc sql2struct 'create table user(id int not null)'`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				fmt.Printf("please specify sql\n")
+				os.Exit(1)
+			}
+
+			s := sqlparser.ParseCreateSQL(args[0])
+			if s == nil {
+				fmt.Printf("parse sql failed\n")
+				os.Exit(1)
+			}
+			if err := s.Gen(os.Stdout, sqlparser.Option{}); err != nil {
+				fmt.Printf("gen struct failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println()
+		},
+	})
+
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   string(parser.OpInterface),
 		Short: "gen struct interface",
