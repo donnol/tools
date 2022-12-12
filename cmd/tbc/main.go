@@ -55,7 +55,7 @@ func main() {
 	var funcName string
 	rootCmd.PersistentFlags().StringVarP(&funcName, "func", "", "", "specify func or method name")
 	var ignore string
-	rootCmd.PersistentFlags().StringVarP(&ignore, "ignore", "", "", "specify ignore package")
+	rootCmd.PersistentFlags().StringVarP(&ignore, "ignore", "", "", "specify ignore package or field")
 	var depth int
 	rootCmd.PersistentFlags().IntVarP(&depth, "depth", "", 0, "specify depth")
 
@@ -75,8 +75,17 @@ func addSubCommand(rootCmd *cobra.Command) {
 		Long:  `tbc sql2struct 'create table user(id int not null)'`,
 		Run: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
-				fmt.Printf("please specify sql\n")
+				fmt.Printf("please specify sql like 'create table user(id int not null)'\n")
 				os.Exit(1)
+			}
+
+			// 标志
+			flags := cmd.Flags()
+			ignoreField, _ := flags.GetString("ignore")
+
+			opt := sqlparser.Option{}
+			if ignoreField != "" {
+				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
 			}
 
 			s := sqlparser.ParseCreateSQL(args[0])
@@ -84,7 +93,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 				fmt.Printf("parse sql failed\n")
 				os.Exit(1)
 			}
-			if err := s.Gen(os.Stdout, sqlparser.Option{}); err != nil {
+			if err := s.Gen(os.Stdout, opt); err != nil {
 				fmt.Printf("gen struct failed: %v\n", err)
 				os.Exit(1)
 			}

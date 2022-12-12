@@ -12,6 +12,7 @@ import (
 	"github.com/pingcap/tidb/parser"
 	"github.com/pingcap/tidb/parser/ast"
 	_ "github.com/pingcap/tidb/types/parser_driver"
+	"github.com/samber/lo"
 )
 
 func ParseCreateSQL(sql string) *Struct {
@@ -255,6 +256,11 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 	{
 		for _, field := range s.Fields {
 			fieldName := field.Name
+			if len(opt.IgnoreField) > 0 {
+				if lo.IndexOf(opt.IgnoreField, fieldName) > -1 {
+					continue
+				}
+			}
 			if opt.FieldNameMapper != nil {
 				fieldName = opt.FieldNameMapper(fieldName)
 			}

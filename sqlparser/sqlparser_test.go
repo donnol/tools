@@ -168,6 +168,7 @@ func TestStruct_Gen(t *testing.T) {
 func TestParseCreateSQL(t *testing.T) {
 	type args struct {
 		sql string
+		opt Option
 	}
 	tests := []struct {
 		name  string
@@ -207,6 +208,40 @@ updated_at timestamp not null comment '更新时间'
 		return "user"
 	}`,
 		},
+		{
+			name: "ignoreField",
+			args: args{
+				sql: `create table user (
+id integer unsigned not null comment 'id',
+name varchar(255) not null comment '名称', 
+created_at datetime not null comment '创建时间', 
+updated_at timestamp not null comment '更新时间'
+) comment '用户表'`,
+				opt: Option{
+					IgnoreField: []string{"updated_at"},
+				},
+			},
+			want: &Struct{
+				Name:    "user",
+				Comment: "用户表",
+				Fields: []Field{
+					{Name: "id", Type: "int unsigned", Tag: "", Comment: "id"},
+					{Name: "name", Type: "varchar", Tag: "", Comment: "名称"},
+					{Name: "created_at", Type: "datetime", Tag: "", Comment: "创建时间"},
+					{Name: "updated_at", Type: "timestamp", Tag: "", Comment: "更新时间"},
+				},
+			},
+			wantW: "\n" +
+				"	// User 用户表" + "\n" +
+				"	type User struct {" + "\n" +
+				"		Id uint `json:\"id\" db:\"id\"` // id" + "\n" +
+				"		Name string `json:\"name\" db:\"name\"` // 名称" + "\n" +
+				"		CreatedAt time.Time `json:\"createdAt\" db:\"created_at\"` // 创建时间" + "\n" +
+				"	}" + "\n" +
+				`	func (User) TableName() string {
+		return "user"
+	}`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -214,7 +249,7 @@ updated_at timestamp not null comment '更新时间'
 				t.Errorf("ParseCreateSQL() = %+v, want %+v", got, tt.want)
 			} else {
 				buf := new(bytes.Buffer)
-				if err := got.Gen(buf, Option{}); err != nil {
+				if err := got.Gen(buf, tt.args.opt); err != nil {
 					t.Error(err)
 				}
 				if buf.String() != tt.wantW {
