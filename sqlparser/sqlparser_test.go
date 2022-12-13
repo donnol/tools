@@ -259,3 +259,94 @@ updated_at timestamp not null comment '更新时间'
 		})
 	}
 }
+
+func TestStruct_GenData(t *testing.T) {
+	type args struct {
+		sql string
+		n   int64
+		opt Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantW   string
+		wantErr bool
+	}{
+		{
+			name: "full",
+			args: args{
+				sql: `create table user (
+					id integer unsigned not null comment 'id',
+					name varchar(255) not null comment '名称', 
+					created_at datetime not null comment '创建时间', 
+					updated_at timestamp not null comment '更新时间'
+					) comment '用户表'`,
+				n:   0,
+				opt: doption,
+			},
+			wantW: "INSERT IGNORE INTO `user` (" + "\n" +
+				"`id`," + "\n" +
+				"`name`," + "\n" +
+				"`created_at`," + "\n" +
+				"`updated_at`" + "\n" +
+				") VALUES (",
+			wantErr: false,
+		},
+		{
+			name: "ignore",
+			args: args{
+				sql: `create table user (
+					id integer unsigned not null comment 'id',
+					name varchar(255) not null comment '名称', 
+					created_at datetime not null comment '创建时间', 
+					updated_at timestamp not null comment '更新时间'
+					) comment '用户表'`,
+				n: 0,
+				opt: Option{
+					IgnoreField: []string{"updated_at"},
+				},
+			},
+			wantW: "INSERT IGNORE INTO `user` (" + "\n" +
+				"`id`," + "\n" +
+				"`name`," + "\n" +
+				"`created_at`" + "\n" +
+				") VALUES (",
+			wantErr: false,
+		},
+		{
+			name: "ignore",
+			args: args{
+				sql: `create table user (
+					id integer unsigned not null comment 'id',
+					name varchar(255) not null comment '名称', 
+					created_at datetime not null comment '创建时间', 
+					updated_at timestamp not null comment '更新时间'
+					) comment '用户表'`,
+				n: 2,
+				opt: Option{
+					IgnoreField: []string{"updated_at"},
+				},
+			},
+			wantW: "INSERT IGNORE INTO `user` (" + "\n" +
+				"`id`," + "\n" +
+				"`name`," + "\n" +
+				"`created_at`" + "\n" +
+				") VALUES (",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := ParseCreateSQL(tt.args.sql)
+			w := &bytes.Buffer{}
+			if err := s.GenData(w, tt.args.n, tt.args.opt); (err != nil) != tt.wantErr {
+				t.Errorf("Struct.GenData() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			// 因为值是随机生成的，所以只比较前面部分
+			if gotW := w.String(); len(gotW) <= len(tt.wantW) {
+				t.Errorf("Struct.GenData() = %v, want %v", gotW, tt.wantW)
+			}
+		})
+	}
+}

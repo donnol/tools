@@ -58,6 +58,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&ignore, "ignore", "", "", "specify ignore package or field")
 	var depth int
 	rootCmd.PersistentFlags().IntVarP(&depth, "depth", "", 0, "specify depth")
+	var amount int64
+	rootCmd.PersistentFlags().Int64VarP(&amount, "amount", "", 1, "specify amount")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -69,6 +71,40 @@ func main() {
 }
 
 func addSubCommand(rootCmd *cobra.Command) {
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpGenDataForTable),
+		Short: "gen insert statement with data for table",
+		Long:  `tbc gendata 'create table user(id int not null)'`,
+		Run: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				fmt.Printf("please specify sql like 'create table user(id int not null)'\n")
+				os.Exit(1)
+			}
+
+			// 标志
+			flags := cmd.Flags()
+			ignoreField, _ := flags.GetString("ignore")
+			amount, _ := flags.GetInt64("amount")
+
+			opt := sqlparser.Option{}
+			if ignoreField != "" {
+				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
+			}
+
+			s := sqlparser.ParseCreateSQL(args[0])
+			if s == nil {
+				fmt.Printf("parse sql failed\n")
+				os.Exit(1)
+			}
+			fmt.Printf("----- Begin generate %d -----\n", amount)
+			if err := s.GenData(os.Stdout, amount, opt); err != nil {
+				fmt.Printf("gen struct failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("----- Generate finish -----")
+		},
+	})
+
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   string(parser.OpGenStructFromSQL),
 		Short: "gen struct from sql",

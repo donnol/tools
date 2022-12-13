@@ -34,4 +34,5 @@ const (
 	OpGenProxy         Op = "genproxy"
 	OpFind             Op = "find"
 	OpGenStructFromSQL Op = "sql2struct"
+	OpGenDataForTable  Op = "gendata"
 )
