@@ -60,6 +60,10 @@ func main() {
 	rootCmd.PersistentFlags().IntVarP(&depth, "depth", "", 0, "specify depth")
 	var amount int64
 	rootCmd.PersistentFlags().Int64VarP(&amount, "amount", "", 1, "specify amount")
+	var file string
+	rootCmd.PersistentFlags().StringVarP(&file, "file", "f", "", "specify input file")
+	var pkgName string
+	rootCmd.PersistentFlags().StringVar(&pkgName, "pkg", "", "specify package name")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -76,32 +80,61 @@ func addSubCommand(rootCmd *cobra.Command) {
 		Short: "gen insert statement with data for table",
 		Long:  `tbc gendata 'create table user(id int not null)'`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				fmt.Printf("please specify sql like 'create table user(id int not null)'\n")
-				os.Exit(1)
-			}
-
 			// 标志
 			flags := cmd.Flags()
 			ignoreField, _ := flags.GetString("ignore")
 			amount, _ := flags.GetInt64("amount")
+			file, _ := flags.GetString("file")
+			output, _ := flags.GetString("output")
+
+			sql := ""
+			if len(args) > 0 {
+				sql = args[0]
+			} else if file != "" {
+				data, err := os.ReadFile(file)
+				if err != nil {
+					fmt.Printf("read file failed: %v\n", err)
+					os.Exit(1)
+				}
+				sql = string(data)
+			}
+
+			if sql == "" {
+				fmt.Printf("please specify sql like 'create table user(id int not null)' or input file by --file=xxx.sql\n")
+				os.Exit(1)
+			}
 
 			opt := sqlparser.Option{}
 			if ignoreField != "" {
 				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
 			}
 
-			s := sqlparser.ParseCreateSQL(args[0])
+			s := sqlparser.ParseCreateSQL(sql)
 			if s == nil {
 				fmt.Printf("parse sql failed\n")
 				os.Exit(1)
 			}
+			w := os.Stdout
+			if output != "" {
+				f, err := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+				if err != nil {
+					fmt.Printf("open file %s failed: %v\n", output, err)
+					os.Exit(1)
+				}
+				defer f.Close()
+
+				w = f
+			}
 			fmt.Printf("----- Begin generate %d -----\n", amount)
-			if err := s.GenData(os.Stdout, amount, opt); err != nil {
+			if err := s.GenData(w, amount, opt); err != nil {
 				fmt.Printf("gen struct failed: %v\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("----- Generate finish -----")
+			if output == "" {
+				fmt.Println("----- Generate finish -----")
+			} else {
+				fmt.Printf("----- Generate finish: %s -----\n", output)
+			}
 		},
 	})
 
@@ -110,27 +143,72 @@ func addSubCommand(rootCmd *cobra.Command) {
 		Short: "gen struct from sql",
 		Long:  `tbc sql2struct 'create table user(id int not null)'`,
 		Run: func(cmd *cobra.Command, args []string) {
-			if len(args) == 0 {
-				fmt.Printf("please specify sql like 'create table user(id int not null)'\n")
-				os.Exit(1)
-			}
-
 			// 标志
 			flags := cmd.Flags()
 			ignoreField, _ := flags.GetString("ignore")
+			file, _ := flags.GetString("file")
+			output, _ := flags.GetString("output")
+			pkg, _ := flags.GetString("pkg")
+
+			sql := ""
+			if len(args) > 0 {
+				sql = args[0]
+			} else if file != "" {
+				data, err := os.ReadFile(file)
+				if err != nil {
+					fmt.Printf("read file failed: %v\n", err)
+					os.Exit(1)
+				}
+				sql = string(data)
+			}
+
+			if sql == "" {
+				fmt.Printf("please specify sql like 'create table user(id int not null)' or input file by --file=xxx.sql\n")
+				os.Exit(1)
+			}
 
 			opt := sqlparser.Option{}
 			if ignoreField != "" {
 				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
 			}
 
-			s := sqlparser.ParseCreateSQL(args[0])
+			s := sqlparser.ParseCreateSQL(sql)
 			if s == nil {
 				fmt.Printf("parse sql failed\n")
 				os.Exit(1)
 			}
-			if err := s.Gen(os.Stdout, opt); err != nil {
+
+			w := os.Stdout
+			if output != "" {
+				f, err := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+				if err != nil {
+					fmt.Printf("open file %s failed: %v\n", output, err)
+					os.Exit(1)
+				}
+				defer f.Close()
+
+				w = f
+			}
+			buf := new(bytes.Buffer)
+			if pkg != "" {
+				_, err := buf.WriteString("package " + pkg)
+				if err != nil {
+					fmt.Printf("write package name failed: %v\n", err)
+					os.Exit(1)
+				}
+			}
+			if err := s.Gen(buf, opt); err != nil {
 				fmt.Printf("gen struct failed: %v\n", err)
+				os.Exit(1)
+			}
+			content, err := format.Format(output, buf.String(), false)
+			if err != nil {
+				fmt.Printf("format failed: %v\n", err)
+				os.Exit(1)
+			}
+			_, err = w.WriteString(content)
+			if err != nil {
+				fmt.Printf("write to w failed: %v\n", err)
 				os.Exit(1)
 			}
 			fmt.Println()
