@@ -67,6 +67,9 @@ type AT struct {
 	reqBody []byte
 	resp    *http.Response
 
+	// 接口实现情况
+	status Status
+
 	// 文档
 	doc string
 
@@ -166,6 +169,38 @@ func (at *AT) SetFile(file string) *AT {
 	}
 
 	at.file = file
+	return at
+}
+
+type (
+	Status int
+)
+
+const (
+	StatusNone           Status = 0
+	StatusInDesign       Status = 1 // 设计中
+	StatusNotImplemented Status = 2 // 未实现
+	StatusImplementation Status = 3 // 实现中
+	StatusImplemented    Status = 4 // 已实现
+)
+
+func (s Status) String() string {
+	r := ""
+	switch s {
+	case StatusInDesign:
+		r = "设计中"
+	case StatusNotImplemented:
+		r = "未实现"
+	case StatusImplementation:
+		r = "实现中"
+	case StatusImplemented:
+		r = "已实现"
+	}
+	return r
+}
+
+func (at *AT) SetStatus(status Status) *AT {
+	at.status = status
 	return at
 }
 
@@ -411,8 +446,9 @@ func (at *AT) Path() string {
 }
 
 func (at *AT) CatalogEntry() CatalogEntry {
+	commentWithStatus := at.commentWithStatus()
 	return CatalogEntry{
-		Title:  at.comment,
+		Title:  commentWithStatus,
 		Method: at.method,
 		Path:   at.path,
 	}
@@ -652,6 +688,14 @@ func toAnchor(str string) string {
 	return fmt.Sprintf(`<a name="%s" href="#%s">%s</a>`, str, str, str)
 }
 
+func (at *AT) commentWithStatus() string {
+	commentWithStatus := at.comment
+	if at.status != 0 {
+		commentWithStatus += " [" + at.status.String() + "]"
+	}
+	return commentWithStatus
+}
+
 // 生成文档
 func (at *AT) makeDoc() *AT {
 
@@ -661,9 +705,11 @@ func (at *AT) makeDoc() *AT {
 	path := at.path
 	key := apiKey(path, at.method)
 
+	commentWithStatus := at.commentWithStatus()
+
 	// 标题
 	// 支持anchor：<a name="推送样本到目标" href="#推送样本到目标">推送样本到目标</a>
-	doc += "## " + toAnchor(at.comment) + "\n\n"
+	doc += "## " + toAnchor(commentWithStatus) + "\n\n"
 
 	// 方法
 	doc += "`" + key + "`\n\n"
