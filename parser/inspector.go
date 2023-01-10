@@ -487,10 +487,12 @@ func (ins *Inspector) inspectStmt(stmt ast.Stmt, from string) (result StmtResult
 		panic(fmt.Errorf("BadStmt: %+v", stmtValue))
 
 	case *ast.BlockStmt:
-		for _, single := range stmtValue.List {
-			debug.Printf(from+"block stmt: %+v\n", single)
-			res := ins.inspectStmt(single, from)
-			result = result.Merge(res)
+		if stmtValue != nil {
+			for _, single := range stmtValue.List {
+				debug.Printf(from+"block stmt: %+v\n", single)
+				res := ins.inspectStmt(single, from)
+				result = result.Merge(res)
+			}
 		}
 		debug.Printf(from+"block funcMap: %+v\n", result.funcMap)
 

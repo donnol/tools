@@ -83,6 +83,14 @@ func ToEntity(v any) Entity {
 	}
 }
 
+func ToEntityBatch(vs ...any) []Entity {
+	r := make([]Entity, 0, len(vs))
+	for _, v := range vs {
+		r = append(r, ToEntity(v))
+	}
+	return r
+}
+
 func MakeEdge(from, to Entity, tail, head string) Edge {
 	findex := lo.IndexOf(from.Ports(), tail)
 	if findex == -1 {
