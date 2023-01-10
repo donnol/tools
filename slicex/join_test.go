@@ -28,6 +28,16 @@ func UserBookMatcher(book Book, user User) bool {
 	return book.Author == user.Id
 }
 
+func UserBookCompare(book Book, user User) int {
+	if book.Author == user.Id {
+		return 0
+	} else if book.Author > user.Id {
+		return 1
+	} else {
+		return -1
+	}
+}
+
 var (
 	users = []User{
 		{Id: 1, Name: "jd"},
@@ -43,6 +53,74 @@ var (
 
 func TestJoin(t *testing.T) {
 	r := Join(books, users, UserBookMatcher, func(book Book, user User) BookWithUser {
+		return BookWithUser{
+			Book:     book,
+			UserName: user.Name,
+		}
+	})
+	want := []BookWithUser{
+		{Book{1, "hello", 1}, "jd"},
+		{Book{2, "world", 1}, "jd"},
+		{Book{3, "good", 2}, "jc"},
+		{Book{4, "job", 2}, "jc"},
+	}
+	if !reflect.DeepEqual(r, want) {
+		t.Errorf("bad case, %+v != %+v", r, want)
+	}
+}
+
+func TestJoinBNL(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		size int
+	}{
+		{
+			name: "1",
+			size: 1,
+		},
+		{
+			name: "2",
+			size: 2,
+		},
+		{
+			name: "3",
+			size: 3,
+		},
+		{
+			name: "4",
+			size: 4,
+		},
+		{
+			name: "5",
+			size: 5,
+		},
+	} {
+		setJoinBNLBufSize(tt.size)
+
+		r := joinBNL(books, users, UserBookMatcher, func(book Book, user User) BookWithUser {
+			return BookWithUser{
+				Book:     book,
+				UserName: user.Name,
+			}
+		})
+		want := []BookWithUser{
+			{Book{1, "hello", 1}, "jd"},
+			{Book{2, "world", 1}, "jd"},
+			{Book{3, "good", 2}, "jc"},
+			{Book{4, "job", 2}, "jc"},
+		}
+		if !reflect.DeepEqual(r, want) {
+			t.Errorf("bad case, %+v != %+v", r, want)
+		}
+	}
+}
+
+func TestJoinSortMerge(t *testing.T) {
+	r := joinSortMerge(books, users, func(i, j int) bool {
+		return books[i].Author < books[j].Author
+	}, func(i, j int) bool {
+		return users[i].Id < users[j].Id
+	}, UserBookCompare, func(book Book, user User) BookWithUser {
 		return BookWithUser{
 			Book:     book,
 			UserName: user.Name,
@@ -126,6 +204,76 @@ func BenchmarkJoin100X(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		Join(books, users, UserBookMatcher, func(book Book, user User) BookWithUser {
+			return BookWithUser{
+				Book:     book,
+				UserName: user.Name,
+			}
+		})
+	}
+}
+
+func BenchmarkJoinBNL(b *testing.B) {
+	setJoinBNLBufSize(2)
+
+	for i := 0; i < b.N; i++ {
+		joinBNL(books, users, UserBookMatcher, func(book Book, user User) BookWithUser {
+			return BookWithUser{
+				Book:     book,
+				UserName: user.Name,
+			}
+		})
+	}
+}
+
+func BenchmarkJoinBNL100X(b *testing.B) {
+	users := lo.RepeatBy(100, func(index int) User {
+		return users[1]
+	})
+	books := lo.RepeatBy(100, func(index int) Book {
+		return books[3]
+	})
+
+	for i := 0; i < b.N; i++ {
+		Join(books, users, UserBookMatcher, func(book Book, user User) BookWithUser {
+			return BookWithUser{
+				Book:     book,
+				UserName: user.Name,
+			}
+		})
+	}
+}
+
+func BenchmarkJoinSortMerge(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		joinSortMerge(books, users, func(i, j int) bool {
+			return books[i].Author < books[j].Author
+		}, func(i, j int) bool {
+			return users[i].Id < users[j].Id
+		}, UserBookCompare, func(book Book, user User) BookWithUser {
+			return BookWithUser{
+				Book:     book,
+				UserName: user.Name,
+			}
+		})
+	}
+}
+
+var (
+	usersX1MSM = lo.RepeatBy(1_000_000, func(index int) User {
+		return users[1]
+	})
+	booksX1MSM = lo.RepeatBy(1_000_000, func(index int) Book {
+		return books[3]
+	})
+)
+
+func BenchmarkJoinSortMerge100X(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		joinSortMerge(booksX1MSM, usersX1MSM, func(i, j int) bool {
+			return booksX1MSM[i].Author < booksX1MSM[j].Author
+		}, func(i, j int) bool {
+			return usersX1MSM[i].Id < usersX1MSM[j].Id
+		}, UserBookCompare, func(book Book, user User) BookWithUser {
 			return BookWithUser{
 				Book:     book,
 				UserName: user.Name,
