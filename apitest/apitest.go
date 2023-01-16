@@ -13,6 +13,7 @@ package apitest
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
@@ -260,7 +261,7 @@ func (at *AT) PressureRun(n, c int) *AT {
 
 	var total int64
 	for i := 0; i < n; i++ {
-		if err := w.Push(worker.MakeJob(func() error {
+		if err := w.Push(*worker.NewJob(func(ctx context.Context) error {
 			// 运行
 			at.run(true)
 

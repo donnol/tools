@@ -22,7 +22,7 @@ type Notifier interface {
 // Logger 日志接口
 type Logger interface {
 	SetNotify(notify Notifier)
-	Fatalf(format string, v ...any)
+	Fatalf(format string, v ...any) // Mark the level fatal, but not panic or exit
 	Errorf(format string, v ...any)
 	Warnf(format string, v ...any)
 	Infof(format string, v ...any)

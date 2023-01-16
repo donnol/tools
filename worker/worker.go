@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"log"
 	"os"
@@ -34,34 +35,32 @@ func init() {
 
 // Job 工作
 type Job struct {
-	do Do // 方法
+	doctx DoWithCtx
 
 	timeout time.Duration // 超时时间
 
 	errorHandler ErrorHandler // 错误处理方法
 }
 
-// Do 执行
-type Do func() error
+type DoWithCtx func(ctx context.Context) error
 
 // ErrorHandler 错误处理方法
 type ErrorHandler func(error)
 
-// MakeJob 新建工作
-func MakeJob(do Do, timeout time.Duration, eh ErrorHandler) Job {
-	return Job{
-		do:           do,
+func NewJob(do DoWithCtx, timeout time.Duration, eh ErrorHandler) *Job {
+	return &Job{
+		doctx:        do,
 		timeout:      timeout,
 		errorHandler: eh,
 	}
 }
 
-func (job Job) run() error {
-	if job.do == nil {
+func (job *Job) run(ctx context.Context) error {
+	if job.doctx == nil {
 		return ErrNilJobDo
 	}
 
-	if err := job.do(); err != nil {
+	if err := job.doctx(ctx); err != nil {
 		if job.errorHandler != nil {
 			job.errorHandler(err)
 		} else {
@@ -140,44 +139,51 @@ func (w *Worker) do(job Job) {
 		}()
 
 		// 执行
+		ctx := context.Background()
 		if job.timeout > 0 {
-			w.doWithTimeout(job)
+			w.doWithTimeout(ctx, job)
 		} else {
-			if err := job.run(); err != nil {
+			if err := job.run(ctx); err != nil {
 				w.errChan <- err
 			}
 		}
 	}(job)
 }
 
-func (w *Worker) doWithTimeout(job Job) {
+func (w *Worker) doWithTimeout(ctx context.Context, job Job) {
 	var retChan = make(chan struct{})
 	defer close(retChan)
 
 	// 执行
-	go func(retChan chan struct{}) {
+	ctx, cancel := context.WithTimeout(ctx, job.timeout)
+	defer cancel()
+	go func(ctx context.Context, retChan chan struct{}) {
 		defer func() {
 			if r := recover(); r != nil {
 				logger.Fatalf("job exec: %+v\n", r)
 			}
+
+			retChan <- struct{}{}
 		}()
 
-		// FIXME:
 		// 这里不能直接这样调，如果job.run()执行的时间很长，将不会在超时后停止
 		// 正确的做法应该是传入一个stopper管道，用户端代码需要适时检查该管道，判断是否需要停止
 		// 参照'github.com/eapache/go-resiliency'的deadline包
-		if err := job.run(); err != nil {
+		// 所以，传入ctx
+		if err := job.run(ctx); err != nil {
 			w.errChan <- err
 		}
-		retChan <- struct{}{}
-	}(retChan)
+	}(ctx, retChan)
 
 	// 超时
 	timer := time.NewTimer(job.timeout)
 	select {
-	case <-retChan:
+	case <-retChan: // 子线程完成了，马上返回，无需再等
 		return
 	case t := <-timer.C:
+		// 时间到了，要发送消息给子线程，让它停止运行
+		// 通过`defer cancel()`
+
 		logger.Fatalf("job timeout: %+v\n", t)
 		return
 	}
@@ -224,7 +230,7 @@ func (w *Worker) Push(job Job) error {
 	if w.stop {
 		return ErrWorkerIsStop
 	}
-	if job.do == nil {
+	if job.doctx == nil {
 		return ErrNilJobDo
 	}
 

@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"log"
 	"testing"
 	"time"
@@ -11,14 +12,14 @@ func TestWorker(t *testing.T) {
 	w.Start()
 
 	if err := w.Push(Job{
-		do: func() error {
+		doctx: func(ctx context.Context) error {
 			panic("terriable")
 		},
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := w.Push(Job{
-		do: func() error {
+		doctx: func(ctx context.Context) error {
 			for i := 0; i < 10; i++ {
 				log.Printf("i: %d\n", i)
 			}
@@ -30,8 +31,9 @@ func TestWorker(t *testing.T) {
 	for i := 10; i < 1000; i++ {
 		tmp := i
 		if err := w.Push(Job{
-			do: func() error {
-				log.Printf("i: %d\n", tmp)
+			doctx: func(ctx context.Context) error {
+				_ = tmp
+				// log.Printf("i: %d\n", tmp)
 				return nil
 			},
 		}); err != nil {
@@ -45,7 +47,7 @@ func TestWorker(t *testing.T) {
 	w.Stop()
 
 	if err := w.Push(Job{
-		do: func() error {
+		doctx: func(ctx context.Context) error {
 			log.Printf("Push after stop.")
 			return nil
 		},
@@ -61,7 +63,7 @@ func TestWorkerBuffer(t *testing.T) {
 	for i := 1; i <= 1000; i++ {
 		tmp := i
 		if err := w.Push(Job{
-			do: func() error {
+			doctx: func(ctx context.Context) error {
 				_ = tmp
 				time.Sleep(500 * time.Millisecond)
 
@@ -73,7 +75,8 @@ func TestWorkerBuffer(t *testing.T) {
 
 		bl := w.jobChan.BufLen()
 		if bl != 0 {
-			t.Logf("buffer len: %d\n", bl)
+			_ = bl
+			// t.Logf("buffer len: %d\n", bl)
 		}
 	}
 	t.Log("finish")
@@ -85,7 +88,7 @@ func TestWorkerWithTimeout(t *testing.T) {
 	w := New(0)
 	w.Start()
 
-	job := MakeJob(func() error {
+	job := NewJob(func(ctx context.Context) error {
 		for i := 0; i < 10; i++ {
 			log.Printf("i: %d\n", i)
 			time.Sleep(1 * time.Second)
@@ -94,7 +97,7 @@ func TestWorkerWithTimeout(t *testing.T) {
 	}, 5*time.Second, func(err error) {
 		log.Printf("err is %v\n", err)
 	})
-	if err := w.Push(job); err != nil {
+	if err := w.Push(*job); err != nil {
 		t.Fatal(err)
 	}
 

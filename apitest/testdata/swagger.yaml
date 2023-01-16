@@ -1,20 +1,16 @@
 extensionprops: {}
 swagger: "2.0"
 info:
-    extensionprops: {}
     title: Swagger Petstore
     description: 'This is a sample server Petstore server.  You can find out more about Swagger at [http://swagger.io](http://swagger.io) or on [irc.freenode.net, #swagger](http://swagger.io/irc/).  For this sample, you can use the api key `special-key` to test the authorization filters.'
     termsOfService: http://swagger.io/terms/
     contact:
-        extensionprops: {}
         email: apiteam@swagger.io
     license:
-        extensionprops: {}
         name: Apache 2.0
         url: http://www.apache.org/licenses/LICENSE-2.0.html
     version: 1.0.3
 externalDocs:
-    extensionprops: {}
     description: Find out more about Swagger
     url: http://swagger.io
 schemes:
@@ -38,8 +34,7 @@ paths:
                   description: Pet object that needs to be added to the store
                   required: true
                   schema:
-                    ref: '#/definitions/Pet'
-                    value: null
+                    $ref: '#/definitions/Pet'
             responses:
                 "405":
                     extensionprops: {}
@@ -67,8 +62,7 @@ paths:
                   description: Pet object that needs to be added to the store
                   required: true
                   schema:
-                    ref: '#/definitions/Pet'
-                    value: null
+                    $ref: '#/definitions/Pet'
             responses:
                 "400":
                     extensionprops: {}
@@ -143,8 +137,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: '#/definitions/Pet'
-                        value: null
+                        $ref: '#/definitions/Pet'
                 "400":
                     extensionprops: {}
                     description: Invalid ID supplied
@@ -224,8 +217,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: '#/definitions/ApiResponse'
-                        value: null
+                        $ref: '#/definitions/ApiResponse'
             consumes:
                 - multipart/form-data
             produces:
@@ -251,27 +243,20 @@ paths:
                   type: array
                   required: true
                   items:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                        enum:
-                            - available
-                            - pending
-                            - sold
-                        default: available
+                    type: string
+                    enum:
+                        - available
+                        - pending
+                        - sold
+                    default: available
             responses:
                 "200":
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: ""
-                        value:
-                            extensionprops: {}
-                            type: array
-                            items:
-                                ref: '#/definitions/Pet'
-                                value: null
+                        type: array
+                        items:
+                            $ref: '#/definitions/Pet'
                 "400":
                     extensionprops: {}
                     description: Invalid status value
@@ -299,22 +284,15 @@ paths:
                   type: array
                   required: true
                   items:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
+                    type: string
             responses:
                 "200":
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: ""
-                        value:
-                            extensionprops: {}
-                            type: array
-                            items:
-                                ref: '#/definitions/Pet'
-                                value: null
+                        type: array
+                        items:
+                            $ref: '#/definitions/Pet'
                 "400":
                     extensionprops: {}
                     description: Invalid tag value
@@ -339,10 +317,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: ""
-                        value:
-                            extensionprops: {}
-                            type: object
+                        type: object
             produces:
                 - application/json
             security:
@@ -362,15 +337,13 @@ paths:
                   description: order placed for purchasing the pet
                   required: true
                   schema:
-                    ref: '#/definitions/Order'
-                    value: null
+                    $ref: '#/definitions/Order'
             responses:
                 "200":
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: '#/definitions/Order'
-                        value: null
+                        $ref: '#/definitions/Order'
                 "400":
                     extensionprops: {}
                     description: Invalid Order
@@ -429,8 +402,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: '#/definitions/Order'
-                        value: null
+                        $ref: '#/definitions/Order'
                 "400":
                     extensionprops: {}
                     description: Invalid ID supplied
@@ -456,8 +428,7 @@ paths:
                   description: Created user object
                   required: true
                   schema:
-                    ref: '#/definitions/User'
-                    value: null
+                    $ref: '#/definitions/User'
             responses:
                 default:
                     extensionprops: {}
@@ -511,8 +482,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: '#/definitions/User'
-                        value: null
+                        $ref: '#/definitions/User'
                 "400":
                     extensionprops: {}
                     description: Invalid username supplied
@@ -542,8 +512,7 @@ paths:
                   description: Updated user object
                   required: true
                   schema:
-                    ref: '#/definitions/User'
-                    value: null
+                    $ref: '#/definitions/User'
             responses:
                 "400":
                     extensionprops: {}
@@ -571,13 +540,9 @@ paths:
                   description: List of user object
                   required: true
                   schema:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: array
-                        items:
-                            ref: '#/definitions/User'
-                            value: null
+                    type: array
+                    items:
+                        $ref: '#/definitions/User'
             responses:
                 default:
                     extensionprops: {}
@@ -602,13 +567,9 @@ paths:
                   description: List of user object
                   required: true
                   schema:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: array
-                        items:
-                            ref: '#/definitions/User'
-                            value: null
+                    type: array
+                    items:
+                        $ref: '#/definitions/User'
             responses:
                 default:
                     extensionprops: {}
@@ -644,10 +605,7 @@ paths:
                     extensionprops: {}
                     description: successful operation
                     schema:
-                        ref: ""
-                        value:
-                            extensionprops: {}
-                            type: string
+                        type: string
                     headers:
                         X-Expires-After:
                             parameter:
@@ -682,231 +640,122 @@ paths:
                 - application/xml
 definitions:
     ApiResponse:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            properties:
-                code:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int32
-                message:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                type:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
+        type: object
+        properties:
+            code:
+                type: integer
+                format: int32
+            message:
+                type: string
+            type:
+                type: string
     Category:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            xml:
-                extensionprops: {}
-                name: Category
-            properties:
-                id:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                name:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
+        type: object
+        xml:
+            name: Category
+        properties:
+            id:
+                type: integer
+                format: int64
+            name:
+                type: string
     Order:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            xml:
-                extensionprops: {}
-                name: Order
-            properties:
-                complete:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: boolean
-                id:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                petId:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                quantity:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int32
-                shipDate:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                        format: date-time
-                status:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                        description: Order Status
-                        enum:
-                            - placed
-                            - approved
-                            - delivered
+        type: object
+        xml:
+            name: Order
+        properties:
+            complete:
+                type: boolean
+            id:
+                type: integer
+                format: int64
+            petId:
+                type: integer
+                format: int64
+            quantity:
+                type: integer
+                format: int32
+            shipDate:
+                type: string
+                format: date-time
+            status:
+                type: string
+                description: Order Status
+                enum:
+                    - placed
+                    - approved
+                    - delivered
     Pet:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            xml:
-                extensionprops: {}
-                name: Pet
-            required:
-                - name
-                - photoUrls
-            properties:
-                category:
-                    ref: '#/definitions/Category'
-                    value: null
-                id:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                name:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                        example: doggie
-                photoUrls:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: array
-                        xml:
-                            extensionprops: {}
-                            wrapped: true
-                        items:
-                            ref: ""
-                            value:
-                                extensionprops: {}
-                                type: string
-                                xml:
-                                    extensionprops: {}
-                                    name: photoUrl
-                status:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                        description: pet status in the store
-                        enum:
-                            - available
-                            - pending
-                            - sold
-                tags:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: array
-                        xml:
-                            extensionprops: {}
-                            wrapped: true
-                        items:
-                            ref: '#/definitions/Tag'
-                            value: null
+        type: object
+        xml:
+            name: Pet
+        required:
+            - name
+            - photoUrls
+        properties:
+            category:
+                $ref: '#/definitions/Category'
+            id:
+                type: integer
+                format: int64
+            name:
+                type: string
+                example: doggie
+            photoUrls:
+                type: array
+                xml:
+                    wrapped: true
+                items:
+                    type: string
+                    xml:
+                        name: photoUrl
+            status:
+                type: string
+                description: pet status in the store
+                enum:
+                    - available
+                    - pending
+                    - sold
+            tags:
+                type: array
+                xml:
+                    wrapped: true
+                items:
+                    $ref: '#/definitions/Tag'
     Tag:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            xml:
-                extensionprops: {}
-                name: Tag
-            properties:
-                id:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                name:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
+        type: object
+        xml:
+            name: Tag
+        properties:
+            id:
+                type: integer
+                format: int64
+            name:
+                type: string
     User:
-        ref: ""
-        value:
-            extensionprops: {}
-            type: object
-            xml:
-                extensionprops: {}
-                name: User
-            properties:
-                email:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                firstName:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                id:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int64
-                lastName:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                password:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                phone:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
-                userStatus:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: integer
-                        format: int32
-                        description: User Status
-                username:
-                    ref: ""
-                    value:
-                        extensionprops: {}
-                        type: string
+        type: object
+        xml:
+            name: User
+        properties:
+            email:
+                type: string
+            firstName:
+                type: string
+            id:
+                type: integer
+                format: int64
+            lastName:
+                type: string
+            password:
+                type: string
+            phone:
+                type: string
+            userStatus:
+                type: integer
+                format: int32
+                description: User Status
+            username:
+                type: string
 securityDefinitions:
     api_key:
         extensionprops: {}
@@ -922,20 +771,15 @@ securityDefinitions:
             read:pets: read your pets
             write:pets: modify pets in your account
 tags:
-    - extensionprops: {}
-      name: pet
+    - name: pet
       description: Everything about your Pets
       externalDocs:
-        extensionprops: {}
         description: Find out more
         url: http://swagger.io
-    - extensionprops: {}
-      name: store
+    - name: store
       description: Access to Petstore orders
-    - extensionprops: {}
-      name: user
+    - name: user
       description: Operations about user
       externalDocs:
-        extensionprops: {}
         description: Find out more about our store
         url: http://swagger.io
