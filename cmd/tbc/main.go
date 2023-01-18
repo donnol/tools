@@ -20,6 +20,7 @@ import (
 	"github.com/donnol/tools/internal/utils/debug"
 	"github.com/donnol/tools/parser"
 	"github.com/donnol/tools/sqlparser"
+	"github.com/twpayne/go-jsonstruct"
 	"golang.org/x/tools/go/ast/astutil"
 	"golang.org/x/tools/go/packages"
 
@@ -75,6 +76,71 @@ func main() {
 }
 
 func addSubCommand(rootCmd *cobra.Command) {
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpGenStructFromJSON),
+		Short: "gen struct from json",
+		Long:  `tbc json2struct '{"name": "jack"}'`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// 标志
+			flags := cmd.Flags()
+			file, _ := flags.GetString("file")
+			output, _ := flags.GetString("output")
+
+			jsonstr := ""
+			if len(args) > 0 {
+				jsonstr = args[0]
+			} else if file != "" {
+				data, err := os.ReadFile(file)
+				if err != nil {
+					fmt.Printf("read file failed: %v\n", err)
+					os.Exit(1)
+				}
+				jsonstr = string(data)
+			}
+
+			if jsonstr == "" {
+				fmt.Printf("please specify json like '{\"name\": \"jack\"}' or input file by --file=xxx.json\n")
+				os.Exit(1)
+			}
+
+			obr, err := jsonstruct.ObserveJSON(bytes.NewReader([]byte(jsonstr)))
+			if err != nil {
+				fmt.Printf("parse json failed: %+v\n", err)
+				os.Exit(1)
+			}
+			gen := jsonstruct.NewGenerator()
+			data, err := gen.GoCode(obr)
+			if err != nil {
+				fmt.Printf("gen go code failed: %+v\n", err)
+				os.Exit(1)
+			}
+
+			w := os.Stdout
+			if output != "" {
+				f, err := os.OpenFile(output, os.O_CREATE|os.O_TRUNC|os.O_RDWR, os.ModePerm)
+				if err != nil {
+					fmt.Printf("open file %s failed: %v\n", output, err)
+					os.Exit(1)
+				}
+				defer f.Close()
+
+				w = f
+			}
+
+			content, err := format.Format(output, string(data), false)
+			if err != nil {
+				fmt.Printf("format failed: %v\n", err)
+				os.Exit(1)
+			}
+			_, err = w.WriteString(content)
+			if err != nil {
+				fmt.Printf("write to w failed: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Println()
+		},
+	})
+
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   string(parser.OpGenDataForTable),
 		Short: "gen insert statement with data for table",

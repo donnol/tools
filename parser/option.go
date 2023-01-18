@@ -25,14 +25,15 @@ type Option struct {
 type Op string
 
 const (
-	OpReplace          Op = "replace"
-	OpMock             Op = "mock"
-	OpImpl             Op = "impl"
-	OpInterface        Op = "interface"
-	OpCallgraph        Op = "callgraph"
-	OpGenProject       Op = "genproject"
-	OpGenProxy         Op = "genproxy"
-	OpFind             Op = "find"
-	OpGenStructFromSQL Op = "sql2struct"
-	OpGenDataForTable  Op = "gendata"
+	OpReplace           Op = "replace"
+	OpMock              Op = "mock"
+	OpImpl              Op = "impl"
+	OpInterface         Op = "interface"
+	OpCallgraph         Op = "callgraph"
+	OpGenProject        Op = "genproject"
+	OpGenProxy          Op = "genproxy"
+	OpFind              Op = "find"
+	OpGenStructFromSQL  Op = "sql2struct"
+	OpGenDataForTable   Op = "gendata"
+	OpGenStructFromJSON Op = "json2struct"
 )

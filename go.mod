@@ -18,6 +18,7 @@ require (
 	github.com/samber/lo v1.36.0
 	github.com/smallnest/chanx v1.1.0
 	github.com/spf13/cobra v1.6.1
+	github.com/twpayne/go-jsonstruct v1.2.0
 	github.com/yuin/goldmark v1.5.3
 	golang.org/x/mod v0.7.0
 	golang.org/x/time v0.3.0
@@ -31,6 +32,8 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/danjacques/gofslock v0.0.0-20191023191349-0a45f885bc37 // indirect
+	github.com/fatih/camelcase v1.0.0 // indirect
+	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/goccy/go-json v0.10.0 // indirect
