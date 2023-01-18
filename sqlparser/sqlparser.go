@@ -41,6 +41,31 @@ func parse(sql string) (*ast.StmtNode, error) {
 	return &stmtNodes, nil
 }
 
+func ParseCreateSQLBatch(sql string) []*Struct {
+	r := make([]*Struct, 0)
+
+	nodes, err := parseBatch(sql)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, node := range nodes {
+		s := &Struct{}
+		node.Accept(s)
+		r = append(r, s)
+	}
+
+	return r
+}
+
+func parseBatch(sql string) ([]ast.StmtNode, error) {
+	p := parser.New()
+	stmtNodes, _, err := p.ParseSQL(sql)
+	if err != nil {
+		return nil, err
+	}
+	return stmtNodes, err
+}
+
 type colX struct {
 	colNames []string
 }
@@ -138,7 +163,7 @@ func (v *Struct) Leave(in ast.Node) (ast.Node, bool) {
 
 func processFieldType(fieldType string) string {
 	// 去掉括号及其内部内容
-	re := regexp.MustCompile(`([(\d)])`)
+	re := regexp.MustCompile(`([(\d)(,)])`)
 	fieldType = re.ReplaceAllString(fieldType, "")
 	return fieldType
 }
@@ -312,6 +337,10 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 			}
 			if opt.FieldNameMapper != nil {
 				fieldName = opt.FieldNameMapper(fieldName)
+			}
+			// 与TableName()方法重名时，添加后缀；因为用了tag来与数据库字段对应，所以影响不大
+			if fieldName == "TableName" {
+				fieldName += "Field"
 			}
 			fieldType := field.Type
 			if opt.FieldTypeMapper != nil {

@@ -350,3 +350,130 @@ func TestStruct_GenData(t *testing.T) {
 		})
 	}
 }
+
+func TestParseCreateSQLBatch(t *testing.T) {
+	type args struct {
+		sql string
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*Struct
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				sql: `create table user (
+					id integer not null,
+					name varchar(255) not null, 
+					created_at datetime not null, 
+					updated_at timestamp not null
+				);
+				create table role (
+					id integer not null,
+					name varchar(255) not null, 
+					created_at datetime not null, 
+					updated_at timestamp not null
+				);
+				`,
+			},
+			want: []*Struct{
+				{Name: "user", Fields: []Field{
+					{
+						Name: "id",
+						Type: "int",
+					},
+					{
+						Name: "name",
+						Type: "varchar",
+					},
+					{
+						Name: "created_at",
+						Type: "datetime",
+					},
+					{
+						Name: "updated_at",
+						Type: "timestamp",
+					},
+				}},
+				{Name: "role", Fields: []Field{
+					{
+						Name: "id",
+						Type: "int",
+					},
+					{
+						Name: "name",
+						Type: "varchar",
+					},
+					{
+						Name: "created_at",
+						Type: "datetime",
+					},
+					{
+						Name: "updated_at",
+						Type: "timestamp",
+					},
+				}},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseCreateSQLBatch(tt.args.sql)
+			for i, one := range got {
+				if !reflect.DeepEqual(*one, *tt.want[i]) {
+					t.Errorf("ParseCreateSQLBatch() = %v, want %v", *one, *tt.want[i])
+				}
+			}
+		})
+	}
+}
+
+func Test_processFieldType(t *testing.T) {
+	type args struct {
+		fieldType string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "1",
+			args: args{
+				fieldType: "integer",
+			},
+			want: "integer",
+		},
+		{
+			name: "2",
+			args: args{
+				fieldType: "varchar(255)",
+			},
+			want: "varchar",
+		},
+		{
+			name: "3",
+			args: args{
+				fieldType: "double(10,2)",
+			},
+			want: "double",
+		},
+		{
+			name: "4",
+			args: args{
+				fieldType: "BIGINT UNSIGNED",
+			},
+			want: "BIGINT UNSIGNED",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := processFieldType(tt.args.fieldType); got != tt.want {
+				t.Errorf("processFieldType() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

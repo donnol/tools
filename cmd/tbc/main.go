@@ -175,8 +175,8 @@ func addSubCommand(rootCmd *cobra.Command) {
 				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
 			}
 
-			s := sqlparser.ParseCreateSQL(sql)
-			if s == nil {
+			ss := sqlparser.ParseCreateSQLBatch(sql)
+			if ss == nil {
 				fmt.Printf("parse sql failed\n")
 				os.Exit(1)
 			}
@@ -192,9 +192,11 @@ func addSubCommand(rootCmd *cobra.Command) {
 				w = f
 			}
 			fmt.Printf("----- Begin generate %d -----\n", amount)
-			if err := s.GenData(w, amount, opt); err != nil {
-				fmt.Printf("gen struct failed: %v\n", err)
-				os.Exit(1)
+			for _, s := range ss {
+				if err := s.GenData(w, amount, opt); err != nil {
+					fmt.Printf("gen struct failed: %v\n", err)
+					os.Exit(1)
+				}
 			}
 			if output == "" {
 				fmt.Println("----- Generate finish -----")
@@ -238,8 +240,8 @@ func addSubCommand(rootCmd *cobra.Command) {
 				opt.IgnoreField = append(opt.IgnoreField, ignoreField)
 			}
 
-			s := sqlparser.ParseCreateSQL(sql)
-			if s == nil {
+			ss := sqlparser.ParseCreateSQLBatch(sql)
+			if ss == nil {
 				fmt.Printf("parse sql failed\n")
 				os.Exit(1)
 			}
@@ -263,13 +265,15 @@ func addSubCommand(rootCmd *cobra.Command) {
 					os.Exit(1)
 				}
 			}
-			if err := s.Gen(buf, opt); err != nil {
-				fmt.Printf("gen struct failed: %v\n", err)
-				os.Exit(1)
+			for _, s := range ss {
+				if err := s.Gen(buf, opt); err != nil {
+					fmt.Printf("gen struct failed: %v\n", err)
+					os.Exit(1)
+				}
 			}
 			content, err := format.Format(output, buf.String(), false)
 			if err != nil {
-				fmt.Printf("format failed: %v\n", err)
+				fmt.Printf("format failed: %v\ncontent: %s\n", err, buf.String())
 				os.Exit(1)
 			}
 			_, err = w.WriteString(content)
