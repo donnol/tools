@@ -787,6 +787,11 @@ func fieldsToLine(level int, fields []reflectx.Field) (string, map[string]string
 	var lines string
 	var keyCommentMap = make(map[string]string)
 	for _, field := range fields {
+		// 非导出
+		if !field.StructField.IsExported() {
+			continue
+		}
+
 		var fieldName, fieldTypeName, fieldComment string
 
 		// 是否内嵌结构体

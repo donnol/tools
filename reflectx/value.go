@@ -15,7 +15,7 @@ import (
 
 var (
 	// ErrParamNotStruct 参数不是结构体
-	ErrParamNotStruct = fmt.Errorf("Please input struct param")
+	ErrParamNotStruct = fmt.Errorf("please input struct param")
 )
 
 // InitParam 初始化-使用反射初始化param里的指定类型

@@ -332,10 +332,47 @@ func (at *AT) EqualCode(wantCode int) *AT {
 	return at
 }
 
+var (
+	resultExtractor = make(map[string]ResultExtractor)
+)
+
+type (
+	ResultExtractor func(data []byte, r any) error
+)
+
+func (at *AT) RegisterResultExtractor(format string, re ResultExtractor) *AT {
+	resultExtractor[format] = re
+	return at
+}
+
+func (at *AT) GetResultExtractor(format string) (re ResultExtractor, ok bool) {
+	re, ok = resultExtractor[format]
+	return re, ok
+}
+
+func extract(format string, data []byte, r any) error {
+	re, ok := resultExtractor[format]
+	if ok {
+		return re(data, r)
+	}
+
+	switch format {
+	case "xml":
+		if err := xml.Unmarshal(data, r); err != nil {
+			return fmt.Errorf("xml decode failed: %+v, data: %s", err, data)
+		}
+	default:
+		if err := json.Unmarshal(data, r); err != nil {
+			return fmt.Errorf("json decode failed: %+v, data: %s", err, data)
+		}
+	}
+	return nil
+}
+
 // Result 获取结果
 func (at *AT) Result(r any) *AT {
 	if r == nil {
-		at.setErr(fmt.Errorf("nil r"))
+		at.setErr(fmt.Errorf("param r can't be nil"))
 		return at
 	}
 
@@ -343,22 +380,14 @@ func (at *AT) Result(r any) *AT {
 	if at.resp != nil {
 		data, _, err := copyResponseBody(at.resp)
 		if err != nil {
-			at.setErr(fmt.Errorf("xml decode failed: %+v, resp: %+v", err, at.resp))
+			at.setErr(fmt.Errorf("copy response body failed: %+v, resp: %+v", err, at.resp))
 			return at
 		}
 
 		// 解析data到r
-		switch at.resultFormat {
-		case "xml":
-			if err := xml.Unmarshal(data, r); err != nil {
-				at.setErr(fmt.Errorf("xml decode failed: %+v, data: %s", err, data))
-				return at
-			}
-		default:
-			if err := json.Unmarshal(data, r); err != nil {
-				at.setErr(fmt.Errorf("json decode failed: %+v, data: %s", err, data))
-				return at
-			}
+		if err := extract(at.resultFormat, data, r); err != nil {
+			at.setErr(err)
+			return at
 		}
 	}
 	at.result = r

@@ -74,3 +74,7 @@ type (
 type InnerModel struct {
 	CornerStone string `json:"stone,omitempty"` // 基石
 }
+
+var (
+	_ = User{}.password
+)

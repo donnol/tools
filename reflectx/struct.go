@@ -274,7 +274,7 @@ func resolveWithGoDoc(structName string) (map[string]string, map[string]string, 
 			if commentLineNo == 0 ||
 				commentLineNo == nowLineNo-1 {
 				commentLineNo = nowLineNo
-				commentLine += fmt.Sprintf("<%s>", strings.TrimSpace(strings.TrimLeft(strings.TrimSpace(line), commentSep)))
+				commentLine += fmt.Sprintf("<%s>", strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), commentSep)))
 			}
 		}
 
@@ -323,8 +323,5 @@ func resolveWithGoDoc(structName string) (map[string]string, map[string]string, 
 
 func isCommentLine(line string) bool {
 	line = strings.TrimSpace(line)
-	if strings.Index(line, commentSep) == 0 {
-		return true
-	}
-	return false
+	return strings.Index(line, commentSep) == 0
 }
