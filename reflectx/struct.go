@@ -90,6 +90,10 @@ func getFields(s Struct) []Field {
 	return fields
 }
 
+func uniqKey(rt reflect.Type) string {
+	return rt.PkgPath() + "|" + rt.Name()
+}
+
 // collectStructComment 收集结构体的注释
 func collectStructComment(refType reflect.Type, s *Struct) error {
 	// 解析-获取结构体注释
@@ -131,9 +135,13 @@ func collectStructComment(refType reflect.Type, s *Struct) error {
 		}
 		// 忽略time.Time
 		if fieldType.Kind() == reflect.Struct && fieldType != reflect.TypeOf((*time.Time)(nil)).Elem() {
-			sf.Struct, err = ResolveStruct(fieldType)
-			if err != nil {
-				return err
+			// 字段类型元素包含本类型
+			isSelfType := uniqKey(fieldType) == uniqKey(refType)
+			if !isSelfType {
+				sf.Struct, err = ResolveStruct(fieldType)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
