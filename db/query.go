@@ -73,9 +73,9 @@ func WrapSQLQueryRows(
 	return nil
 }
 
-// WrapSQLQueryRows query by stmt and args, return values with dest
+// WrapConnFindAll query by stmt and args, return values with dest
 // support many rows
-func WrapSQLFindAll[R Finder](
+func WrapConnFindAll[R Finder](
 	ctx context.Context,
 	db *sql.DB,
 	initial R,
