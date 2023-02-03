@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"reflect"
@@ -15,11 +16,16 @@ type Finder interface {
 	NewScanObjAndFields(colTypes []*sql.ColumnType) (finder Finder, fields []any)
 }
 
+type Storer interface {
+	*sql.DB | *sql.Tx | *sql.Conn
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 // FindAll
 // sql里select的字段数量必须与R的ScanFields方法返回的数组元素数量一致
-func FindAll[R Finder](db *sql.DB, initial R) (r []R, err error) {
+func FindAll[S Storer, R Finder](db S, initial R) (r []R, err error) {
 	query, args := initial.Query()
-	rows, err := db.Query(query, args...) // sql里select了n列
+	rows, err := db.QueryContext(context.TODO(), query, args...) // sql里select了n列
 	if err != nil {
 		return
 	}
@@ -45,7 +51,7 @@ func FindAll[R Finder](db *sql.DB, initial R) (r []R, err error) {
 	return
 }
 
-func FindOne[R Finder](db *sql.DB, ir R) (r R, err error) {
+func FindOne[S Storer, R Finder](db S, ir R) (r R, err error) {
 	res, err := FindAll(db, ir)
 	if err != nil {
 		return r, err

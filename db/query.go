@@ -38,6 +38,7 @@ func WrapSQLConn(
 }
 
 // WrapSQLQueryRows query by stmt and args, return values with dest
+// only support one row
 func WrapSQLQueryRows(
 	ctx context.Context,
 	db *sql.DB,
@@ -70,4 +71,53 @@ func WrapSQLQueryRows(
 	}
 
 	return nil
+}
+
+// WrapSQLQueryRows query by stmt and args, return values with dest
+// support many rows
+func WrapSQLFindAll[R Finder](
+	ctx context.Context,
+	db *sql.DB,
+	initial R,
+) (r []R, err error) {
+
+	if err = WrapSQLConn(ctx, db, func(ctx context.Context, conn *sql.Conn) error {
+		r, err = FindAll(conn, initial)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return
+	}
+
+	return
+}
+
+func WrapTxFindAll[R Finder](
+	ctx context.Context,
+	db *sql.DB,
+	initial R,
+) (r []R, err error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	var success bool
+	defer func() {
+		if !success {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	r, err = FindAll(tx, initial)
+	if err != nil {
+		return nil, err
+	}
+	success = true
+
+	return
 }
