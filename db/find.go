@@ -7,13 +7,13 @@ import (
 	"reflect"
 )
 
-type Finder interface {
+type Finder[R any] interface {
 	Query() (query string, args []any) // 返回查询语句，参数
 
-	// 新建同类型对象，不要使用同一个，用来接收结果
-	// 	这里返回的结果必须是本类型对象，但这种写法其实不能保证(可以返回其它实现了本接口的对象)，使用时注意
-	// fields指定对象字段与列的对应关系
-	NewScanObjAndFields(colTypes []*sql.ColumnType) (finder Finder, fields []any)
+	// 新建结果类型对象，不要使用同一个，用来接收结果
+	// r需要是指针类型
+	// fields需要是字段指针类型，需要与表的列保持一一对应
+	NewScanObjAndFields(colTypes []*sql.ColumnType) (r R, fields []any)
 }
 
 type Storer interface {
@@ -23,8 +23,8 @@ type Storer interface {
 
 // FindAll
 // sql里select的字段数量必须与R的ScanFields方法返回的数组元素数量一致
-func FindAll[S Storer, R Finder](db S, initial R) (r []R, err error) {
-	query, args := initial.Query()
+func FindAll[S Storer, F Finder[R], R any](db S, finder F, inital R) (r []R, err error) {
+	query, args := finder.Query()
 	rows, err := db.QueryContext(context.TODO(), query, args...) // sql里select了n列
 	if err != nil {
 		return
@@ -36,13 +36,13 @@ func FindAll[S Storer, R Finder](db S, initial R) (r []R, err error) {
 		return
 	}
 	for rows.Next() {
-		t, fields := initial.NewScanObjAndFields(colTypes) // fields也必须有n个元素
+		obj, fields := finder.NewScanObjAndFields(colTypes) // fields也必须有n个元素
 		if err = rows.Scan(fields...); err != nil {
 			return
 		}
 		// PrintFields(fields)
 
-		r = append(r, t.(R))
+		r = append(r, obj)
 	}
 	if err = rows.Err(); err != nil {
 		return
@@ -51,8 +51,8 @@ func FindAll[S Storer, R Finder](db S, initial R) (r []R, err error) {
 	return
 }
 
-func FindOne[S Storer, R Finder](db S, ir R) (r R, err error) {
-	res, err := FindAll(db, ir)
+func FindOne[S Storer, F Finder[R], R any](db S, finder F, inital R) (r R, err error) {
+	res, err := FindAll(db, finder, inital)
 	if err != nil {
 		return r, err
 	}

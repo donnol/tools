@@ -23,6 +23,8 @@ require (
 	golang.org/x/mod v0.7.0
 	golang.org/x/time v0.3.0
 	golang.org/x/tools v0.4.0
+	gorm.io/driver/sqlite v1.4.4
+	gorm.io/gorm v1.24.5
 )
 
 require (
@@ -42,8 +44,11 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/mattn/go-sqlite3 v1.14.15 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/opentracing/basictracer-go v1.0.0 // indirect

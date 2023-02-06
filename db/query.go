@@ -75,14 +75,15 @@ func WrapSQLQueryRows(
 
 // WrapConnFindAll query by stmt and args, return values with dest
 // support many rows
-func WrapConnFindAll[R Finder](
+func WrapConnFindAll[F Finder[R], R any](
 	ctx context.Context,
 	db *sql.DB,
-	initial R,
+	finder F,
+	inital R,
 ) (r []R, err error) {
 
 	if err = WrapSQLConn(ctx, db, func(ctx context.Context, conn *sql.Conn) error {
-		r, err = FindAll(conn, initial)
+		r, err = FindAll(conn, finder, inital)
 		if err != nil {
 			return err
 		}
@@ -95,10 +96,11 @@ func WrapConnFindAll[R Finder](
 	return
 }
 
-func WrapTxFindAll[R Finder](
+func WrapTxFindAll[F Finder[R], R any](
 	ctx context.Context,
 	db *sql.DB,
-	initial R,
+	finder F,
+	inital R,
 ) (r []R, err error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -113,7 +115,7 @@ func WrapTxFindAll[R Finder](
 		}
 	}()
 
-	r, err = FindAll(tx, initial)
+	r, err = FindAll(tx, finder, inital)
 	if err != nil {
 		return nil, err
 	}

@@ -25,3 +25,5 @@ apitest/testdata/swaggerui/dist/*
 apitest/doc
 
 graphviz/*.png
+
+db/testdata/test.db

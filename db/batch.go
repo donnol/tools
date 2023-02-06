@@ -8,8 +8,8 @@ import (
 )
 
 // Batch 批量处理查询到的数据
-func Batch[S Storer, R Finder](db S, initial R, batchNum int, handler func([]R) error) (err error) {
-	query, args := initial.Query()
+func Batch[S Storer, F Finder[R], R any](db S, finder F, batchNum int, handler func([]R) error) (err error) {
+	query, args := finder.Query()
 	rows, err := db.QueryContext(context.TODO(), query, args...)
 	if err != nil {
 		return
@@ -22,12 +22,12 @@ func Batch[S Storer, R Finder](db S, initial R, batchNum int, handler func([]R) 
 	}
 	batch := make([]R, 0, batchNum)
 	for rows.Next() {
-		t, fields := initial.NewScanObjAndFields(colTypes)
+		t, fields := finder.NewScanObjAndFields(colTypes)
 		if err = rows.Scan(fields...); err != nil {
 			return
 		}
 
-		batch = append(batch, t.(R))
+		batch = append(batch, t)
 		if batchNum > 0 && len(batch) >= batchNum {
 			if err = handler(batch); err != nil {
 				err = fmt.Errorf("batch handle failed %w", err)
@@ -52,8 +52,8 @@ func Batch[S Storer, R Finder](db S, initial R, batchNum int, handler func([]R) 
 }
 
 // BatchConcurrent 并发批量处理查询到的数据
-func BatchConcurrent[S Storer, R Finder](db S, initial R, batchNum int, handler func([]R) error, concNum int) (err error) {
-	query, args := initial.Query()
+func BatchConcurrent[S Storer, F Finder[R], R any](db S, finder F, batchNum int, handler func([]R) error, concNum int) (err error) {
+	query, args := finder.Query()
 	rows, err := db.QueryContext(context.TODO(), query, args...)
 	if err != nil {
 		return
@@ -71,12 +71,12 @@ func BatchConcurrent[S Storer, R Finder](db S, initial R, batchNum int, handler 
 
 	batch := make([]R, 0, batchNum)
 	for rows.Next() {
-		t, fields := initial.NewScanObjAndFields(colTypes)
+		t, fields := finder.NewScanObjAndFields(colTypes)
 		if err = rows.Scan(fields...); err != nil {
 			return
 		}
 
-		batch = append(batch, t.(R))
+		batch = append(batch, t)
 		if batchNum > 0 && len(batch) >= batchNum {
 			batchCopy := batch
 			if err = batchWorker.Push(*worker.NewJob(
