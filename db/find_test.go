@@ -137,3 +137,39 @@ func TestFindAll_Total(t *testing.T) {
 		}
 	}
 }
+
+func TestFindList(t *testing.T) {
+	finder := &finderOfUser{
+		id: 1,
+	}
+	var r []User
+	err := FindList(tdb, finder, &r)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(r) != 1 {
+		t.Errorf("bad result len, len(r) %v != %v", len(r), 1)
+	}
+	for _, r := range r {
+		if r.Id != 1 {
+			t.Errorf("bad case of id, %v != %v", r.Id, 1)
+		}
+		if r.Name != "jd" {
+			t.Errorf("bad case of name, %v != %v", r.Name, "jd")
+		}
+	}
+}
+
+func TestFindFirst(t *testing.T) {
+	finder := &finderOfUserOnlyTotal{
+		id: 1,
+	}
+	var total int64
+	err := FindFirst(tdb, finder, &total)
+	if err != nil {
+		t.Error(err)
+	}
+	if total != 1 {
+		t.Errorf("bad result, total %v != %v", total, 1)
+	}
+}

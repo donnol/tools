@@ -21,6 +21,46 @@ type Storer interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+func FindList[S Storer, F Finder[*R], R any](db S, finder F, res *[]R) (err error) {
+	query, args := finder.Query()
+	rows, err := db.QueryContext(context.TODO(), query, args...) // sql里select了n列
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	colTypes, err := rows.ColumnTypes()
+	if err != nil {
+		return
+	}
+	for rows.Next() {
+		obj, fields := finder.NewScanObjAndFields(colTypes) // fields也必须有n个元素
+		if err = rows.Scan(fields...); err != nil {
+			return
+		}
+		// PrintFields(fields)
+
+		*res = append(*res, *obj)
+	}
+	if err = rows.Err(); err != nil {
+		return
+	}
+
+	return
+}
+
+func FindFirst[S Storer, F Finder[*R], R any](db S, finder F, res *R) (err error) {
+	var r []R
+	err = FindList(db, finder, &r)
+	if err != nil {
+		return
+	}
+	if len(r) > 0 {
+		*res = r[0]
+	}
+	return
+}
+
 // FindAll
 // sql里select的字段数量必须与R的ScanFields方法返回的数组元素数量一致
 func FindAll[S Storer, F Finder[R], R any](db S, finder F, inital R) (r []R, err error) {
