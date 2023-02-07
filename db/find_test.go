@@ -33,7 +33,15 @@ func (f *finderOfUser) NewScanObjAndFields(colTypes []*sql.ColumnType) (r *User,
 	return
 }
 
+// 这样可以省去一个inital参数，但是不能推断出R的实际类型，就需要手动传入类型参数，这样就需要写多个代码，因此暂时不使用这个函数签名
+func FindAll1[S Storer, F Finder[R], R any](db S, finder F) (r []R, err error) {
+	return
+}
+
 func TestFindAll(t *testing.T) {
+	// var finder1 Finder[*User] = &finderOfUser{}
+	// FindAll1(tdb, finder1) // Error: cannot infer R (/home/jd/Project/jd/tools/db/find.go:37:38)
+
 	finder := &finderOfUser{
 		id: 1,
 	}
