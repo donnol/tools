@@ -45,7 +45,7 @@ func TestFindAll(t *testing.T) {
 	finder := &finderOfUser{
 		id: 1,
 	}
-	r, err := FindAll(tdb, finder, (*User)(nil))
+	r, err := FindAll(tdb, finder, (User{}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,7 +84,7 @@ func TestFindAll_Id(t *testing.T) {
 	finder := &finderOfUserOnlyId{
 		id: 1,
 	}
-	r, err := FindAll(tdb, finder, (*User)(nil))
+	r, err := FindAll(tdb, finder, (User{}))
 	if err != nil {
 		t.Error(err)
 	}
@@ -124,7 +124,7 @@ func TestFindAll_Total(t *testing.T) {
 	finder := &finderOfUserOnlyTotal{
 		id: 1,
 	}
-	r, err := FindAll(tdb, finder, (*int64)(nil))
+	r, err := FindAll(tdb, finder, (int64)(0))
 	if err != nil {
 		t.Error(err)
 	}
@@ -132,7 +132,7 @@ func TestFindAll_Total(t *testing.T) {
 		t.Errorf("bad result len1, len(r) %v != %v", len(r), 1)
 	}
 	for _, r := range r {
-		if *r != 1 {
+		if r != 1 {
 			t.Errorf("bad case of id, %v != %v", r, 1)
 		}
 	}

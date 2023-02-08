@@ -13,7 +13,7 @@ type Finder[R any] interface {
 	// 新建结果类型对象，不要使用同一个，用来接收结果
 	// r需要是指针类型
 	// fields需要是字段指针类型，需要与表的列保持一一对应
-	NewScanObjAndFields(colTypes []*sql.ColumnType) (r R, fields []any)
+	NewScanObjAndFields(colTypes []*sql.ColumnType) (r *R, fields []any)
 }
 
 type Storer interface {
@@ -21,7 +21,7 @@ type Storer interface {
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
-func FindList[S Storer, F Finder[*R], R any](db S, finder F, res *[]R) (err error) {
+func FindList[S Storer, F Finder[R], R any](db S, finder F, res *[]R) (err error) {
 	query, args := finder.Query()
 	rows, err := db.QueryContext(context.TODO(), query, args...) // sql里select了n列
 	if err != nil {
@@ -49,7 +49,7 @@ func FindList[S Storer, F Finder[*R], R any](db S, finder F, res *[]R) (err erro
 	return
 }
 
-func FindFirst[S Storer, F Finder[*R], R any](db S, finder F, res *R) (err error) {
+func FindFirst[S Storer, F Finder[R], R any](db S, finder F, res *R) (err error) {
 	var r []R
 	err = FindList(db, finder, &r)
 	if err != nil {
@@ -82,7 +82,7 @@ func FindAll[S Storer, F Finder[R], R any](db S, finder F, inital R) (r []R, err
 		}
 		// PrintFields(fields)
 
-		r = append(r, obj)
+		r = append(r, *obj)
 	}
 	if err = rows.Err(); err != nil {
 		return

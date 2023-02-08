@@ -27,7 +27,7 @@ func Batch[S Storer, F Finder[R], R any](db S, finder F, batchNum int, handler f
 			return
 		}
 
-		batch = append(batch, t)
+		batch = append(batch, *t)
 		if batchNum > 0 && len(batch) >= batchNum {
 			if err = handler(batch); err != nil {
 				err = fmt.Errorf("batch handle failed %w", err)
@@ -76,7 +76,7 @@ func BatchConcurrent[S Storer, F Finder[R], R any](db S, finder F, batchNum int,
 			return
 		}
 
-		batch = append(batch, t)
+		batch = append(batch, *t)
 		if batchNum > 0 && len(batch) >= batchNum {
 			batchCopy := batch
 			if err = batchWorker.Push(*worker.NewJob(
