@@ -9,6 +9,57 @@ import (
 	"github.com/donnol/tools/funcx"
 )
 
+func WrapDB(
+	ctx context.Context,
+	driverName string,
+	dataSourceName string,
+	f func(
+		ctx context.Context,
+		conn *sql.DB,
+	) error,
+) error {
+	db, err := sql.Open(driverName, dataSourceName)
+	if err != nil {
+		return err
+	}
+
+	if err := f(ctx, db); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func WrapTx(
+	ctx context.Context,
+	db *sql.DB,
+	f func(
+		ctx context.Context,
+		tx *sql.Tx,
+	) error,
+) (err error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return
+	}
+	var success bool
+	defer func() {
+		if !success {
+			tx.Rollback()
+		} else {
+			tx.Commit()
+		}
+	}()
+
+	err = f(ctx, tx)
+	if err != nil {
+		return err
+	}
+	success = true
+
+	return
+}
+
 func WrapSQLConn(
 	ctx context.Context,
 	db *sql.DB,
@@ -83,7 +134,7 @@ func WrapConnFindAll[F Finder[R], R any](
 ) (r []R, err error) {
 
 	if err = WrapSQLConn(ctx, db, func(ctx context.Context, conn *sql.Conn) error {
-		r, err = FindAll(conn, finder, inital)
+		err = FindList(conn, finder, &r)
 		if err != nil {
 			return err
 		}
@@ -102,24 +153,16 @@ func WrapTxFindAll[F Finder[R], R any](
 	finder F,
 	inital R,
 ) (r []R, err error) {
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	var success bool
-	defer func() {
-		if !success {
-			tx.Rollback()
-		} else {
-			tx.Commit()
-		}
-	}()
 
-	r, err = FindAll(tx, finder, inital)
-	if err != nil {
-		return nil, err
+	if err = WrapTx(ctx, db, func(ctx context.Context, tx *sql.Tx) error {
+		err = FindList(tx, finder, &r)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return
 	}
-	success = true
 
 	return
 }
