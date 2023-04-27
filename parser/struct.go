@@ -164,10 +164,11 @@ type Package struct {
 type Interface struct {
 	*types.Interface
 
-	PkgPath string
-	PkgName string
-	Name    string
-	Methods []Method // 方法列表
+	PkgPath    string
+	PkgName    string
+	Name       string
+	TypeParams *ast.FieldList
+	Methods    []Method // 方法列表
 }
 
 var (
@@ -222,15 +223,17 @@ type arg struct {
 }
 
 func (s Interface) MakeMock() (string, map[string]struct{}) {
+	fullTypeParam, partTypeParam := s.handleTypeParams()
+	debug.Printf("interface : %#v, %#v, %v, %v\n", s.Interface, s.Name, fullTypeParam, partTypeParam)
 	mockType := s.makeMockName()
 	mockRecv := s.makeMockRecv()
 	proxyFuncName := s.makeProxyFuncName()
 	debug.Printf("proxyfuncname:%s\n", proxyFuncName)
 
-	proxyFunc := "func " + proxyFuncName + "(base " + s.Name + ") *" + mockType + "{" + `if base == nil {
+	proxyFunc := "func " + proxyFuncName + fullTypeParam + "(base " + s.Name + partTypeParam + ") " + s.Name + partTypeParam + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
-	return &` + mockType + `{`
+	return &` + mockType + partTypeParam + `{`
 	cc := fmt.Sprintf(`%sCommonProxyContext`, LcFirst(mockType))
 
 	var is string
@@ -254,7 +257,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		} () 
 		`, mockType, m.Name, cc, m.Name)
 
-		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType, methodSig, returnStmt, mockRecv, call)
+		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType+partTypeParam, methodSig, returnStmt, mockRecv, call)
 
 		assertBuf := new(bytes.Buffer)
 		assertTmpl, err := template.New("proxyMethodResultAssert").Parse(proxyMethodResultAssertTmpl)
@@ -269,8 +272,17 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 		if err != nil {
 			panic(err)
 		}
+		methodArgs := make([]arg, 0, len(args))
+		for _, arg := range args {
+			// 这里把不定参数的...去掉，生成的代码会以切片的形式传递参数
+			i := strings.Index(arg.Name, "...")
+			if i != -1 {
+				arg.Name = arg.Name[:i]
+			}
+			methodArgs = append(methodArgs, arg)
+		}
 		paramTmpl.Execute(paramBuf, map[string]interface{}{
-			"args": args,
+			"args": methodArgs,
 		})
 		argNames := ""
 		for i, arg := range args {
@@ -312,15 +324,15 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	}
 
 	proxyFunc += proxyMethod.String() + "}}"
-	is = mockPrefix(mockType, is)
+	is = mockStructPrefix(mockType+fullTypeParam, is)
 
-	is += `var (_ ` + s.Name + ` = (*` + mockType + ")(nil)\n\n"
+	is += `var (`
 	is += fmt.Sprintf(`%s = inject.ProxyContext {
 		PkgPath: "%s",
 		InterfaceName: "%s",
 	}
 	`, cc, s.PkgPath, s.Name)
-	is += pc + "\n_ =" + proxyFuncName + `)`
+	is += pc + `)`
 	is += "\n" + "\n\n" + proxyFunc + "\n"
 	is += ms
 
@@ -433,6 +445,27 @@ func (s Interface) makeMockName() string {
 	return name + "Mock"
 }
 
+func (s Interface) handleTypeParams() (full string, part string) {
+	if s.TypeParams == nil {
+		return
+	}
+	for _, tp := range s.TypeParams.List {
+		if len(tp.Names) == 0 {
+			continue
+		}
+		for _, name := range tp.Names {
+			full += name.Name
+			part += name.Name
+		}
+		full += " " + types.ExprString(tp.Type)
+		full += ", "
+		part += ", "
+	}
+	full = "[" + full + "]"
+	part = "[" + part + "]"
+	return
+}
+
 func (s Interface) removeI() string {
 	name := s.Name
 	// 如果首个字符是I，则去掉
@@ -447,7 +480,7 @@ func (s Interface) makeMockRecv() string {
 	return "mockRecv"
 }
 
-func mockPrefix(name, is string) string {
+func mockStructPrefix(name, is string) string {
 	return "type " + name + " struct{ " + is + "}\n"
 }
 

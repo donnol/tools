@@ -241,17 +241,26 @@ func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult
 		case *ast.InterfaceType:
 			exprResult := ins.inspectExpr(specValue.Type, from)
 			debug.Printf("interface type name: %s, exprValue: %+v, type: %+v, result: %+v\n", specValue.Name, specValue, specValue.Type, exprResult)
+			if specValue.TypeParams != nil {
+				for _, tp := range specValue.TypeParams.List {
+					if len(tp.Names) == 0 {
+						continue
+					}
+					debug.Printf("type params: %+v, %v\n", tp.Names[0], tp.Type)
+				}
+			}
 
 			interType := ins.pkg.TypesInfo.TypeOf(specValue.Type)
 			r := parseTypesType(interType, parseTypesTypeOption{pkgPath: ins.pkg.PkgPath})
 			methods := r.methods
 
 			inter := Interface{
-				Interface: ins.pkg.TypesInfo.Types[specValue.Type].Type.(*types.Interface),
-				Name:      specValue.Name.Name,
-				PkgPath:   ins.pkg.PkgPath,
-				PkgName:   ins.pkg.Name,
-				Methods:   methods,
+				Interface:  ins.pkg.TypesInfo.Types[specValue.Type].Type.(*types.Interface),
+				Name:       specValue.Name.Name,
+				TypeParams: specValue.TypeParams,
+				PkgPath:    ins.pkg.PkgPath,
+				PkgName:    ins.pkg.Name,
+				Methods:    methods,
 			}
 			mock, imports := inter.MakeMock()
 			debug.Printf("mock: %s, imports: %v\n", mock, imports)
