@@ -314,7 +314,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	proxyFunc += proxyMethod.String() + "}}"
 	is = mockPrefix(mockType, is)
 
-	is += `var (_ ` + s.Name + ` = &` + mockType + "{}\n\n"
+	is += `var (_ ` + s.Name + ` = (*` + mockType + ")(nil)\n\n"
 	is += fmt.Sprintf(`%s = inject.ProxyContext {
 		PkgPath: "%s",
 		InterfaceName: "%s",
@@ -425,7 +425,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 }
 
 func (s Interface) makeProxyFuncName() string {
-	return "get" + s.Name + "Proxy"
+	return "Get" + s.Name + "Proxy"
 }
 
 func (s Interface) makeMockName() string {

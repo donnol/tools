@@ -399,7 +399,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 			flags := cmd.Flags()
 			path, _ := flags.GetString("path")
 			rec, _ := flags.GetBool("recursive")
-			fmt.Printf("| mock | %+v, %+v\n", path, rec)
+			fmt.Printf("| mock | pkg path: %s, recursive: %+v\n", path, rec)
 
 			ip := &importpath.ImportPath{}
 			paths, err := getPaths(ip, path, rec)
@@ -409,7 +409,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 			if len(paths) == 0 {
 				log.Fatalf("找不到有效路径，请使用-p指定或设置-r！")
 			}
-			fmt.Printf("dirs: %+v\n", paths)
+			debug.Printf("dirs: %+v\n", paths)
 
 			// 解析
 			p := parser.New(parser.Option{
