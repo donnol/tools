@@ -4,7 +4,9 @@ useful tools.
 
 ## tbc
 
-安装：`make tbc_install`. (请先安装 make 工具)
+`Go`命令安装: `go install github.com/donnol/tools/cmd/tbc@latest`.
+
+源码安装，克隆本仓库代码后：`make tbc_install`. (请先安装 make 工具)
 
 使用：
 
