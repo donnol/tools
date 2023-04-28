@@ -115,12 +115,33 @@ func (pkg Package) SaveMock(mode, dir, file string) error {
 	// 全局变量/函数
 	globalContent := `
 	var (
-		_gen_customCtxMap = make(map[string]inject.CtxFunc)
+		_gen_customCtxMap = new_gen_customCtxMapType()
 	)
+
+	type _gen_customCtxMapType struct {
+		m map[string]inject.CtxFunc
+	}
+
+	func new_gen_customCtxMapType() *_gen_customCtxMapType {
+		return &_gen_customCtxMapType{
+			m: make(map[string]inject.CtxFunc),
+		}
+	}
+
+	func (m *_gen_customCtxMapType) Lookup(pctx inject.ProxyContext, typeParams ...string) (inject.CtxFunc, bool) {
+		key := pctxUniqWithTypeParams(pctx.Uniq(), typeParams...)
+		v, ok := m.m[key]
+		return v, ok
+	}
+
+	func (m *_gen_customCtxMapType) Set(pctx inject.ProxyContext, f inject.CtxFunc, typeParams ...string) {
+		key := pctxUniqWithTypeParams(pctx.Uniq(), typeParams...)
+		m.m[key] = f
+	}
 
 	// RegisterProxyMethod 注册代理方法，根据包名+接口名+方法名唯一对应一个方法；在有了泛型后还要加上类型参数，唯一键变为包名+接口名+方法名+TP1,TP2,...
 	func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc, typeParams ...string) {
-		_gen_customCtxMap[pctxUniqWithTypeParams(pctx.Uniq(), typeParams...)] = cf
+		_gen_customCtxMap.Set(pctx, cf, typeParams...)
 	}
 	
 	func pctxUniqWithTypeParams(uniq string, typeParams ...string) string {
@@ -196,12 +217,20 @@ var (
 		{{.funcResult}}
 
 		_gen_ctx := {{.mockType}}{{.funcName}}ProxyContext
-		_gen_ctx_uniq := pctxUniqWithTypeParams(_gen_ctx.Uniq(), typeParams...)
-		_gen_cf, _gen_ok := _gen_customCtxMap[_gen_ctx_uniq]
-		if _gen_ok {
+		
+		var _gen_actual_cf inject.CtxFunc
+		_gen_inner_cf, _gen_inner_ok := _gen_innerCtxMap.Lookup(_gen_ctx, typeParams...)
+		_gen_cf, _gen_ok := _gen_customCtxMap.Lookup(_gen_ctx, typeParams...)
+		if _gen_inner_ok {
+			_gen_actual_cf = _gen_inner_cf
+		} else if _gen_ok {
+			_gen_actual_cf = _gen_cf
+		}
+
+		if _gen_actual_cf != nil {
 			_gen_params := []any{}
 			{{.params}}
-			{{if .funcResultList}} _gen_res := {{else}}  {{end}} _gen_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
+			{{if .funcResultList}} _gen_res := {{else}}  {{end}} _gen_actual_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
 			{{.resultAssert}}
 		} else {
 			{{if .funcResultList}} {{.funcResultList}} = {{else}}  {{end}} base.{{.funcName}}({{.argNames}})
@@ -259,10 +288,11 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 		originTypeName = s.PkgName + "." + s.Name
 	}
 	proxyFunc := `
-	// ` + proxyFuncName + ` 获取接口代理；若使用泛型，需传入typeParams，其值为类型参数的字符串字面量；若想进一步修改方法行为，可以使用RegisterProxyMethod函数注入自定义方法实现
-	func ` + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ", typeParams ...string) " + originTypeName + partTypeParam + "{" + `if base == nil {
+	// ` + proxyFuncName + ` 获取接口代理；若使用泛型，需传入typeParams，其值为类型参数的字符串字面量；若想进一步修改方法行为，可以使用RegisterProxyMethod函数注入自定义方法实现；如果想要为每个实例单独注入方法，则使用第二个返回值对象来设置
+	func ` + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ", typeParams ...string) (" + originTypeName + partTypeParam + ",  *_gen_customCtxMapType) {" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
+	_gen_innerCtxMap := new_gen_customCtxMapType()
 	return &` + mockType + partTypeParam + `{`
 	cc := fmt.Sprintf(`%sCommonProxyContext`, LcFirst(mockType))
 
@@ -353,7 +383,7 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 		})
 	}
 
-	proxyFunc += proxyMethod.String() + "}}"
+	proxyFunc += proxyMethod.String() + "}, _gen_innerCtxMap}"
 	is = mockStructPrefix(mockType+fullTypeParam, is)
 
 	is += `var (`
