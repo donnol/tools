@@ -118,8 +118,16 @@ func (pkg Package) SaveMock(mode, dir, file string) error {
 		_gen_customCtxMap = make(map[string]inject.CtxFunc)
 	)
 
-	func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc) {
-		_gen_customCtxMap[pctx.Uniq()] = cf
+	// RegisterProxyMethod 注册代理方法，根据包名+接口名+方法名唯一对应一个方法；在有了泛型后还要加上类型参数，唯一键变为包名+接口名+方法名+TP1,TP2,...
+	func RegisterProxyMethod(pctx inject.ProxyContext, cf inject.CtxFunc, typeParams ...string) {
+		_gen_customCtxMap[pctxUniqWithTypeParams(pctx.Uniq(), typeParams...)] = cf
+	}
+	
+	func pctxUniqWithTypeParams(uniq string, typeParams ...string) string {
+		if len(typeParams) > 0 {
+			uniq = uniq + "|" + strings.Join(typeParams, ",")
+		}
+		return uniq
 	}
 	`
 	content = globalContent + content
@@ -188,7 +196,8 @@ var (
 		{{.funcResult}}
 
 		_gen_ctx := {{.mockType}}{{.funcName}}ProxyContext
-		_gen_cf, _gen_ok := _gen_customCtxMap[_gen_ctx.Uniq()]
+		_gen_ctx_uniq := pctxUniqWithTypeParams(_gen_ctx.Uniq(), typeParams...)
+		_gen_cf, _gen_ok := _gen_customCtxMap[_gen_ctx_uniq]
 		if _gen_ok {
 			_gen_params := []any{}
 			{{.params}}
@@ -249,7 +258,9 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 	if mode == "offsite" {
 		originTypeName = s.PkgName + "." + s.Name
 	}
-	proxyFunc := "func " + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ") " + originTypeName + partTypeParam + "{" + `if base == nil {
+	proxyFunc := `
+	// ` + proxyFuncName + ` 获取接口代理；若使用泛型，需传入typeParams，其值为类型参数的字符串字面量；若想进一步修改方法行为，可以使用RegisterProxyMethod函数注入自定义方法实现
+	func ` + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ", typeParams ...string) " + originTypeName + partTypeParam + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
 	return &` + mockType + partTypeParam + `{`
