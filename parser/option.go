@@ -20,6 +20,8 @@ type Option struct {
 	NeedCall bool // 需要记录调用了哪些函数/方法
 
 	ReplaceCallExpr bool // 替换调用表达式
+
+	Mode string // 模式：normal offsite
 }
 
 type Op string

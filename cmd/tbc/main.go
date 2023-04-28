@@ -65,6 +65,8 @@ func main() {
 	rootCmd.PersistentFlags().StringVarP(&file, "file", "f", "", "specify input file")
 	var pkgName string
 	rootCmd.PersistentFlags().StringVar(&pkgName, "pkg", "", "specify package name")
+	var mode string
+	rootCmd.PersistentFlags().StringVar(&mode, "mode", "normal", "specify mode like normal or offsite")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -310,7 +312,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 			fmt.Printf("| interface | %+v, %+v\n", path, rec)
 
 			ip := &importpath.ImportPath{}
-			paths, err := getPaths(ip, path, rec)
+			_, paths, err := getPaths(ip, path, rec)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -399,17 +401,18 @@ func addSubCommand(rootCmd *cobra.Command) {
 			flags := cmd.Flags()
 			path, _ := flags.GetString("path")
 			rec, _ := flags.GetBool("recursive")
-			fmt.Printf("| mock | pkg path: %s, recursive: %+v\n", path, rec)
+			mode, _ := flags.GetString("mode")
+			fmt.Printf("| mock | pkg path: %s, recursive: %+v, mode: %s\n", path, rec, mode)
 
 			ip := &importpath.ImportPath{}
-			paths, err := getPaths(ip, path, rec)
+			curdir, paths, err := getPaths(ip, path, rec)
 			if err != nil {
 				log.Fatal(err)
 			}
 			if len(paths) == 0 {
 				log.Fatalf("找不到有效路径，请使用-p指定或设置-r！")
 			}
-			debug.Printf("dirs: %+v\n", paths)
+			debug.Printf("paths: %+v\n", paths)
 
 			// 解析
 			p := parser.New(parser.Option{
@@ -421,7 +424,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 				log.Fatal(err)
 			}
 			for _, pkg := range pkgs.Pkgs {
-				if err = pkg.SaveMock(""); err != nil {
+				if err = pkg.SaveMock(mode, curdir, ""); err != nil {
 					log.Printf("gen mock failed, pkg: %+v, err: %+v\n", pkg, err)
 				}
 			}
@@ -448,7 +451,7 @@ func addSubCommand(rootCmd *cobra.Command) {
 			fmt.Printf("| impl | %+v, %+v, %+v\n", interf, path, rec)
 
 			ip := &importpath.ImportPath{}
-			paths, err := getPaths(ip, path, rec)
+			_, paths, err := getPaths(ip, path, rec)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -844,12 +847,12 @@ func {{.newFuncName}}({{.args}}) ({{.res}}) {
 	}()
 )
 
-func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error) {
+func getPaths(ip *importpath.ImportPath, path string, rec bool) (string, []string, error) {
 	var err error
 
 	dir, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return dir, nil, err
 	}
 
 	var paths []string
@@ -857,12 +860,12 @@ func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error
 	if path == "" {
 		path, err = ip.GetByCurrentDir()
 		if err != nil {
-			return nil, err
+			return dir, nil, err
 		}
 
 		haveGoFile, err := checkDirHaveGoFile(dir)
 		if err != nil {
-			return nil, err
+			return dir, nil, err
 		}
 		if haveGoFile {
 			paths = append(paths, path)
@@ -874,20 +877,20 @@ func getPaths(ip *importpath.ImportPath, path string, rec bool) ([]string, error
 
 	modDir, modPath, err := ip.GetModFilePath(dir)
 	if err != nil {
-		return nil, err
+		return dir, nil, err
 	}
 	fmt.Printf("dir: %s, modDir: %s, modPath: %s\n", dir, modDir, modPath)
 
 	if rec {
 		dirs, err := collectGoFileDir(dir)
 		if err != nil {
-			return nil, err
+			return dir, nil, err
 		}
 		for _, d := range dirs {
 			paths = append(paths, strings.Replace(d, dir, modDir, -1))
 		}
 	}
-	return paths, nil
+	return dir, paths, nil
 }
 
 // collectGoFileDir 在指定目录下收集含有go文件的子目录

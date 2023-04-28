@@ -34,15 +34,20 @@ func (pkgs Packages) LookupPkg(name string) (Package, bool) {
 	return pkg, false
 }
 
-func (pkg Package) NewGoFileWithSuffix(suffix string) (file string) {
+func (pkg Package) NewGoFileWithSuffix(mode, dir, suffix string) (file string) {
 	if pkg.Module == nil {
 		fmt.Printf("pkg.Module is nil\n")
 	}
 	part := strings.ReplaceAll(pkg.PkgPath, pkg.Module.Path, "")
 	debug.Printf("pkg: %+v, module: %+v, %s\n", pkg.PkgPath, pkg.Module, part)
 
-	dir := filepath.Join(pkg.Module.Dir, part)
-	file = filepath.Join(dir, suffix+".go")
+	var mockdir string
+	if mode == "offsite" {
+		mockdir = dir
+	} else {
+		mockdir = filepath.Join(pkg.Module.Dir, part)
+	}
+	file = filepath.Join(mockdir, suffix+".go")
 
 	return
 }
@@ -62,7 +67,7 @@ func (pkg Package) SaveInterface(file string) error {
 	// TODO:检查是否重复
 
 	if file == "" {
-		file = pkg.NewGoFileWithSuffix("interface")
+		file = pkg.NewGoFileWithSuffix("", "", "interface")
 	}
 	// 写入
 	formatContent, err := format.Format(file, gocontent, false)
@@ -78,8 +83,12 @@ func (pkg Package) SaveInterface(file string) error {
 	return nil
 }
 
-func (pkg Package) SaveMock(file string) error {
-	var gocontent = "package " + pkg.Name + "\n"
+func (pkg Package) SaveMock(mode, dir, file string) error {
+	pkgName := pkg.Name
+	if mode == "offsite" {
+		pkgName = filepath.Base(dir)
+	}
+	var gocontent = "package " + pkgName + "\n"
 
 	// 找出所有外部包引用，生成import
 	// 因为是生成mock结构体，所以有包引用的都是参数和返回值
@@ -93,7 +102,7 @@ func (pkg Package) SaveMock(file string) error {
 			log.Printf("have type set: %+v\n", single.Interface)
 			continue
 		}
-		mock, imps := single.MakeMock()
+		mock, imps := single.MakeMock(mode)
 		for imp := range imps {
 			imports[imp] = struct{}{}
 		}
@@ -137,7 +146,7 @@ func (pkg Package) SaveMock(file string) error {
 	// TODO:检查是否重复
 
 	if file == "" {
-		file = pkg.NewGoFileWithSuffix("mock")
+		file = pkg.NewGoFileWithSuffix(mode, dir, "mock")
 	}
 	// 写入
 	formatContent, err := format.Format(file, gocontent, false)
@@ -222,7 +231,7 @@ type arg struct {
 	Variadic bool
 }
 
-func (s Interface) MakeMock() (string, map[string]struct{}) {
+func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 	fullTypeParam, partTypeParam := s.handleTypeParams()
 	debug.Printf("interface : %#v, %#v, %v, %v\n", s.Interface, s.Name, fullTypeParam, partTypeParam)
 	mockType := s.makeMockName()
@@ -230,7 +239,11 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	proxyFuncName := s.makeProxyFuncName()
 	debug.Printf("proxyfuncname:%s\n", proxyFuncName)
 
-	proxyFunc := "func " + proxyFuncName + fullTypeParam + "(base " + s.Name + partTypeParam + ") " + s.Name + partTypeParam + "{" + `if base == nil {
+	originTypeName := s.Name
+	if mode == "offsite" {
+		originTypeName = s.PkgName + "." + s.Name
+	}
+	proxyFunc := "func " + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ") " + originTypeName + partTypeParam + "{" + `if base == nil {
 		panic(fmt.Errorf("base cannot be nil"))
 	}
 	return &` + mockType + partTypeParam + `{`
@@ -242,7 +255,7 @@ func (s Interface) MakeMock() (string, map[string]struct{}) {
 	var proxyMethod = new(bytes.Buffer)
 	var imports = make(map[string]struct{}, 4)
 	for _, m := range s.Methods {
-		fieldName, fieldType, methodSig, returnStmt, call, args, reses, imps := s.processFunc(m)
+		fieldName, fieldType, methodSig, returnStmt, call, args, reses, imps := s.processFunc(mode, m)
 
 		for imp := range imps {
 			imports[imp] = struct{}{}
@@ -349,7 +362,7 @@ const (
 
 // func(ctx context.Context, m M) (err error) -> (ctx, m)
 // func(context.Context,M) (error) -> (p0, p1)
-func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, returnStmt, call string, args []arg, reses []arg, imports map[string]struct{}) {
+func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, methodSig, returnStmt, call string, args []arg, reses []arg, imports map[string]struct{}) {
 
 	imports = make(map[string]struct{}, 4) // 导入的包
 	fieldName = m.Name + "Func"
@@ -358,7 +371,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	sigType := m.Origin.Type().(*types.Signature)
 	if sigType.Variadic() {
 		//  在这里获取完整签名字符串时，还是正常的：func(interface{}, string, ...interface{}) error
-		typStr := types.TypeString(sigType, pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+		typStr := types.TypeString(sigType, pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath, keepPkgPathWhenIsSamePkg: mode == "offsite"}))
 		debug.Printf("typ: %+v, str: %s\n", sigType, typStr)
 	}
 	params := sigType.Params()
@@ -376,7 +389,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		imports[pkgPath] = struct{}{}
 
 		// 解析进来之后，不定参数类型变成了slice：[]interface{}
-		typStr := types.TypeString(pvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+		typStr := types.TypeString(pvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath, keepPkgPathWhenIsSamePkg: mode == "offsite"}))
 
 		// 处理最后一个是不定参数的情况
 		var paramTypePrefix string
@@ -415,7 +428,7 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 		pkgPath := getTypesPkgPath(rvar.Type())
 		imports[pkgPath] = struct{}{}
 
-		typ := types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath}))
+		typ := types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath, keepPkgPathWhenIsSamePkg: mode == "offsite"}))
 		resString += name + " " + typ + sep
 
 		reses = append(reses, arg{
@@ -428,6 +441,10 @@ func (s Interface) processFunc(m Method) (fieldName, fieldType, methodSig, retur
 	methodSig = methodSig + resString
 
 	debug.Printf("methodSig: %v\n", methodSig)
+	if mode == "offsite" {
+		li := strings.Index(methodSig, leftParent)
+		fieldType = "func" + methodSig[li:]
+	}
 
 	call = strings.TrimRight(call, sep)
 	call = leftParent + call + rightParent

@@ -43,6 +43,8 @@ type (
 
 		replaceCallExpr bool
 
+		mode string // normal or offsite
+
 		PkgInfo
 	}
 )
@@ -58,6 +60,7 @@ func New(opt Option) *Parser {
 		toPath:            opt.ToPath,
 		output:            opt.Output,
 		replaceCallExpr:   opt.ReplaceCallExpr,
+		mode:              opt.Mode,
 	}
 }
 

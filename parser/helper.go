@@ -10,6 +10,8 @@ import (
 
 type qualifierParam struct {
 	pkgPath string
+
+	keepPkgPathWhenIsSamePkg bool // 在同一个包内时，是否保留包名
 }
 
 var (
@@ -19,9 +21,11 @@ var (
 		return func(pkg *types.Package) string {
 			name := pkg.Name()
 
-			// 如果是同一个包内的，省略包名
-			if pkg.Path() == qp.pkgPath {
-				return ""
+			if !qp.keepPkgPathWhenIsSamePkg {
+				// 如果是同一个包内的，省略包名
+				if pkg.Path() == qp.pkgPath {
+					return ""
+				}
 			}
 
 			return name

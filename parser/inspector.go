@@ -262,7 +262,7 @@ func (ins *Inspector) inspectSpec(spec ast.Spec, from string) (result SpecResult
 				PkgName:    ins.pkg.Name,
 				Methods:    methods,
 			}
-			mock, imports := inter.MakeMock()
+			mock, imports := inter.MakeMock("")
 			debug.Printf("mock: %s, imports: %v\n", mock, imports)
 			result.interfaceMap[specValue.Name.Name] = inter
 
