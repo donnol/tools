@@ -192,15 +192,15 @@ var (
 		if _gen_ok {
 			_gen_params := []any{}
 			{{.params}}
-			_gen_res := _gen_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
+			{{if .funcResultList}} _gen_res := {{else}}  {{end}} _gen_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
 			{{.resultAssert}}
 		} else {
-			{{.funcResultList}} = base.{{.funcName}}({{.argNames}})
+			{{if .funcResultList}} {{.funcResultList}} = {{else}}  {{end}} base.{{.funcName}}({{.argNames}})
 		}
 
-		log.Printf("[ctx: %s]used time: %v\n", _gen_ctx.Uniq(), time.Since(_gen_begin))
+		log.Printf("[ctx: %s] used time: %v\n", _gen_ctx.Uniq(), time.Since(_gen_begin))
 
-		return {{.funcResultList}}
+		{{if .funcResultList}} return {{.funcResultList}} {{else}}  {{end}}
 	},
 	`
 
@@ -232,6 +232,12 @@ type arg struct {
 }
 
 func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
+	if mode == "offsite" {
+		// 异地模式，忽略非导出接口
+		if !ast.IsExported(s.Name) {
+			return "", nil
+		}
+	}
 	fullTypeParam, partTypeParam := s.handleTypeParams()
 	debug.Printf("interface : %#v, %#v, %v, %v\n", s.Interface, s.Name, fullTypeParam, partTypeParam)
 	mockType := s.makeMockName()
@@ -458,8 +464,7 @@ func (s Interface) makeProxyFuncName() string {
 }
 
 func (s Interface) makeMockName() string {
-	name := s.removeI()
-	return name + "Mock"
+	return s.Name + "Mock"
 }
 
 func (s Interface) handleTypeParams() (full string, part string) {
@@ -483,10 +488,10 @@ func (s Interface) handleTypeParams() (full string, part string) {
 	return
 }
 
-func (s Interface) removeI() string {
+func (s Interface) RemoveFirst(c string) string {
 	name := s.Name
-	// 如果首个字符是I，则去掉
-	index := strings.Index(name, "I")
+	// 如果首个字符是c，则去掉
+	index := strings.Index(name, c)
 	if index == 0 {
 		name = name[1:]
 	}
