@@ -473,10 +473,14 @@ func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, met
 	if res.Len() == 0 {
 		returnStmt = " "
 	}
+	useNamedRet := false
 	var resString string
 	for i := 0; i < res.Len(); i++ {
 		rvar := res.At(i)
 		name := rvar.Name()
+		if name != "" {
+			useNamedRet = true
+		}
 
 		// 返回类型的包路径信息
 		pkgPath := getTypesPkgPath(rvar.Type())
@@ -498,7 +502,7 @@ func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, met
 		})
 	}
 	resString = strings.TrimRight(resString, sep)
-	if res.Len() > 1 {
+	if res.Len() > 1 || useNamedRet {
 		resString = leftParent + resString + rightParent
 	}
 	methodSig = methodSig + " " + resString
