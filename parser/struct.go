@@ -114,6 +114,8 @@ func (pkg Package) SaveMock(mode, dir, file string) error {
 
 	// 全局变量/函数
 	globalContent := `
+	// ===== map =====
+
 	var (
 		_gen_customCtxMap = new_gen_customCtxMapType()
 	)
@@ -310,12 +312,14 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 
 		is += fmt.Sprintf("\n%s %s\n", fieldName, fieldType)
 
-		pc += fmt.Sprintf(`%s%sProxyContext = func() (pctx inject.ProxyContext) { 
+		pc += fmt.Sprintf(`
+		// represent %s.%s: %s
+		%s%sProxyContext = func() (pctx inject.ProxyContext) { 
 			pctx = %s
 			pctx.MethodName = "%s"
 			return
 		} () 
-		`, mockType, m.Name, cc, m.Name)
+		`, s.Name, m.Name, fieldType, mockType, m.Name, cc, m.Name)
 
 		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType+partTypeParam, methodSig, returnStmt, mockRecv, call)
 
@@ -452,7 +456,10 @@ func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, met
 		if paramTypePrefix != "" && strings.Index(typStr, "[]") == 0 {
 			typStr = typStr[2:]
 		}
-		methodSig += name + " " + paramTypePrefix + typStr + sep
+		methodSig += name + " " + paramTypePrefix + typStr
+		if i != params.Len()-1 {
+			methodSig += sep + " "
+		}
 
 		call += name + paramTypePrefix + sep
 
@@ -476,7 +483,14 @@ func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, met
 		imports[pkgPath] = struct{}{}
 
 		typ := types.TypeString(rvar.Type(), pkgNameQualifier(qualifierParam{pkgPath: s.PkgPath, keepPkgPathWhenIsSamePkg: mode == "offsite"}))
-		resString += name + " " + typ + sep
+		if name == "" {
+			resString += typ
+		} else {
+			resString += name + " " + typ
+		}
+		if i != res.Len()-1 {
+			resString += sep + " "
+		}
 
 		reses = append(reses, arg{
 			Name: name,
@@ -484,8 +498,10 @@ func (s Interface) processFunc(mode string, m Method) (fieldName, fieldType, met
 		})
 	}
 	resString = strings.TrimRight(resString, sep)
-	resString = leftParent + resString + rightParent
-	methodSig = methodSig + resString
+	if res.Len() > 1 {
+		resString = leftParent + resString + rightParent
+	}
+	methodSig = methodSig + " " + resString
 
 	debug.Printf("methodSig: %v\n", methodSig)
 	if mode == "offsite" {
@@ -512,7 +528,7 @@ func (s Interface) handleTypeParams() (full string, part string) {
 	if s.TypeParams == nil {
 		return
 	}
-	for _, tp := range s.TypeParams.List {
+	for i, tp := range s.TypeParams.List {
 		if len(tp.Names) == 0 {
 			continue
 		}
@@ -521,8 +537,10 @@ func (s Interface) handleTypeParams() (full string, part string) {
 			part += name.Name
 		}
 		full += " " + types.ExprString(tp.Type)
-		full += ", "
-		part += ", "
+		if i != len(s.TypeParams.List)-1 {
+			full += ", "
+			part += ", "
+		}
 	}
 	full = "[" + full + "]"
 	part = "[" + part + "]"
@@ -544,7 +562,10 @@ func (s Interface) makeMockRecv() string {
 }
 
 func mockStructPrefix(name, is string) string {
-	return "type " + name + " struct{ " + is + "}\n"
+	return `
+	// ===== ` + name + ` =====
+
+	type ` + name + " struct{ " + is + "}\n"
 }
 
 // Struct 结构体
