@@ -113,19 +113,7 @@ func (pkg Package) SaveMock(mode, dir, file string) error {
 	}
 
 	// 全局变量/函数
-	globalContent := `
-	// ===== map =====
-
-	var (
-		_gen_customCtxMap = do.NewProxyCtxMap()
-	)
-
-	// RegisterProxyMethod 注册代理方法，根据包名+接口名+方法名唯一对应一个方法；在有了泛型后还要加上类型参数，唯一键变为包名+接口名+方法名+TP1,TP2,...
-	func RegisterProxyMethod(pctx do.ProxyContext, cf do.ProxyCtxFunc, typeParams ...string) {
-		_gen_customCtxMap.Set(pctx, cf, typeParams...)
-	}
-	
-	`
+	globalContent := ``
 	content = globalContent + content
 
 	// 导入
@@ -199,7 +187,7 @@ var (
 		var _gen_actual_cf do.ProxyCtxFunc
 
 		_gen_inner_cf, _gen_inner_ok := _gen_innerCtxMap.Lookup(_gen_ctx, typeParams...)
-		_gen_cf, _gen_ok := _gen_customCtxMap.Lookup(_gen_ctx, typeParams...)
+		_gen_cf, _gen_ok := do.GlobalProxyCtxMap().Lookup(_gen_ctx, typeParams...)
 		if _gen_inner_ok {
 			_gen_actual_cf = _gen_inner_cf
 		} else if _gen_ok {
@@ -272,6 +260,7 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 
 	var is string
 	var pc string
+	var allpc = mockType + `ProxyContextAll = []do.ProxyContext{`
 	var ms string
 	var proxyMethod = new(bytes.Buffer)
 	var imports = make(map[string]struct{}, 4)
@@ -284,14 +273,17 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 
 		is += fmt.Sprintf("\n%s %s\n", fieldName, fieldType)
 
+		pcname := fmt.Sprintf("%s%sProxyContext", mockType, m.Name)
+		allpc += `
+		` + pcname + ","
 		pc += fmt.Sprintf(`
 		// represent %s.%s: %s
-		%s%sProxyContext = func() (pctx do.ProxyContext) { 
+		%s = func() (pctx do.ProxyContext) { 
 			pctx = %s
 			pctx.MethodName = "%s"
 			return
 		} () 
-		`, s.Name, m.Name, fieldType, mockType, m.Name, cc, m.Name)
+		`, s.Name, m.Name, fieldType, pcname, cc, m.Name)
 
 		ms += fmt.Sprintf("\nfunc (%s *%s) %s {\n %s %s.%s \n}\n", mockRecv, mockType+partTypeParam, methodSig, returnStmt, mockRecv, call)
 
@@ -368,7 +360,7 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 		InterfaceName: "%s",
 	}
 	`, cc, s.PkgPath, s.Name)
-	is += pc + `)`
+	is += pc + "\n" + allpc + "\n}\n" + `)`
 	is += "\n" + "\n\n" + proxyFunc + "\n"
 	is += ms
 
