@@ -38,4 +38,5 @@ const (
 	OpGenStructFromSQL  Op = "sql2struct"
 	OpGenDataForTable   Op = "gendata"
 	OpGenStructFromJSON Op = "json2struct"
+	OpProxy Op = "proxy"
 )

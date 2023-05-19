@@ -8,13 +8,16 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/donnol/do"
 	"github.com/donnol/tools/format"
 	"github.com/donnol/tools/importpath"
 	"github.com/donnol/tools/internal/utils/debug"
@@ -67,6 +70,11 @@ func main() {
 	rootCmd.PersistentFlags().StringVar(&pkgName, "pkg", "", "specify package name")
 	var mode string
 	rootCmd.PersistentFlags().StringVar(&mode, "mode", "normal", "specify mode like normal or offsite")
+	var typ string
+	rootCmd.PersistentFlags().StringVarP(&typ, "type", "t", "tcp", "specify network type like tcp")
+	var localAddr, remoteAddr string
+	rootCmd.PersistentFlags().StringVarP(&localAddr, "localAddr", "", ":33288", "specify local addr like ':33288'")
+	rootCmd.PersistentFlags().StringVarP(&remoteAddr, "remoteAddr", "", "127.0.0.1:33289", "specify remote addr like '127.0.0.1:33289'")
 
 	// 添加子命令
 	addSubCommand(rootCmd)
@@ -819,6 +827,44 @@ like:
 
 			for _, mod := range mods {
 				fmt.Printf("module: %s, %s, %s\n", mod.RelDir, mod.Mod.Path, mod.Mod.Version)
+			}
+		},
+	})
+
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   string(parser.OpProxy),
+		Short: "proxy from local to remote",
+		Long: `
+		-t network type, only support tcp now
+		`,
+		Run: func(cmd *cobra.Command, args []string) {
+			// 标志
+			flags := cmd.Flags()
+			typ, _ := flags.GetString("type")
+			_ = typ
+			localAddr, _ := flags.GetString("localAddr")
+			remoteAddr, _ := flags.GetString("remoteAddr")
+
+			if err := do.TCPProxy(localAddr, remoteAddr, func(lconn, rconn net.Conn) {
+				ltconn, ok := lconn.(*net.TCPConn)
+				if ok {
+					fmt.Printf("keep local conn alive\n")
+					ltconn.SetKeepAlive(true)
+					ltconn.SetKeepAlivePeriod(30 * time.Minute)
+				}
+				rtconn, ok := rconn.(*net.TCPConn)
+				if ok {
+					fmt.Printf("keep remote conn alive\n")
+					rtconn.SetKeepAlive(true)
+					rtconn.SetKeepAlivePeriod(30 * time.Minute)
+				}
+
+				fmt.Printf("accept begin\n")
+				do.TCPProxyDefaultHandler(lconn, rconn)
+				fmt.Printf("accept end\n")
+			}); err != nil {
+				fmt.Printf("proxy failed: %v\n", err)
+				os.Exit(1)
 			}
 		},
 	})
