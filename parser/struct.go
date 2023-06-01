@@ -177,7 +177,7 @@ var (
 	{{.methodName}}: {{.funcSignature}} {
 		var _gen_ctx = {{.mockType}}{{.funcName}}ProxyContext
 
-		_gen_stop := do.ProxyTraceBegin(_gen_ctx{{if .argNames}}, {{.argNames}} {{end}})
+		_gen_stop := do.ProxyTraceBegin(_gen_ctx{{if .argNamesWithoutVari}}, {{.argNamesWithoutVari}} {{end}})
 		defer func() {
 			_gen_stop()
 		}()
@@ -339,15 +339,16 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 			panic(err)
 		}
 		tmpl.Execute(proxyMethod, map[string]interface{}{
-			"methodName":     fieldName,
-			"funcSignature":  strings.Replace(methodSig, m.Name, "func", 1),
-			"mockType":       mockType,
-			"funcName":       m.Name,
-			"funcResult":     resBuf.String(),
-			"funcResultList": funcResultList,
-			"argNames":       argNames,
-			"params":         paramBuf.String(),
-			"resultAssert":   assertBuf.String(),
+			"methodName":          fieldName,
+			"funcSignature":       strings.Replace(methodSig, m.Name, "func", 1),
+			"mockType":            mockType,
+			"funcName":            m.Name,
+			"funcResult":          resBuf.String(),
+			"funcResultList":      funcResultList,
+			"argNames":            argNames,
+			"argNamesWithoutVari": strings.ReplaceAll(argNames, "...", ""),
+			"params":              paramBuf.String(),
+			"resultAssert":        assertBuf.String(),
 		})
 	}
 
