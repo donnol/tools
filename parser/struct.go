@@ -177,7 +177,7 @@ var (
 	{{.methodName}}: {{.funcSignature}} {
 		var _gen_ctx = {{.mockType}}{{.funcName}}ProxyContext
 
-		stop := do.ProxyTraceBegin(_gen_ctx)
+		stop := do.ProxyTraceBegin(_gen_ctx{{if .argNames}}, {{.argNames}} {{end}})
 		defer func() {
 			stop()
 		}()
