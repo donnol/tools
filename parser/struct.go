@@ -186,8 +186,8 @@ var (
 		
 		var _gen_actual_cf do.ProxyCtxFunc
 
-		_gen_inner_cf, _gen_inner_ok := _gen_innerCtxMap.Lookup(_gen_ctx, typeParams...)
-		_gen_cf, _gen_ok := do.GlobalProxyCtxMap().Lookup(_gen_ctx, typeParams...)
+		_gen_inner_cf, _gen_inner_ok := _gen_innerCtxMap.Lookup(_gen_ctx, _gen_typeParams...)
+		_gen_cf, _gen_ok := do.GlobalProxyCtxMap().Lookup(_gen_ctx, _gen_typeParams...)
 		if _gen_inner_ok {
 			_gen_actual_cf = _gen_inner_cf
 		} else if _gen_ok {
@@ -197,10 +197,10 @@ var (
 		if _gen_actual_cf != nil {
 			_gen_params := []any{}
 			{{.params}}
-			{{if .funcResultList}} _gen_res := {{else}}  {{end}} _gen_actual_cf(_gen_ctx, base.{{.funcName}}, _gen_params)
+			{{if .funcResultList}} _gen_res := {{else}}  {{end}} _gen_actual_cf(_gen_ctx, _gen_base.{{.funcName}}, _gen_params)
 			{{.resultAssert}}
 		} else {
-			{{if .funcResultList}} {{.funcResultList}} = {{else}}  {{end}} base.{{.funcName}}({{.argNames}})
+			{{if .funcResultList}} {{.funcResultList}} = {{else}}  {{end}} _gen_base.{{.funcName}}({{.argNames}})
 		}
 
 		{{if .funcResultList}} return {{.funcResultList}} {{else}}  {{end}}
@@ -251,8 +251,8 @@ func (s Interface) MakeMock(mode string) (string, map[string]struct{}) {
 	}
 	proxyFunc := `
 	// ` + proxyFuncName + ` 获取接口代理；若使用泛型，需传入typeParams，其值为类型参数的字符串字面量；若想进一步修改方法行为，可以使用RegisterProxyMethod函数注入自定义方法实现；如果想要为每个实例单独注入方法，则使用第二个返回值对象来设置
-	func ` + proxyFuncName + fullTypeParam + "(base " + originTypeName + partTypeParam + ", typeParams ...string) (" + originTypeName + partTypeParam + ",  *do.ProxyCtxFuncStore) {" + `if base == nil {
-		panic(fmt.Errorf("base cannot be nil"))
+	func ` + proxyFuncName + fullTypeParam + "(_gen_base " + originTypeName + partTypeParam + ", _gen_typeParams ...string) (" + originTypeName + partTypeParam + ",  *do.ProxyCtxFuncStore) {" + `if _gen_base == nil {
+		panic(fmt.Errorf("_gen_base cannot be nil"))
 	}
 	_gen_innerCtxMap := do.NewProxyCtxMap()
 	return &` + mockType + partTypeParam + `{`
