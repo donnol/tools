@@ -1,6 +1,7 @@
 package sqlparser
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -99,6 +100,52 @@ const (
 	func ({{.StructName}}) TableName() string {
 		return "{{.TableName}}"
 	}`
+
+	helperStructHeadTmpl = `
+	type _{{.StructName}}NameHelper struct {
+	`
+	helperStructFieldTmpl = `	{{.FieldName}} string // field: {{.DBField}}
+	`
+	helperStructFootTmpl = `}`
+
+	helperMethodFuzzTmpl = `
+	// FuzzWrap make v become %v%
+	func (_{{.StructName}}NameHelper) FuzzWrap(v string) string {
+		return "%" + v + "%"
+	}
+	`
+	helperMethodColsHeaderTmpl = `
+	func (_{{.StructName}}NameHelper) Columns() []string {
+		return []string{
+	`
+	helperMethodColsBodyTmpl = `"{{.DBField}}",
+	`
+	helperMethodColsFooterTmpl = `
+			}
+		}
+	`
+
+	structHelperHeader = `
+	func ({{.StructName}}) NameHelper() _{{.StructName}}NameHelper {
+		return _{{.StructName}}NameHelper{
+	`
+	structHelperBody = `{{.FieldName}}: "{{.DBField}}",
+	`
+	structHelperFooter = `
+		}
+	}
+	`
+
+	structValuesHeader = `
+	func (s {{.StructName}}) Values() []any {
+		return []any{
+	`
+	structValuesBody = `s.{{.FieldName}},
+	`
+	structValuesFooter = `
+		}
+	}
+	`
 )
 
 type Struct struct {
@@ -110,6 +157,7 @@ type Field struct {
 	Name    string
 	Type    string
 	Tag     string
+	DBField string
 	Comment string
 }
 
@@ -126,6 +174,7 @@ func (v *Struct) Enter(in ast.Node) (ast.Node, bool) {
 			field := Field{
 				Name: col.Name.Name.O,
 			}
+			field.DBField = col.Name.Name.L
 
 			field.Type = col.Tp.InfoSchemaStr()
 			field.Type = processFieldType(field.Type)
@@ -327,6 +376,58 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 		}
 	}
 
+	hbuf := new(bytes.Buffer)
+	{
+		temp, err := template.New("structHead").Parse(helperStructHeadTmpl)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(hbuf, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
+	hhbuf := new(bytes.Buffer)
+	{
+		temp, err := template.New("structHead").Parse(helperMethodColsHeaderTmpl)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(hhbuf, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
+	shbuf := new(bytes.Buffer)
+	{
+		temp, err := template.New("structHead").Parse(structHelperHeader)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(shbuf, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
+	svbuf := new(bytes.Buffer)
+	{
+		temp, err := template.New("structHead").Parse(structValuesHeader)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(svbuf, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
 	{
 		for _, field := range s.Fields {
 			fieldName := field.Name
@@ -358,15 +459,98 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 				"FieldName":    fieldName,
 				"FieldType":    fieldType,
 				"FieldTag":     fieldTag,
+				"DBField":      field.DBField,
 				"FieldComment": field.Comment,
 			}); err != nil {
 				return err
+			}
+
+			{
+				temp, err := template.New("structField").Parse(helperStructFieldTmpl)
+				if err != nil {
+					return err
+				}
+				if err := temp.Execute(hbuf, map[string]any{
+					"FieldName":    fieldName,
+					"FieldType":    fieldType,
+					"FieldTag":     fieldTag,
+					"DBField":      field.DBField,
+					"FieldComment": field.Comment,
+				}); err != nil {
+					return err
+				}
+			}
+			{
+				temp, err := template.New("structField").Parse(structHelperBody)
+				if err != nil {
+					return err
+				}
+				if err := temp.Execute(shbuf, map[string]any{
+					"FieldName":    fieldName,
+					"FieldType":    fieldType,
+					"FieldTag":     fieldTag,
+					"DBField":      field.DBField,
+					"FieldComment": field.Comment,
+				}); err != nil {
+					return err
+				}
+			}
+			{
+				temp, err := template.New("structField").Parse(structValuesBody)
+				if err != nil {
+					return err
+				}
+				if err := temp.Execute(svbuf, map[string]any{
+					"FieldName":    fieldName,
+					"FieldType":    fieldType,
+					"FieldTag":     fieldTag,
+					"DBField":      field.DBField,
+					"FieldComment": field.Comment,
+				}); err != nil {
+					return err
+				}
+			}
+
+			{
+				temp, err := template.New("structField").Parse(helperMethodColsBodyTmpl)
+				if err != nil {
+					return err
+				}
+				if err := temp.Execute(hhbuf, map[string]any{
+					"FieldName":    fieldName,
+					"FieldType":    fieldType,
+					"FieldTag":     fieldTag,
+					"DBField":      field.DBField,
+					"FieldComment": field.Comment,
+				}); err != nil {
+					return err
+				}
 			}
 		}
 	}
 
 	{
 		if _, err := w.Write([]byte(structFootTmpl)); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := hbuf.Write([]byte(helperStructFootTmpl)); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := shbuf.Write([]byte(structHelperFooter)); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := svbuf.Write([]byte(structValuesFooter)); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := hhbuf.Write([]byte(helperMethodColsFooterTmpl)); err != nil {
 			return err
 		}
 	}
@@ -383,6 +567,42 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 			return err
 		}
 	}
+
+	{
+		if _, err := w.Write(hbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+	{
+		// helperMethodFuzzTmpl
+		temp, err := template.New("structHead").Parse(helperMethodFuzzTmpl)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(w, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := w.Write(hhbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := w.Write(shbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+
+	{
+		if _, err := w.Write(svbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
