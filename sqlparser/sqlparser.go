@@ -147,6 +147,16 @@ const (
 	}
 	`
 
+	structValuePtrsHeader = `
+	func (s *{{.StructName}}) ValuePtrs() []any {
+		return []any{
+	`
+	structValuePtrsBody = `&s.{{.FieldName}},
+	`
+	structValuePtrsFooter = `
+		}
+	}`
+
 	enumHelperHeader = `
 	type _{{.StructName}}Enum struct {
 	`
@@ -495,6 +505,19 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 			return err
 		}
 	}
+	svpbuf := new(bytes.Buffer)
+	{
+		temp, err := template.New("structHead").Parse(structValuePtrsHeader)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(svpbuf, map[string]any{
+			"StructName":    name,
+			"StructComment": s.Comment,
+		}); err != nil {
+			return err
+		}
+	}
 	fieldEnumBuf := new(bytes.Buffer)
 	{
 		temp, err := template.New("structHead").Parse(enumHelperHeader)
@@ -617,6 +640,21 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 					return err
 				}
 			}
+			{
+				temp, err := template.New("structField").Parse(structValuePtrsBody)
+				if err != nil {
+					return err
+				}
+				if err := temp.Execute(svpbuf, map[string]any{
+					"FieldName":    fieldName,
+					"FieldType":    fieldType,
+					"FieldTag":     fieldTag,
+					"DBField":      field.DBField,
+					"FieldComment": field.Comment,
+				}); err != nil {
+					return err
+				}
+			}
 
 			{
 				temp, err := template.New("structField").Parse(helperMethodColsBodyTmpl)
@@ -670,10 +708,14 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 				}
 				for i, e := range field.Enums {
 					ev := e.EnumValue
-					_, err1 := strconv.ParseInt(ev, 10, 64)
-					_, err2 := strconv.ParseUint(ev, 10, 64)
-					if err1 != nil && err2 != nil {
+					if fieldType == "string" {
 						ev = fmt.Sprintf("%q", ev)
+					} else {
+						_, err1 := strconv.ParseInt(ev, 10, 64)
+						_, err2 := strconv.ParseUint(ev, 10, 64)
+						if err1 != nil && err2 != nil {
+							ev = fmt.Sprintf("%q", ev)
+						}
 					}
 					{
 						temp, err := template.New("structField").Parse(enumMethodBodyFieldBody)
@@ -730,6 +772,11 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 	}
 	{
 		if _, err := svbuf.Write([]byte(structValuesFooter)); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := svpbuf.Write([]byte(structValuePtrsFooter)); err != nil {
 			return err
 		}
 	}
@@ -803,6 +850,11 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 
 	{
 		if _, err := w.Write(svbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := w.Write(svpbuf.Bytes()); err != nil {
 			return err
 		}
 	}
