@@ -99,7 +99,14 @@ const (
 	structTableNameTmpl = `
 	func ({{.StructName}}) TableName() string {
 		return "{{.TableName}}"
-	}`
+	}
+	`
+
+	structColumn = `
+	func (s {{.StructName}}) Columns() []string {
+		return s.NameHelper().Columns()
+	}
+	`
 
 	helperStructHeadTmpl = `
 	type _{{.StructName}}NameHelper struct {
@@ -818,6 +825,29 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 			return err
 		}
 	}
+	{
+		// structColumn
+		temp, err := template.New("structColumn").Parse(structColumn)
+		if err != nil {
+			return err
+		}
+		if err := temp.Execute(w, map[string]any{
+			"StructName": name,
+			"TableName":  s.Name,
+		}); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := w.Write(svbuf.Bytes()); err != nil {
+			return err
+		}
+	}
+	{
+		if _, err := w.Write(svpbuf.Bytes()); err != nil {
+			return err
+		}
+	}
 
 	{
 		if _, err := w.Write(hbuf.Bytes()); err != nil {
@@ -848,16 +878,6 @@ func (s *Struct) Gen(w io.Writer, opt Option) error {
 		}
 	}
 
-	{
-		if _, err := w.Write(svbuf.Bytes()); err != nil {
-			return err
-		}
-	}
-	{
-		if _, err := w.Write(svpbuf.Bytes()); err != nil {
-			return err
-		}
-	}
 	if haveEnum {
 		if _, err := w.Write(fieldEnumBuf.Bytes()); err != nil {
 			return err
