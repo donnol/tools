@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/andreyvit/diff"
+
 	_ "github.com/pingcap/tidb/types/parser_driver"
 )
 
@@ -105,24 +107,28 @@ func TestStruct_Gen(t *testing.T) {
 				Fields: []Field{
 					{
 						Name:    "id",
+						DBField: "id",
 						Type:    "UNSIGNED BIGINT",
 						Tag:     "",
 						Comment: "主键id",
 					},
 					{
 						Name:    "name",
+						DBField: "name",
 						Type:    "varchar",
 						Tag:     "",
 						Comment: "名称",
 					},
 					{
 						Name:    "created_at",
+						DBField: "created_at",
 						Type:    "datetime",
 						Tag:     "",
 						Comment: "创建时间",
 					},
 					{
 						Name:    "updated_at",
+						DBField: "updated_at",
 						Type:    "timestamp",
 						Tag:     "",
 						Comment: "更新时间",
@@ -132,7 +138,7 @@ func TestStruct_Gen(t *testing.T) {
 			args: args{
 				opt: Option{},
 			},
-			wantW: "\n" +
+			wantW: "import \"github.com/donnol/do\"\n\n" +
 				"	// UserTable 用户表" + "\n" +
 				"	type UserTable struct {" + "\n" +
 				"		Id uint64 `json:\"id\" db:\"id\"` // 主键id" + "\n" +
@@ -142,7 +148,62 @@ func TestStruct_Gen(t *testing.T) {
 				"	}" + "\n" +
 				`	func (UserTable) TableName() string {
 		return "user_table"
-	}`,
+	}
+	
+	func (s UserTable) Columns() []string {
+		return s.NameHelper().Columns()
+	}
+	
+	func (s UserTable) Values() []any {
+		return []any{
+	s.Id,
+	s.Name,
+	s.CreatedAt,
+	s.UpdatedAt,
+	
+		}
+	}
+	
+	func (s *UserTable) ValuePtrs() []any {
+		return []any{
+	&s.Id,
+	&s.Name,
+	&s.CreatedAt,
+	&s.UpdatedAt,
+	
+		}
+	}
+	type _UserTableNameHelper struct {
+		Id string // field: id
+		Name string // field: name
+		CreatedAt string // field: created_at
+		UpdatedAt string // field: updated_at
+	}
+	// FuzzWrap make v become %v%
+	func (_UserTableNameHelper) FuzzWrap(v string) string {
+		return "%" + v + "%"
+	}
+	
+	func (_UserTableNameHelper) Columns() []string {
+		return []string{
+	"id",
+	"name",
+	"created_at",
+	"updated_at",
+	
+			}
+		}
+	
+	func (UserTable) NameHelper() _UserTableNameHelper {
+		return _UserTableNameHelper{
+	Id: "id",
+	Name: "name",
+	CreatedAt: "created_at",
+	UpdatedAt: "updated_at",
+	
+		}
+	}
+	`,
 			wantErr: false,
 		},
 	}
@@ -159,7 +220,7 @@ func TestStruct_Gen(t *testing.T) {
 				return
 			}
 			if gotW := w.String(); gotW != tt.wantW {
-				t.Errorf("Struct.Gen() = %v, want %v", gotW, tt.wantW)
+				t.Errorf("Struct.Gen() = %v, want %v, diff: %s", gotW, tt.wantW, diff.LineDiff(gotW, tt.wantW))
 			}
 		})
 	}
@@ -190,13 +251,13 @@ updated_at timestamp not null comment '更新时间'
 				Name:    "user",
 				Comment: "用户表",
 				Fields: []Field{
-					{Name: "id", Type: "int unsigned", Tag: "", Comment: "id"},
-					{Name: "name", Type: "varchar", Tag: "", Comment: "名称"},
-					{Name: "created_at", Type: "datetime", Tag: "", Comment: "创建时间"},
-					{Name: "updated_at", Type: "timestamp", Tag: "", Comment: "更新时间"},
+					{Name: "id", DBField: "id", Type: "int unsigned", Tag: "", Comment: "id"},
+					{Name: "name", DBField: "name", Type: "varchar", Tag: "", Comment: "名称"},
+					{Name: "created_at", DBField: "created_at", Type: "datetime", Tag: "", Comment: "创建时间"},
+					{Name: "updated_at", DBField: "updated_at", Type: "timestamp", Tag: "", Comment: "更新时间"},
 				},
 			},
-			wantW: "\n" +
+			wantW: "import \"github.com/donnol/do\"\n\n" +
 				"	// User 用户表" + "\n" +
 				"	type User struct {" + "\n" +
 				"		Id uint `json:\"id\" db:\"id\"` // id" + "\n" +
@@ -206,7 +267,62 @@ updated_at timestamp not null comment '更新时间'
 				"	}" + "\n" +
 				`	func (User) TableName() string {
 		return "user"
-	}`,
+	}
+	
+	func (s User) Columns() []string {
+		return s.NameHelper().Columns()
+	}
+	
+	func (s User) Values() []any {
+		return []any{
+	s.Id,
+	s.Name,
+	s.CreatedAt,
+	s.UpdatedAt,
+	
+		}
+	}
+	
+	func (s *User) ValuePtrs() []any {
+		return []any{
+	&s.Id,
+	&s.Name,
+	&s.CreatedAt,
+	&s.UpdatedAt,
+	
+		}
+	}
+	type _UserNameHelper struct {
+		Id string // field: id
+		Name string // field: name
+		CreatedAt string // field: created_at
+		UpdatedAt string // field: updated_at
+	}
+	// FuzzWrap make v become %v%
+	func (_UserNameHelper) FuzzWrap(v string) string {
+		return "%" + v + "%"
+	}
+	
+	func (_UserNameHelper) Columns() []string {
+		return []string{
+	"id",
+	"name",
+	"created_at",
+	"updated_at",
+	
+			}
+		}
+	
+	func (User) NameHelper() _UserNameHelper {
+		return _UserNameHelper{
+	Id: "id",
+	Name: "name",
+	CreatedAt: "created_at",
+	UpdatedAt: "updated_at",
+	
+		}
+	}
+	`,
 		},
 		{
 			name: "ignoreField",
@@ -225,13 +341,13 @@ updated_at timestamp not null comment '更新时间'
 				Name:    "user",
 				Comment: "用户表",
 				Fields: []Field{
-					{Name: "id", Type: "int unsigned", Tag: "", Comment: "id"},
-					{Name: "name", Type: "varchar", Tag: "", Comment: "名称"},
-					{Name: "created_at", Type: "datetime", Tag: "", Comment: "创建时间"},
-					{Name: "updated_at", Type: "timestamp", Tag: "", Comment: "更新时间"},
+					{Name: "id", DBField: "id", Type: "int unsigned", Tag: "", Comment: "id"},
+					{Name: "name", DBField: "name", Type: "varchar", Tag: "", Comment: "名称"},
+					{Name: "created_at", DBField: "created_at", Type: "datetime", Tag: "", Comment: "创建时间"},
+					{Name: "updated_at", DBField: "updated_at", Type: "timestamp", Tag: "", Comment: "更新时间"},
 				},
 			},
-			wantW: "\n" +
+			wantW: "import \"github.com/donnol/do\"\n\n" +
 				"	// User 用户表" + "\n" +
 				"	type User struct {" + "\n" +
 				"		Id uint `json:\"id\" db:\"id\"` // id" + "\n" +
@@ -240,7 +356,57 @@ updated_at timestamp not null comment '更新时间'
 				"	}" + "\n" +
 				`	func (User) TableName() string {
 		return "user"
-	}`,
+	}
+	
+	func (s User) Columns() []string {
+		return s.NameHelper().Columns()
+	}
+	
+	func (s User) Values() []any {
+		return []any{
+	s.Id,
+	s.Name,
+	s.CreatedAt,
+	
+		}
+	}
+	
+	func (s *User) ValuePtrs() []any {
+		return []any{
+	&s.Id,
+	&s.Name,
+	&s.CreatedAt,
+	
+		}
+	}
+	type _UserNameHelper struct {
+		Id string // field: id
+		Name string // field: name
+		CreatedAt string // field: created_at
+	}
+	// FuzzWrap make v become %v%
+	func (_UserNameHelper) FuzzWrap(v string) string {
+		return "%" + v + "%"
+	}
+	
+	func (_UserNameHelper) Columns() []string {
+		return []string{
+	"id",
+	"name",
+	"created_at",
+	
+			}
+		}
+	
+	func (User) NameHelper() _UserNameHelper {
+		return _UserNameHelper{
+	Id: "id",
+	Name: "name",
+	CreatedAt: "created_at",
+	
+		}
+	}
+	`,
 		},
 	}
 	for _, tt := range tests {
@@ -253,7 +419,7 @@ updated_at timestamp not null comment '更新时间'
 					t.Error(err)
 				}
 				if buf.String() != tt.wantW {
-					t.Errorf("Struct.Gen() = %v, want %v", buf.String(), tt.wantW)
+					t.Errorf("Struct.Gen() = %v, want %v, diff: %s", buf.String(), tt.wantW, diff.LineDiff(buf.String(), tt.wantW))
 				}
 			}
 		})
@@ -381,38 +547,46 @@ func TestParseCreateSQLBatch(t *testing.T) {
 			want: []*Struct{
 				{Name: "user", Fields: []Field{
 					{
-						Name: "id",
-						Type: "int",
+						Name:    "id",
+						Type:    "int",
+						DBField: "id",
 					},
 					{
-						Name: "name",
-						Type: "varchar",
+						Name:    "name",
+						Type:    "varchar",
+						DBField: "name",
 					},
 					{
-						Name: "created_at",
-						Type: "datetime",
+						Name:    "created_at",
+						Type:    "datetime",
+						DBField: "created_at",
 					},
 					{
-						Name: "updated_at",
-						Type: "timestamp",
+						Name:    "updated_at",
+						Type:    "timestamp",
+						DBField: "updated_at",
 					},
 				}},
 				{Name: "role", Fields: []Field{
 					{
-						Name: "id",
-						Type: "int",
+						Name:    "id",
+						Type:    "int",
+						DBField: "id",
 					},
 					{
-						Name: "name",
-						Type: "varchar",
+						Name:    "name",
+						Type:    "varchar",
+						DBField: "name",
 					},
 					{
-						Name: "created_at",
-						Type: "datetime",
+						Name:    "created_at",
+						Type:    "datetime",
+						DBField: "created_at",
 					},
 					{
-						Name: "updated_at",
-						Type: "timestamp",
+						Name:    "updated_at",
+						Type:    "timestamp",
+						DBField: "updated_at",
 					},
 				}},
 			},
