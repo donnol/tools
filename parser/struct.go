@@ -98,7 +98,7 @@ func (pkg Package) SaveMock(mode, dir, file string) error {
 	var content string
 	for _, single := range pkg.Interfaces {
 		debug.Printf("have type set: %+v, embeds: %d\n", single.Interface, single.Interface.NumEmbeddeds())
-		if single.Interface.NumEmbeddeds() != 0 {
+		if !single.Interface.IsMethodSet() {
 			log.Printf("have type set: %+v\n", single.Interface)
 			continue
 		}
